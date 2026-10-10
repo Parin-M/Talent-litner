@@ -56,7 +56,7 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
   Future<void> _buzz({bool heavy = false}) async {
     if (!widget.settings.haptics) return;
     try {
-      if (await Vibration.hasVibrator()) {
+      if (await Vibration.hasVibrator() == true) {
         await Vibration.vibrate(duration: heavy ? 100 : 35);
         return;
       }
