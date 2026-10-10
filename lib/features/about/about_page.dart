@@ -5,6 +5,7 @@ import '../../core/i18n/app_strings.dart';
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
   static const _repoUrl = 'https://github.com/Parin-M/parin-litner';
+  static const _authorCredit = 'این برنامه توسط پوریا مشعلچیان (Pourya Mashalchian) ساخته شده است.';
 
   Future<void> _openRepository(BuildContext context) async {
     final uri = Uri.parse(_repoUrl);
@@ -24,7 +25,7 @@ class AboutPage extends StatelessWidget {
           const SizedBox(height: 18),
           const Text('Parin Litner', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
           const SizedBox(height: 12),
-          Text('${s('about_creator_desc')}\n\n${s('about_ai')}', style: TextStyle(fontSize: 16, height: 1.65, color: scheme.onSurfaceVariant), textAlign: TextAlign.center),
+          Text('$_authorCredit\n\n${s('about_ai')}', style: TextStyle(fontSize: 16, height: 1.65, color: scheme.onSurfaceVariant), textAlign: TextAlign.center),
         ]))),
         const SizedBox(height: 14),
         Card(child: ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8), leading: CircleAvatar(backgroundColor: scheme.primaryContainer, child: Icon(Icons.code_rounded, color: scheme.onPrimaryContainer)), title: Text(s('about_github'), style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(s('about_repo_desc')), trailing: const Icon(Icons.open_in_new_rounded), onTap: () => _openRepository(context))),

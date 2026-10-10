@@ -103,8 +103,22 @@ class _GlassPanel extends StatelessWidget {
   const _GlassPanel({required this.child, this.onTap});
   @override Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final panel = Container(width: double.infinity, padding: const EdgeInsets.all(18), decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.white.withValues(alpha: .78), scheme.primary.withValues(alpha: .06)]), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.white.withValues(alpha: .88)), boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: .08), blurRadius: 24, offset: const Offset(0, 8))]), child: child);
+    final dark = scheme.brightness == Brightness.dark;
+    final panelSurface = scheme.surface;
+    final radius = BorderRadius.circular(12);
+    final panel = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: panelSurface.withValues(alpha: dark ? .98 : .90),
+        gradient: LinearGradient(colors: [panelSurface.withValues(alpha: dark ? .98 : .90), scheme.primary.withValues(alpha: .045)]),
+        borderRadius: radius,
+        border: Border.all(color: scheme.outline.withValues(alpha: .20)),
+        boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: dark ? .06 : .08), blurRadius: 18, offset: const Offset(0, 5))],
+      ),
+      child: child,
+    );
     if (onTap == null) return panel;
-    return Material(color: Colors.transparent, child: InkWell(borderRadius: BorderRadius.circular(24), onTap: onTap, child: panel));
+    return Material(color: Colors.transparent, child: InkWell(borderRadius: radius, onTap: onTap, child: panel));
   }
 }

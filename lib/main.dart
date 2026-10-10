@@ -43,7 +43,17 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
   }
 
   Future<void> _save() async { try { await storage.save(decks); } catch (_) {} }
-  Future<void> _export() async { try { await backup.exportDecks(decks); } catch (_) {} }
+  Future<void> _export() async {
+    try {
+      final saved = await backup.exportDecks(decks);
+      if (!mounted) return;
+      final key = saved ? 'backup_saved' : 'backup_cancelled';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.t(context, key))));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.t(context, 'backup_error'))));
+    }
+  }
 
   Future<void> _import() async {
     try {
@@ -64,7 +74,9 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
       if (mode) { decks = incoming; } else { decks.addAll(incoming.map((d) => Deck(id: uid(), name: d.name, description: d.description, colorHex: d.colorHex, cards: d.cards, boxes: d.boxes))); }
       await _save();
       if (mounted) setState(() {});
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.t(context, 'backup_invalid'))));
+    }
   }
 
   @override
@@ -76,7 +88,7 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
       locale: settings.locale,
       supportedLocales: AppStrings.supportedLocales,
       localizationsDelegates: const [AppStrings.delegate, GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
-      theme: AppTheme.light(settings.themeIndex, glass: settings.glass, glassOpacity: settings.glassOpacity),
+      theme: AppTheme.build(settings.themeIndex, mode: settings.appearanceMode, glass: settings.glass, glassOpacity: settings.glassOpacity),
       builder: (context, child) => Directionality(textDirection: settings.language.rtl ? TextDirection.rtl : TextDirection.ltr, child: child ?? const SizedBox.shrink()),
       home: loading ? const Scaffold(body: Center(child: CircularProgressIndicator())) : HomePage(decks: decks, onChanged: _save, onImport: _import, onExport: _export, settings: settings),
     ),
