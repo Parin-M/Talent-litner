@@ -191,3 +191,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--metro-accent); b
   .button { padding: 9px 10px; font-size: 12px; }
   .button.small { font-size: 11px; padding: 6px 7px; }
 }
+
+/* Make form labels/buttons fit instead of overflowing narrow Android 4 WebViews. */
+.panel .row, .panel .form-actions, .panel .row.wrap { max-width: 100%; }
+.panel .button { max-width: 100%; flex: 0 1 auto; }
+.panel .setting-copy { overflow-wrap: anywhere; word-wrap: break-word; }
+.panel-header > * { min-width: 0; }
