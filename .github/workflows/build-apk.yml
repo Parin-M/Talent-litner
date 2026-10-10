@@ -246,3 +246,65 @@ jobs:
           path: build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30
+
+
+  android4_legacy:
+    name: Build native Android 4.0 edition (API 14)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Prepare legacy app assets
+        run: |
+          python3 legacy-android/scripts/prepare_assets.py
+          mkdir -p legacy-android/app/src/main/res/mipmap-mdpi legacy-android/app/src/main/res/mipmap-hdpi legacy-android/app/src/main/res/mipmap-xhdpi legacy-android/app/src/main/res/mipmap-xxhdpi legacy-android/app/src/main/res/mipmap-xxxhdpi
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do cp assets/parin_litner_icon.png legacy-android/app/src/main/res/mipmap-$density/ic_launcher.png; done
+
+      - name: Install Gradle 8.7
+        run: |
+          curl --fail --location --retry 3 https://services.gradle.org/distributions/gradle-8.7-bin.zip --output /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          /tmp/gradle-8.7/bin/gradle --version
+
+      - name: Build native API 14 APK
+        run: /tmp/gradle-8.7/bin/gradle --no-daemon --stacktrace -p legacy-android assembleRelease
+
+      - name: Verify API 14 manifest and APK structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=legacy-android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          AAPT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/aapt"
+          "$AAPT" dump badging "$APK" | tee /tmp/legacy-badging.txt
+          grep -q "sdkVersion:'14'" /tmp/legacy-badging.txt
+          python3 - "$APK" <<'PY'
+          import sys, zipfile
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              bad = z.testzip()
+              if bad:
+                  raise SystemExit('Corrupt APK entry: ' + bad)
+              names = set(z.namelist())
+              if 'classes.dex' not in names:
+                  raise SystemExit('APK has no classes.dex')
+              for track in ('lofi_night.wav', 'rainy_focus.wav', 'deep_focus.wav'):
+                  expected = 'res/raw/' + track
+                  if expected not in names:
+                      raise SystemExit('Missing legacy audio resource: ' + expected)
+          print('Native Android 4 APK integrity and required audio: OK')
+          PY
+
+      - name: Upload native Android 4 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: parin-litner-android4-native-apk
+          path: legacy-android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
