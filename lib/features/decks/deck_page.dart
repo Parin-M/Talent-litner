@@ -270,6 +270,8 @@ class _DeckPageState extends State<DeckPage> {
       MaterialPageRoute(builder: (_) => CardEditor(deck: widget.deck, card: card)),
     );
     if (result == true && mounted) {
+      if (card == null) await widget.settings.recordCardCreated();
+      if (!mounted) return;
       setState(() {});
       widget.onChanged();
     }
