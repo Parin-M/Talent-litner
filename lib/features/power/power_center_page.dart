@@ -113,11 +113,11 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
       builder: (context, _) {
         final scheme = Theme.of(context).colorScheme;
         final cards = widget.decks.expand((deck) => deck.cards).toList();
-        final hard = cards.where((card) => _difficulty(card) == 'hard').length;
+        final hard = cards.where((card) => _difficulty(card) == 'difficulty_hard').length;
         final medium =
             cards.where((card) => _difficulty(card) == 'difficulty_medium').length;
-        final fresh = cards.where((card) => _difficulty(card) == 'new_card').length;
-        final easy = cards.where((card) => _difficulty(card) == 'easy').length;
+        final fresh = cards.where((card) => _difficulty(card) == 'difficulty_new').length;
+        final easy = cards.where((card) => _difficulty(card) == 'difficulty_easy').length;
 
         final today = DateTime.now();
         final last28 = List.generate(28, (index) {
@@ -253,10 +253,10 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                 icon: Icons.psychology_outlined,
                 child: Column(
                   children: [
-                    _DifficultyRow(s(context, 'hard'), hard, scheme.error),
+                    _DifficultyRow(s(context, 'difficulty_hard'), hard, scheme.error),
                     _DifficultyRow(s(context, 'difficulty_medium'), medium, scheme.tertiary),
-                    _DifficultyRow(s(context, 'new_card'), fresh, scheme.primary),
-                    _DifficultyRow(s(context, 'easy'), easy, scheme.secondary),
+                    _DifficultyRow(s(context, 'difficulty_new'), fresh, scheme.primary),
+                    _DifficultyRow(s(context, 'difficulty_easy'), easy, scheme.secondary),
                   ],
                 ),
               ),
