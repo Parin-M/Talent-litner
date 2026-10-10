@@ -46,9 +46,9 @@ class AchievementsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
-          _HeroCard(title: s(context, 'ach_title'), subtitle: s(context, 'ach_subtitle'), value: '$unlocked/${badgeData.length}'),
+          _HeroCard(title: s(context, 'achievement_center'), subtitle: s(context, 'achievement_center_sub'), value: '$unlocked/${badgeData.length}'),
           const SizedBox(height: 12),
-          _SectionCard(title: s(context, 'ach_today_challenge'), icon: Icons.bolt_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _SectionCard(title: s(context, 'today'), icon: Icons.bolt_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(challenge, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
             LinearProgressIndicator(value: challengeDone / target),
@@ -56,7 +56,7 @@ class AchievementsPage extends StatelessWidget {
             Text('$challengeDone / $target', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ])),
           const SizedBox(height: 12),
-          _SectionCard(title: s(context, 'ach_progress'), icon: Icons.insights_outlined, child: GridView.count(
+          _SectionCard(title: s(context, 'experience'), icon: Icons.insights_outlined, child: GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -64,10 +64,10 @@ class AchievementsPage extends StatelessWidget {
             mainAxisSpacing: 10,
             childAspectRatio: 1.7,
             children: [
-              _Metric(s(context, 'ach_cards'), '$total', Icons.style_outlined),
-              _Metric(s(context, 'ach_reviews'), '$reviews', Icons.school_outlined),
-              _Metric(s(context, 'ach_favorites'), '$favorites', Icons.star_outline),
-              _Metric(s(context, 'ach_due'), '$due', Icons.today_outlined),
+              _Metric(s(context, 'cards'), '$total', Icons.style_outlined),
+              _Metric(s(context, 'reviews'), '$reviews', Icons.school_outlined),
+              _Metric(s(context, 'favorite_only'), '$favorites', Icons.star_outline),
+              _Metric(s(context, 'cards_ready'), '$due', Icons.today_outlined),
             ],
           )),
           const SizedBox(height: 12),
