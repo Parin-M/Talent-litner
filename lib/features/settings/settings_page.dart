@@ -56,7 +56,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         final lang = list[index];
                         final active = lang.code == widget.settings.languageCode;
                         return ListTile(
-                          leading: CircleAvatar(child: Text(lang.code.split('-').first.toUpperCase())),
+                          leading: Container(width: 40, height: 40, color: Theme.of(dialogContext).colorScheme.primaryContainer, alignment: Alignment.center, child: Text(lang.code.split('-').first.toUpperCase(), style: TextStyle(color: Theme.of(dialogContext).colorScheme.onPrimaryContainer, fontWeight: FontWeight.w700))),
                           title: Text(lang.nativeName, style: const TextStyle(fontWeight: FontWeight.w800)),
                           subtitle: Text(_localizedLanguageName(lang.code, widget.settings.languageCode)),
                           trailing: active ? Icon(Icons.check_circle, color: Theme.of(dialogContext).colorScheme.primary) : null,
@@ -163,14 +163,14 @@ class _SettingsPageState extends State<SettingsPage> {
                         final theme = AppTheme.themes[index];
                         final active = index == widget.settings.themeIndex;
                         return InkWell(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.zero,
                           onTap: () => widget.settings.setTheme(index),
                           child: Container(
                             width: 128,
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(colors: [theme.primary, theme.secondary]),
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.zero,
                               border: Border.all(color: active ? Colors.white : Colors.white54, width: active ? 3 : 1),
                             ),
                             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -215,11 +215,11 @@ class _SettingsPageState extends State<SettingsPage> {
               _Section(title: s('backup'), icon: Icons.backup_outlined, compact: compact, child: Row(children: [Expanded(child: OutlinedButton.icon(onPressed: widget.onExport, icon: const Icon(Icons.upload_file_outlined), label: Text(s('export')))), const SizedBox(width: 10), Expanded(child: OutlinedButton.icon(onPressed: widget.onImport, icon: const Icon(Icons.download_outlined), label: Text(s('import'))))])),
               const SizedBox(height: 12),
               _Section(title: s('extra'), icon: Icons.auto_awesome_outlined, compact: compact, child: Column(children: [
-                ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.workspace_premium_outlined)), title: Text(s('achievement_center'), style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(s('achievement_center_sub')), trailing: const Icon(Icons.chevron_right), onTap: _openAchievements),
+                ListTile(contentPadding: EdgeInsets.zero, leading: Container(width: 40, height: 40, color: Theme.of(context).colorScheme.primaryContainer, alignment: Alignment.center, child: Icon(Icons.workspace_premium_outlined, color: Theme.of(context).colorScheme.onPrimaryContainer)), title: Text(s('achievement_center'), style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(s('achievement_center_sub')), trailing: const Icon(Icons.chevron_right), onTap: _openAchievements),
                 const Divider(height: 1),
-                ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.info_outline)), title: Text(s('about'), style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(s('about_creator')), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AboutPage()))),
+                ListTile(contentPadding: EdgeInsets.zero, leading: Container(width: 40, height: 40, color: Theme.of(context).colorScheme.primaryContainer, alignment: Alignment.center, child: Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onPrimaryContainer)), title: Text(s('about'), style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(s('about_creator')), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AboutPage()))),
                 const Divider(height: 1),
-                ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.code_rounded)), title: Text(s('about_github'), style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(s('about_repo_desc')), trailing: const Icon(Icons.open_in_new_rounded), onTap: _openRepository),
+                ListTile(contentPadding: EdgeInsets.zero, leading: Container(width: 40, height: 40, color: Theme.of(context).colorScheme.primaryContainer, alignment: Alignment.center, child: Icon(Icons.code_rounded, color: Theme.of(context).colorScheme.onPrimaryContainer)), title: Text(s('about_github'), style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(s('about_repo_desc')), trailing: const Icon(Icons.open_in_new_rounded), onTap: _openRepository),
               ])),
             ],
           ),
@@ -259,10 +259,10 @@ class _Section extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: scheme.brightness == Brightness.dark ? .96 : .88),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.outline.withValues(alpha: .20)),
-        boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: scheme.brightness == Brightness.dark ? .05 : .08), blurRadius: 16, offset: const Offset(0, 5))],
+        color: scheme.surface,
+        borderRadius: BorderRadius.zero,
+        border: Border.all(color: scheme.outlineVariant),
+        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

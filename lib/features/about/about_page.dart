@@ -5,7 +5,7 @@ import '../../core/i18n/app_strings.dart';
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
   static const _repoUrl = 'https://github.com/Parin-M/parin-litner';
-  static const _authorCredit = 'این برنامه توسط پوریا مشعلچیان (Pourya Mashalchian) ساخته شده است.';
+  static const _authorCredit = 'این نرم‌افزار توسط پ مشعلچیان (P Mashalchian) ساخته شده است.';
 
   Future<void> _openRepository(BuildContext context) async {
     final uri = Uri.parse(_repoUrl);
@@ -21,7 +21,7 @@ class AboutPage extends StatelessWidget {
       appBar: AppBar(title: Text(s('about'))),
       body: ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 36), children: [
         Card(child: Padding(padding: const EdgeInsets.all(22), child: Column(children: [
-          Container(width: 92, height: 92, padding: const EdgeInsets.all(10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: scheme.primaryContainer), child: Image.asset('assets/parin_litner_icon.png')),
+          Container(width: 92, height: 92, padding: const EdgeInsets.all(10), decoration: BoxDecoration(borderRadius: BorderRadius.zero, color: scheme.primaryContainer), child: Image.asset('assets/parin_litner_icon.png')),
           const SizedBox(height: 18),
           const Text('Parin Litner', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
           const SizedBox(height: 12),

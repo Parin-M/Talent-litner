@@ -314,7 +314,7 @@ class _HeroCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: [scheme.primary, scheme.secondary],
         ),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.zero,
         boxShadow: [
           BoxShadow(
             color: scheme.primary.withValues(alpha: .16),
@@ -394,13 +394,13 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.zero,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              CircleAvatar(child: Icon(icon)),
+              Container(width: 46, height: 46, color: Theme.of(context).colorScheme.primaryContainer, alignment: Alignment.center, child: Icon(icon, color: Theme.of(context).colorScheme.onPrimaryContainer)),
               const SizedBox(width: 13),
               Expanded(
                 child: Column(
@@ -496,7 +496,7 @@ class _DayDot extends StatelessWidget {
         color: done
             ? scheme.primary
             : scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
       ),
       child: done ? const Icon(Icons.check, size: 16) : null,
     );
@@ -554,8 +554,12 @@ class _RewardRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        child: Icon(done ? Icons.check : Icons.lock_outline),
+      leading: Container(
+        width: 40,
+        height: 40,
+        color: Theme.of(context).colorScheme.primaryContainer,
+        alignment: Alignment.center,
+        child: Icon(done ? Icons.check : Icons.lock_outline, color: Theme.of(context).colorScheme.onPrimaryContainer),
       ),
       title: Text(
         title,

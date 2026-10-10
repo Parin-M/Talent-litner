@@ -99,9 +99,9 @@ class _HeroCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(gradient: LinearGradient(colors: [scheme.primary, scheme.secondary]), borderRadius: BorderRadius.circular(26), boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: .18), blurRadius: 24, offset: const Offset(0, 10))]),
+      decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.zero, ),
       child: Row(children: [
-        const CircleAvatar(radius: 27, child: Icon(Icons.auto_awesome)),
+        Container(width: 54, height: 54, color: Colors.white.withValues(alpha: .16), alignment: Alignment.center, child: const Icon(Icons.auto_awesome, color: Colors.white, size: 28)),
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)), const SizedBox(height: 4), Text(subtitle, style: TextStyle(color: Colors.white.withValues(alpha: .9)))])),
         Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
@@ -120,7 +120,7 @@ class _SectionCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(17),
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: .78), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.white.withValues(alpha: .9)), boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: .06), blurRadius: 18, offset: const Offset(0, 7))]),
+      decoration: BoxDecoration(color: scheme.surface, borderRadius: BorderRadius.zero, border: Border.all(color: scheme.outlineVariant), ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(icon, color: scheme.primary), const SizedBox(width: 8), Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900))]), const Divider(height: 20), child]),
     );
   }
@@ -132,7 +132,7 @@ class _Metric extends StatelessWidget {
   final IconData icon;
   const _Metric(this.title, this.value, this.icon);
   @override
-  Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .55), borderRadius: BorderRadius.circular(18)), child: Row(children: [Icon(icon), const SizedBox(width: 8), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)), Text(title, overflow: TextOverflow.ellipsis)]))]));
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .55), borderRadius: BorderRadius.zero), child: Row(children: [Icon(icon), const SizedBox(width: 8), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)), Text(title, overflow: TextOverflow.ellipsis)]))]));
 }
 
 class _BadgeTile extends StatelessWidget {
@@ -141,6 +141,6 @@ class _BadgeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Padding(padding: const EdgeInsets.only(bottom: 10), child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: scheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(18)), child: Row(children: [CircleAvatar(backgroundColor: badge.done ? scheme.primary : scheme.surface, child: Icon(badge.done ? Icons.check : badge.icon, color: badge.done ? scheme.onPrimary : scheme.primary)), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(badge.title, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 2), Text(badge.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: scheme.onSurfaceVariant)), const SizedBox(height: 7), LinearProgressIndicator(value: badge.progress, minHeight: 6)])), const SizedBox(width: 10), Text('${min(badge.value, badge.target)}/${badge.target}', style: const TextStyle(fontWeight: FontWeight.w800))])));
+    return Padding(padding: const EdgeInsets.only(bottom: 10), child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: scheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.zero), child: Row(children: [Container(width: 42, height: 42, color: badge.done ? scheme.primary : scheme.surface, alignment: Alignment.center, child: Icon(badge.done ? Icons.check : badge.icon, color: badge.done ? scheme.onPrimary : scheme.primary)), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(badge.title, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 2), Text(badge.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: scheme.onSurfaceVariant)), const SizedBox(height: 7), LinearProgressIndicator(value: badge.progress, minHeight: 6)])), const SizedBox(width: 10), Text('${min(badge.value, badge.target)}/${badge.target}', style: const TextStyle(fontWeight: FontWeight.w800))])));
   }
 }

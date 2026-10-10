@@ -120,7 +120,7 @@ class _CardEditorState extends State<CardEditor> {
         ),
         if (bytes != null) ...[
           const SizedBox(height: 8),
-          ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.memory(bytes, height: 170, width: double.infinity, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox(height: 170))),
+          Image.memory(bytes, height: 170, width: double.infinity, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox(height: 170)),
         ],
       ],
     );

@@ -980,6 +980,19 @@
         persist();
       }
     });
+    // The settings gear is outside #content, so its click must be handled
+    // explicitly. Without this listener it looked tappable but never opened.
+    HEADER.addEventListener("click", function(e) {
+      var target = e.target;
+      while (target && target !== HEADER && !target.getAttribute("data-action")) {
+        target = target.parentNode;
+      }
+      if (!target || target === HEADER) return;
+      if (target.getAttribute("data-action") === "goto") {
+        e.preventDefault();
+        goto(target.getAttribute("data-page"));
+      }
+    });
     HEADER_BACK.onclick=function(){back();};
     document.getElementById("bottom-nav").onclick=function(e){
       var target=e.target;while(target&&target!==this&&!target.getAttribute("data-action"))target=target.parentNode;
