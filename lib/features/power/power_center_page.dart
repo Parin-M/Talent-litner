@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../core/i18n/app_strings.dart';
 import '../../core/models/app_models.dart';
 import '../../core/models/app_settings.dart';
 import '../study/study_page.dart';
@@ -24,6 +25,7 @@ class PowerCenterPage extends StatefulWidget {
 
 class _PowerCenterPageState extends State<PowerCenterPage> {
   int _mixSize = 20;
+  String s(BuildContext context, String key) => AppStrings.t(context, key);
 
   List<FlashCard> _smartMix(Deck deck) {
     final now = DateTime.now();
@@ -46,12 +48,16 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
   }
 
   String _difficulty(FlashCard card) {
-    if (card.lapses >= 3 || (card.reviews >= 4 && card.boxIndex <= 1)) {
-      return 'Hard';
+    switch (card.difficulty) {
+      case 'hard': return 'Hard';
+      case 'medium': return 'Medium';
+      case 'easy': return 'Easy';
+      default:
+        if (card.lapses >= 3 || (card.reviews >= 4 && card.boxIndex <= 1)) return 'Hard';
+        if (card.reviews <= 1) return 'New';
+        if (card.boxIndex >= 3 && card.lapses == 0) return 'Easy';
+        return 'Medium';
     }
-    if (card.reviews <= 1) return 'New';
-    if (card.boxIndex >= 3 && card.lapses == 0) return 'Easy';
-    return 'Medium';
   }
 
   Future<void> _startSmartMix() async {
@@ -65,7 +71,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
     if (selected.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Create some cards first.')),
+        SnackBar(content: Text(s(context, 'pc_create_cards'))),
       );
       return;
     }
@@ -93,8 +99,8 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
       SnackBar(
         content: Text(
           ok
-              ? 'Daily reward claimed! +XP'
-              : 'Daily reward already claimed today.',
+              ? s(context, 'pc_claimed')
+              : s(context, 'pc_already'),
         ),
       ),
     );
@@ -129,11 +135,14 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
             (widget.settings.streak * 5).clamp(0, 100).toInt();
 
         return Scaffold(
-          appBar: AppBar(title: const Text('Power Center')),
+          appBar: AppBar(title: Text(s(context, 'power_center_title'))),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
             children: [
               _HeroCard(
+                title: s(context, 'pc_your_power'),
+                levelLabel: s(context, 'pc_level'),
+                streakLabel: s(context, 'pc_day_streak'),
                 level: widget.settings.level,
                 xp: widget.settings.xp,
                 streak: widget.settings.streak,
@@ -143,8 +152,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
               _ActionCard(
                 icon: Icons.auto_awesome,
                 title: 'Smart Study Mix',
-                subtitle:
-                    'Prioritizes due, difficult, and weak cards automatically.',
+                subtitle: s(context, 'smart_mix_sub'),
                 trailing: DropdownButton<int>(
                   value: _mixSize,
                   underline: const SizedBox.shrink(),
@@ -164,7 +172,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
               ),
               const SizedBox(height: 12),
               _Section(
-                title: 'Daily Reward',
+                title: s(context, 'pc_daily_reward'),
                 icon: Icons.card_giftcard_outlined,
                 child: Row(
                   children: [
@@ -174,15 +182,15 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                         children: [
                           Text(
                             widget.settings.dailyRewardAvailable
-                                ? 'Your reward is ready!'
-                                : 'Come back tomorrow for another reward.',
+                                ? s(context, 'pc_reward_ready')
+                                : s(context, 'pc_reward_tomorrow'),
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Up to +$reward XP',
+                            s(context, 'pc_up_to_xp').replaceAll('{xp}', '$reward'),
                             style: TextStyle(
                               color: scheme.onSurfaceVariant,
                             ),
@@ -195,20 +203,20 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                           ? _claimReward
                           : null,
                       icon: const Icon(Icons.redeem_outlined),
-                      label: const Text('Claim'),
+                      label: Text(s(context, 'pc_claim')),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
               _Section(
-                title: 'Weekly Challenge',
+                title: s(context, 'pc_weekly_challenge'),
                 icon: Icons.bolt_outlined,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Complete 40 reviews this week',
+                      s(context, 'pc_complete_40'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -223,7 +231,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      '${min(widget.settings.weekReviews, 40)} / 40 reviews',
+                      '${min(widget.settings.weekReviews, 40)} / 40 ${s(context, 'reviews')}',
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                   ],
@@ -231,7 +239,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
               ),
               const SizedBox(height: 12),
               _Section(
-                title: 'Streak Calendar',
+                title: s(context, 'pc_streak_calendar'),
                 icon: Icons.calendar_month_outlined,
                 child: Wrap(
                   spacing: 7,
@@ -243,41 +251,41 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
               ),
               const SizedBox(height: 12),
               _Section(
-                title: 'Smart Difficulty',
+                title: s(context, 'pc_smart_difficulty'),
                 icon: Icons.psychology_outlined,
                 child: Column(
                   children: [
-                    _DifficultyRow('Hard', hard, scheme.error),
-                    _DifficultyRow('Medium', medium, scheme.tertiary),
-                    _DifficultyRow('New', fresh, scheme.primary),
-                    _DifficultyRow('Easy', easy, scheme.secondary),
+                    _DifficultyRow(s(context, 'hard'), hard, scheme.error),
+                    _DifficultyRow(s(context, 'pc_medium'), medium, scheme.tertiary),
+                    _DifficultyRow(s(context, 'pc_new'), fresh, scheme.primary),
+                    _DifficultyRow(s(context, 'easy'), easy, scheme.secondary),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
               _Section(
-                title: 'Level Rewards',
+                title: s(context, 'pc_level_rewards'),
                 icon: Icons.workspace_premium_outlined,
                 child: Column(
                   children: [
                     _RewardRow(
                       1,
-                      'Getting Started',
+                      s(context, 'pc_started'),
                       widget.settings.level >= 1,
                     ),
                     _RewardRow(
                       3,
-                      'Consistent Learner',
+                      s(context, 'pc_consistent'),
                       widget.settings.level >= 3,
                     ),
                     _RewardRow(
                       5,
-                      'Focus Master',
+                      s(context, 'pc_focus_master'),
                       widget.settings.level >= 5,
                     ),
                     _RewardRow(
                       10,
-                      'Parin Pro',
+                      s(context, 'pc_pro'),
                       widget.settings.level >= 10,
                     ),
                   ],
@@ -292,12 +300,18 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
 }
 
 class _HeroCard extends StatelessWidget {
+  final String title;
+  final String levelLabel;
+  final String streakLabel;
   final int level;
   final int xp;
   final int streak;
   final double levelProgress;
 
   const _HeroCard({
+    required this.title,
+    required this.levelLabel,
+    required this.streakLabel,
     required this.level,
     required this.xp,
     required this.streak,
@@ -336,7 +350,7 @@ class _HeroCard extends StatelessWidget {
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(
-                  'Your Learning Power',
+                  title,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -345,7 +359,7 @@ class _HeroCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'Lv $level',
+                '$levelLabel $level',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
@@ -363,7 +377,7 @@ class _HeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '$xp XP  •  $streak day streak',
+            '$xp XP  •  $streak $streakLabel',
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
