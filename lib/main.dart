@@ -42,7 +42,19 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
     if (mounted) setState(() { decks = data; loading = false; });
   }
 
-  Future<void> _save() async { try { await storage.save(decks); } catch (_) {} }
+  Future<void> _save() async {
+    // The deck/card objects are shared with child routes. Rebuild the root immediately
+    // so changes made there are visible as soon as the route closes, without restarting.
+    if (mounted) setState(() {});
+    try {
+      await storage.save(decks);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.t(context, 'backup_error'))),
+      );
+    }
+  }
   Future<void> _export() async {
     try {
       final saved = await backup.exportDecks(decks);
