@@ -341,7 +341,7 @@ class _HeroCard extends StatelessWidget {
                 size: 34,
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   AppStrings.t(context, 'pc_learning_power'),
                   style: TextStyle(
