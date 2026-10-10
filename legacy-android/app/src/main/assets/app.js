@@ -148,6 +148,8 @@
     if (["lofi_night","rainy_focus","deep_focus"].indexOf(state.settings.musicTrack)<0)state.settings.musicTrack="lofi_night";
     state.settings.glassOpacity = Math.max(.30,Math.min(.90,parseFloat(state.settings.glassOpacity)||.62));
     state.settings.dailyGoal = Math.max(5,Math.min(100,parseInt(state.settings.dailyGoal,10)||20));
+    state.settings.autoRevealDelaySeconds=Math.max(1,Math.min(30,parseInt(state.settings.autoRevealDelaySeconds,10)||5));
+    state.settings.focusCustomMinutes=Math.max(1,Math.min(180,parseInt(state.settings.focusCustomMinutes,10)||60));
     state.settings.musicVolume = Math.max(0,Math.min(1,parseFloat(state.settings.musicVolume)||0));
     if (!state.decks.length) {
       state.decks.push(normalizeDeck({id:"demo",name:"شروع سریع",description:"کارت‌های نمونه",color:"3F51B5",cards:[
@@ -375,16 +377,14 @@
     if(state.settings.showTimer)out+='<div class="row between muted" style="margin-bottom:6px"><span>'+esc(translate("timer"))+'</span><strong id="study-clock">'+duration(session.seconds)+'</strong></div>';
     if(state.settings.showProgress)out+=progressBar((session.index+(session.revealed?.9:.1))/session.cards.length);
     out+='<div class="study-card" style="margin-top:13px" data-action="reveal"><div class="muted" style="margin-bottom:12px">'+esc(label)+'</div>';
-    if(img)out+='<img class="study-image" src="'+attr(imageUrl(img))+'" alt="">';
+    if(img)out+='<button type="button" class="study-image-zoom" data-action="zoom-image"><img class="study-image" src="'+attr(imageUrl(img))+'" alt=""><span>'+esc(translate("zoom_image"))+' ⌕</span></button>';
     if(content)out+='<div class="study-card-text">'+esc(content)+'</div>';
     if(!content&&!img)out+='<div class="study-card-text">'+esc(translate("image_unavailable"))+'</div>';
     out+='<div class="muted" style="margin-top:16px">'+esc(translate("tap"))+'</div></div>';
     if(session.revealed){
       out+='<div class="rate-grid">'+
-        btn(esc(translate("again")),"rate",' data-rating="0',"button rate-again")+
-        btn(esc(translate("hard")),"rate",' data-rating="1',"button rate-hard")+
-        btn(esc(translate("good")),"rate",' data-rating="2',"button rate-good")+
-        btn(esc(translate("easy")),"rate",' data-rating="3',"button rate-easy")+'</div>';
+        btn(esc(translate("didnt_know")),"rate",' data-rating="0',"button rate-didnt-know")+
+        btn(esc(translate("knew")),"rate",' data-rating="2',"button rate-knew")+'</div>';
       out+='<p class="muted" style="text-align:center">'+esc(translate("swipe"))+'</p>';
     } else out+='<div style="margin-top:12px;text-align:center">'+btn(esc(translate("answer")),"reveal","","button primary")+'</div>';
     if(state.settings.musicEnabled)out+='<div class="row wrap" style="margin-top:10px">'+btn(esc(translate("music_btn")),"toggle-music")+'</div>';
@@ -563,7 +563,16 @@
     goto("study",{});
     if(state.settings.musicEnabled){Native.playMusic(state.settings.musicTrack,state.settings.musicVolume);musicPlaying=true;}
     if(state.settings.showTimer)startStudyTimer();
-    if(state.settings.autoReveal)window.setTimeout(function(){if(session&&!session.finished){session.revealed=true;render();}},500);
+    scheduleAutoReveal();
+  }
+  function scheduleAutoReveal() {
+    if(autoRevealTimeout){window.clearTimeout(autoRevealTimeout);autoRevealTimeout=null;}
+    if(!session||session.finished||session.revealed||!state.settings.autoReveal)return;
+    var seconds=Math.max(1,Math.min(30,parseInt(state.settings.autoRevealDelaySeconds,10)||5));
+    autoRevealTimeout=window.setTimeout(function(){
+      autoRevealTimeout=null;
+      if(session&&!session.finished&&!session.revealed){session.revealed=true;render();}
+    },seconds*1000);
   }
   function startStudyTimer() {
     stopStudyTimer();
@@ -571,7 +580,7 @@
       if(session&&!session.finished){session.seconds++;var el=document.getElementById("study-clock");if(el)el.textContent=duration(session.seconds);}
     },1000);
   }
-  function stopStudyTimer(){if(studyInterval){window.clearInterval(studyInterval);studyInterval=null;}}
+  function stopStudyTimer(){if(studyInterval){window.clearInterval(studyInterval);studyInterval=null;}if(autoRevealTimeout){window.clearTimeout(autoRevealTimeout);autoRevealTimeout=null;}}
   function finishStudy() {
     if(!session)return;session.finished=true;stopStudyTimer();persist();
     showModal(translate("done"),'<p>'+esc(session.cards.length+" "+translate("cards_count"))+'</p><p>'+esc(duration(session.seconds))+'</p>',[{label:translate("great"),action:"finish-study",primary:true}]);
@@ -589,7 +598,7 @@
     if(state.settings.showXp)notify("+12 XP");
     if(session.index>=session.cards.length-1){finishStudy();return;}
     session.index++;session.revealed=false;render();
-    if(state.settings.autoReveal)window.setTimeout(function(){if(session&&!session.finished){session.revealed=true;render();}},320);
+    scheduleAutoReveal();
   }
   function recordReview(rating) {
     var now=new Date(),today=dateKey(now),yesterday=dateKey(new Date(now.getFullYear(),now.getMonth(),now.getDate()-1));
@@ -611,6 +620,8 @@
     if(focusRemaining<=0){
       pauseFocusForNavigation();focusRemaining=0;persist();
       if(state.settings.musicEnabled)Native.stopMusic();
+      try { Native.playAlarm(); } catch(e) {}
+      if(state.settings.haptics){try{Native.vibrate(150);window.setTimeout(function(){try{Native.vibrate(150);}catch(e){}},260);}catch(e){}}
       notify(translate("focus_done"));
       showModal(translate("focus_done"),'<p>'+esc(translate("great"))+'</p>',[{label:translate("close"),action:"close-modal"}]);
     }
@@ -818,7 +829,8 @@
       return;
     }
     if(action==="study-all"){startStudy(null,translate("study"));return;}
-    if(action==="reveal"){if(session&&!session.finished){if(autoRevealTimeout){window.clearTimeout(autoRevealTimeout);autoRevealTimeout=null;}session.revealed=true;render();}return;}
+    if(action==="reveal"){if(session&&!session.finished){if(autoRevealTimeout){window.clearTimeout(autoRevealTimeout);autoRevealTimeout=null;}session.revealed=true;if(state.settings.haptics){try{Native.vibrate(25);}catch(e){}}render();}return;}
+    if(action==="zoom-image"){var zoomRef=session&&session.cards[session.index],zoomCard=zoomRef?getCard(zoomRef.deckId,zoomRef.cardId):null;if(zoomCard){var zoomData=session.revealed?zoomCard.backImage:zoomCard.frontImage;if(zoomData)showModal(translate("zoom_image"),'<img class="zoomed-study-image" src="'+attr(imageUrl(zoomData))+'" alt="">',[{label:translate("close"),action:"close-modal",primary:true}]);}return;}
     if(action==="rate"){rateCard(parseInt(target.getAttribute("data-rating"),10)||0);return;}
     if(action==="finish-study"){closeModal();session=null;stopStudyTimer();backAfterStudy();return;}
     if(action==="confirm-study-exit"){closeModal();stopStudyTimer();session=null;back();return;}
