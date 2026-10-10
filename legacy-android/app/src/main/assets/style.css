@@ -196,3 +196,40 @@ input:focus, textarea:focus, select:focus { border-color: #0078d7; box-shadow: 0
 .panel .button { max-width: 100%; flex: 0 1 auto; }
 .panel .setting-copy { overflow-wrap: anywhere; word-wrap: break-word; }
 .panel-header > * { min-width: 0; }
+
+/* Study zoom and clear red/green two-choice review actions. */
+.study-image-zoom {
+  position: relative; display: block; width: 100%; max-width: 100%;
+  padding: 0; margin: 0; border: 0; background: transparent; color: inherit;
+  text-align: center; overflow: hidden; cursor: zoom-in;
+}
+.study-image-zoom .study-image {
+  display: block; width: 100%; max-width: 100%; max-height: 44vh;
+  object-fit: contain; margin: 0 auto;
+}
+.study-image-zoom span {
+  display: inline-block; margin-top: 6px; padding: 5px 9px;
+  font-size: 12px; font-weight: 600; color: #0078d7;
+  border: 1px solid #d1d1d1; background: #f6f6f6;
+}
+.zoomed-study-image {
+  display: block; width: 100%; max-width: 100%; max-height: 76vh;
+  object-fit: contain; margin: 0 auto; touch-action: pinch-zoom;
+}
+.rate-grid .rate-didnt-know { background: #c62828 !important; color: #fff !important; border-color: #c62828 !important; }
+.rate-grid .rate-knew { background: #2e7d32 !important; color: #fff !important; border-color: #2e7d32 !important; }
+.rate-grid { display: flex; gap: 10px; width: 100%; margin-top: 12px; }
+.rate-grid .button { flex: 1 1 0; min-width: 0; font-weight: 700; white-space: normal; }
+.mode-dark .study-image-zoom span, .mode-amoled .study-image-zoom span { background: #252525; color: #8ecaff; border-color: #555; }
+
+.zoom-image-viewport {
+  width: 100%; height: min(66vh, 520px); overflow: auto; text-align: center;
+  background: #111; border: 1px solid #444; display: flex;
+  align-items: center; justify-content: center;
+}
+.zoomed-study-image {
+  flex: none; width: auto; max-width: 100%; max-height: 64vh;
+  object-fit: contain; transform-origin: center center; transition: transform .12s linear;
+}
+.zoom-image-controls { align-items: center; justify-content: center; margin: 9px 0; gap: 10px; }
+.zoom-image-controls .button { min-width: 54px; font-size: 19px; }

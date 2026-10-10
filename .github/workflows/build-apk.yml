@@ -155,6 +155,22 @@ jobs:
           PY
           for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do cp assets/parin_litner_icon.png android/app/src/main/res/mipmap-$d/ic_launcher.png; done
 
+      - name: Enable native haptic vibration permission
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('android/app/src/main/AndroidManifest.xml')
+          text = path.read_text()
+          permission = '    <uses-permission android:name="android.permission.VIBRATE" />'
+          if 'android.permission.VIBRATE' not in text:
+              index = text.find('<application')
+              if index < 0:
+                  raise SystemExit('Android manifest has no application node')
+              text = text[:index] + permission + '\n\n    ' + text[index:]
+          path.write_text(text)
+          print('VIBRATE permission verified')
+          PY
+
       - name: Verify Flutter minimum SDK (Android 7+)
         run: grep -Eq '^\s*minSdk = 24\s*$' android/app/build.gradle.kts
 

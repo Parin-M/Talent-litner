@@ -9,6 +9,8 @@ import android.database.Cursor;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.media.ToneGenerator;
+import android.os.Handler;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -391,6 +393,24 @@ public class MainActivity extends Activity {
                 Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
                 if (vibrator != null && vibrator.hasVibrator()) vibrator.vibrate(Math.max(0L, Math.min(milliseconds, 300L)));
             } catch (Exception ignored) { }
+        }
+
+        @JavascriptInterface public void playAlarm() {
+            runOnUiThread(new Runnable() {
+                @Override public void run() {
+                    final ToneGenerator tone;
+                    try {
+                        tone = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
+                        tone.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 1800);
+                        new Handler().postDelayed(new Runnable() {
+                            @Override public void run() {
+                                try { tone.stopTone(); } catch (Exception ignored) { }
+                                try { tone.release(); } catch (Exception ignored) { }
+                            }
+                        }, 2100L);
+                    } catch (Exception ignored) { }
+                }
+            });
         }
 
         @JavascriptInterface public void playMusic(String id, double volume) {

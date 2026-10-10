@@ -8,9 +8,9 @@
   var HEADER_SUBTITLE = document.getElementById("header-subtitle");
   var state, view = { page: "home" }, navStack = [], modalState = null;
   var editDeckId = null, editCardDeckId = null, editCardId = null, imageTarget = "front";
-  var session = null, studyInterval = null, focusInterval = null, focusRunning = false;
-  var focusDuration = 25, focusRemaining = 25 * 60, focusStartedAt = 0, musicPlaying = false;
-  var pendingImport = null, downloadedBackupName = null, searchTerm = "", smartMixSize = 20;
+  var session = null, studyInterval = null, focusInterval = null, autoRevealTimeout = null, focusRunning = false;
+  var focusDuration = 30, focusRemaining = 30 * 60, focusStartedAt = 0, musicPlaying = false;
+  var pendingImport = null, downloadedBackupName = null, searchTerm = "", smartMixSize = 20, zoomImageData = null, zoomScale = 1;
   var languages = [
     ["fa","فارسی"],["en","English"],["de","Deutsch"],["de-CH","Deutsch (Schweiz)"],["de-AT","Deutsch (Österreich)"],
     ["nl","Nederlands"],["es","Español"],["pt","Português"],["fr","Français"],["da","Dansk"],["no","Norsk"],
@@ -23,7 +23,7 @@
       decks: [],
       settings: {
         themeIndex: 0, appearanceMode: "aero", languageCode: "fa", animations: true, haptics: true,
-        autoReveal: false, showProgress: true, showTimer: true, glass: true, showXp: true,
+        autoReveal: false, autoRevealDelaySeconds: 5, focusCustomMinutes: 60, showProgress: true, showTimer: true, glass: true, showXp: true,
         confirmExit: true, compactSettings: false, glassOpacity: 0.62, dailyGoal: 20,
         musicEnabled: false, musicTrack: "lofi_night", musicVolume: 0.35
       },
@@ -118,6 +118,7 @@
     card.due = text(card.due || new Date().toISOString()); card.favorite = !!card.favorite;
     card.reviews = Math.max(0,parseInt(card.reviews,10)||0); card.lapses = Math.max(0,parseInt(card.lapses,10)||0);
     card.frontImage = card.frontImage || null; card.backImage = card.backImage || null;
+    card.difficulty = ["hard","medium","easy"].indexOf(card.difficulty)>=0 ? card.difficulty : "auto";
     return card;
   }
   function loadState() {
@@ -147,6 +148,8 @@
     if (["lofi_night","rainy_focus","deep_focus"].indexOf(state.settings.musicTrack)<0)state.settings.musicTrack="lofi_night";
     state.settings.glassOpacity = Math.max(.30,Math.min(.90,parseFloat(state.settings.glassOpacity)||.62));
     state.settings.dailyGoal = Math.max(5,Math.min(100,parseInt(state.settings.dailyGoal,10)||20));
+    state.settings.autoRevealDelaySeconds=Math.max(1,Math.min(30,parseInt(state.settings.autoRevealDelaySeconds,10)||5));
+    state.settings.focusCustomMinutes=Math.max(1,Math.min(180,parseInt(state.settings.focusCustomMinutes,10)||60));
     state.settings.musicVolume = Math.max(0,Math.min(1,parseFloat(state.settings.musicVolume)||0));
     if (!state.decks.length) {
       state.decks.push(normalizeDeck({id:"demo",name:"شروع سریع",description:"کارت‌های نمونه",color:"3F51B5",cards:[
@@ -336,6 +339,8 @@
     out+='<label class="field" for="back">'+esc(translate("card_back"))+'</label><textarea id="back" maxlength="20000">'+esc(c?c.back:"")+'</textarea>';
     out+=imageInput("back",d._editingBackImage!==undefined?d._editingBackImage:(c?c.backImage:null));
     out+='<label class="field" for="card-tags">'+esc(translate("tags"))+'</label><input type="text" id="card-tags" maxlength="500" value="'+attr(c?c.tags:"")+'" placeholder="'+attr(translate("tags_hint"))+'">';
+    var cardDifficulty=c&&["hard","medium","easy"].indexOf(c.difficulty)>=0?c.difficulty:"medium";
+    out+='<label class="field" for="card-difficulty">'+esc(translate("card_difficulty"))+'</label><select id="card-difficulty"><option value="hard"'+(cardDifficulty==="hard"?" selected":"")+'>'+esc(translate("hard"))+'</option><option value="medium"'+(cardDifficulty==="medium"?" selected":"")+'>'+esc(translate("pc_medium"))+'</option><option value="easy"'+(cardDifficulty==="easy"?" selected":"")+'>'+esc(translate("easy"))+'</option></select>';
     out+='<label class="field" for="card-box">'+esc(translate("box"))+'</label><select id="card-box">';
     for(var i=0;i<d.boxes.length;i++)out+='<option value="'+i+'"'+(c&&c.box===i?" selected":"")+'>'+esc(d.boxes[i].name)+'</option>';
     out+='</select><label class="setting-row"><input id="card-favorite" type="checkbox"'+(c&&c.favorite?" checked":"")+'><span class="setting-copy"><span class="setting-name">'+esc(translate("favorite_only"))+'</span></span></label>';
@@ -372,16 +377,14 @@
     if(state.settings.showTimer)out+='<div class="row between muted" style="margin-bottom:6px"><span>'+esc(translate("timer"))+'</span><strong id="study-clock">'+duration(session.seconds)+'</strong></div>';
     if(state.settings.showProgress)out+=progressBar((session.index+(session.revealed?.9:.1))/session.cards.length);
     out+='<div class="study-card" style="margin-top:13px" data-action="reveal"><div class="muted" style="margin-bottom:12px">'+esc(label)+'</div>';
-    if(img)out+='<img class="study-image" src="'+attr(imageUrl(img))+'" alt="">';
+    if(img)out+='<button type="button" class="study-image-zoom" data-action="zoom-image"><img class="study-image" src="'+attr(imageUrl(img))+'" alt=""><span>'+esc(translate("zoom_image"))+' ⌕</span></button>';
     if(content)out+='<div class="study-card-text">'+esc(content)+'</div>';
     if(!content&&!img)out+='<div class="study-card-text">'+esc(translate("image_unavailable"))+'</div>';
     out+='<div class="muted" style="margin-top:16px">'+esc(translate("tap"))+'</div></div>';
     if(session.revealed){
       out+='<div class="rate-grid">'+
-        btn(esc(translate("again")),"rate",' data-rating="0',"button rate-again")+
-        btn(esc(translate("hard")),"rate",' data-rating="1',"button rate-hard")+
-        btn(esc(translate("good")),"rate",' data-rating="2',"button rate-good")+
-        btn(esc(translate("easy")),"rate",' data-rating="3',"button rate-easy")+'</div>';
+        btn(esc(translate("didnt_know")),"rate",' data-rating="0"',"button rate-didnt-know")+
+        btn(esc(translate("knew")),"rate",' data-rating="2"',"button rate-knew")+'</div>';
       out+='<p class="muted" style="text-align:center">'+esc(translate("swipe"))+'</p>';
     } else out+='<div style="margin-top:12px;text-align:center">'+btn(esc(translate("answer")),"reveal","","button primary")+'</div>';
     if(state.settings.musicEnabled)out+='<div class="row wrap" style="margin-top:10px">'+btn(esc(translate("music_btn")),"toggle-music")+'</div>';
@@ -389,9 +392,17 @@
   }
   function renderFocus() {
     var out=pageHead(translate("focus_title"),translate("focus_sub"));
-    out+=panel(translate("select_duration"),'<div class="row wrap">'+btn("15 "+translate("focus_minutes"),"focus-duration",' data-minutes="15"',focusDuration===15?"button primary":"button")+' '+btn("25 "+translate("focus_minutes"),"focus-duration",' data-minutes="25"',focusDuration===25?"button primary":"button")+' '+btn("45 "+translate("focus_minutes"),"focus-duration",' data-minutes="45"',focusDuration===45?"button primary":"button")+'</div>');
+    out+=panel(translate("select_duration"),'<div class="row wrap">'+
+      btn("15 "+translate("focus_minutes"),"focus-duration",' data-minutes="15"',focusDuration===15?"button primary":"button")+' '+
+      btn("30 "+translate("focus_minutes"),"focus-duration",' data-minutes="30"',focusDuration===30?"button primary":"button")+' '+
+      btn("45 "+translate("focus_minutes"),"focus-duration",' data-minutes="45"',focusDuration===45?"button primary":"button")+
+      '</div><div class="row wrap" style="margin-top:10px"><label class="field" for="focus-custom-duration">'+esc(translate("focus_custom_minutes"))+'</label><input id="focus-custom-duration" type="number" min="1" max="180" step="1" value="'+Math.max(1,Math.min(180,parseInt(state.settings.focusCustomMinutes,10)||60))+'" style="max-width:140px">'+
+      btn(esc(translate("apply")),"focus-duration-custom","","button primary")+'</div>');
     out+=panel("",'<div id="focus-clock" style="font-size:48px;font-weight:800;text-align:center;padding:16px 0">'+duration(focusRemaining)+'</div><div class="row">'+btn(esc(focusRunning?translate("pause"):translate("start_focus")),"focus-toggle","","button primary")+' '+btn(esc(translate("reset")),"focus-reset")+'</div><label class="setting-row"><input type="checkbox" data-setting="musicEnabled"'+(state.settings.musicEnabled?" checked":"")+'><span class="setting-copy"><span class="setting-name">'+esc(translate("focus_music"))+'</span></span></label>'+
-      '<label class="field">'+esc(translate("music"))+'</label><select data-setting="musicTrack"><option value="lofi_night"'+(state.settings.musicTrack==="lofi_night"?" selected":"")+'>Lo-fi Night</option><option value="rainy_focus"'+(state.settings.musicTrack==="rainy_focus"?" selected":"")+'>Rainy Focus</option><option value="deep_focus"'+(state.settings.musicTrack==="deep_focus"?" selected":"")+'>Deep Focus</option></select>');
+      '<label class="field">'+esc(translate("music"))+'</label><select data-setting="musicTrack"><option value="lofi_night"'+(state.settings.musicTrack==="lofi_night"?" selected":"")+'>'+
+      'Lo-fi Night</option><option value="rainy_focus"'+(state.settings.musicTrack==="rainy_focus"?" selected":"")+'>'+
+      'Rainy Focus</option><option value="deep_focus"'+(state.settings.musicTrack==="deep_focus"?" selected":"")+'>'+
+      'Deep Focus</option></select>');
     return out;
   }
   function settingRow(key, subkey, checked) {
@@ -407,7 +418,7 @@
     for(var j=0;j<window.PARIN_THEMES.length;j++)mo+='<option value="'+j+'"'+(s.themeIndex===j?" selected":"")+'>'+esc(window.PARIN_THEMES[j].name)+'</option>';
     mo+='</select>'+settingRow("glass","glass_sub",s.glass)+'<label class="field">'+esc(translate("glass"))+' • '+Math.round(s.glassOpacity*100)+'%</label><input type="range" min="30" max="90" value="'+Math.round(s.glassOpacity*100)+'" data-setting="glassOpacity">';
     out+=panel(translate("appearance"),mo);
-    out+=panel(translate("study_preferences"),settingRow("animations",null,s.animations)+settingRow("haptics",null,s.haptics)+settingRow("auto_reveal",null,s.autoReveal)+settingRow("progress",null,s.showProgress)+settingRow("timer",null,s.showTimer)+settingRow("show_xp","show_xp_sub",s.showXp)+settingRow("confirm_exit","confirm_exit_sub",s.confirmExit)+settingRow("compact_settings","compact_settings_sub",s.compactSettings));
+    out+=panel(translate("study_preferences"),settingRow("animations",null,s.animations)+settingRow("haptics",null,s.haptics)+settingRow("auto_reveal",null,s.autoReveal)+(s.autoReveal?'<label class="field">'+esc(translate("auto_reveal_delay"))+' • '+s.autoRevealDelaySeconds+' '+esc(translate("seconds"))+'</label><input type="range" min="1" max="30" value="'+s.autoRevealDelaySeconds+'" data-setting="autoRevealDelaySeconds">':"")+settingRow("progress",null,s.showProgress)+settingRow("timer",null,s.showTimer)+settingRow("show_xp","show_xp_sub",s.showXp)+settingRow("confirm_exit","confirm_exit_sub",s.confirmExit)+settingRow("compact_settings","compact_settings_sub",s.compactSettings));
     out+=panel(translate("music"),settingRow("music_study",null,s.musicEnabled)+'<label class="field">'+esc(translate("music"))+'</label><select data-setting="musicTrack"><option value="lofi_night"'+(s.musicTrack==="lofi_night"?" selected":"")+'>Lo-fi Night</option><option value="rainy_focus"'+(s.musicTrack==="rainy_focus"?" selected":"")+'>Rainy Focus</option><option value="deep_focus"'+(s.musicTrack==="deep_focus"?" selected":"")+'>Deep Focus</option></select><label class="field">'+esc(translate("volume")||"Volume")+' • '+Math.round(s.musicVolume*100)+'%</label><input type="range" min="0" max="100" value="'+Math.round(s.musicVolume*100)+'" data-setting="musicVolume"><div class="row wrap" style="margin-top:9px">'+btn(esc(translate("music_btn")),"toggle-music")+'</div>');
     out+=panel(translate("daily_goal"),'<label class="field">'+esc(translate("daily_goal"))+' (5–100)</label><input type="number" min="5" max="100" value="'+s.dailyGoal+'" data-setting="dailyGoal">');
     out+=panel(translate("backup"),'<div class="row wrap">'+btn(esc(translate("export")),"export-backup","","button primary")+' '+btn(esc(translate("import")),"import-backup")+'</div>');
@@ -440,73 +451,76 @@
   }
   function renderAchievements() {
     var st=stats(),items=[
-      ["First Steps","Create your first flashcard",st.total,1],
-      ["Card Builder","Build a collection of 25 cards",st.total,25],
-      ["Reviewer","Complete 50 reviews",st.reviews,50],
-      ["Dedicated","Complete 200 reviews",st.reviews,200],
-      ["Collector","Favorite 10 cards",st.favorites,10],
-      ["Deck Master","Create 5 learning decks",state.decks.length,5],
-      ["Box Explorer","Use 10 Leitner boxes",st.boxes,10],
-      ["Centurion","Reach 1000 total reviews",st.reviews,1000]
+      ["ac_first_steps","ac_first_steps_desc",st.total,1],
+      ["ac_card_builder","ac_card_builder_desc",st.total,25],
+      ["ac_reviewer","ac_reviewer_desc",st.reviews,50],
+      ["ac_dedicated","ac_dedicated_desc",st.reviews,200],
+      ["ac_collector","ac_collector_desc",st.favorites,10],
+      ["ac_deck_master","ac_deck_master_desc",state.decks.length,5],
+      ["ac_box_explorer","ac_box_explorer_desc",st.boxes,10],
+      ["ac_centurion","ac_centurion_desc",st.reviews,1000]
     ];
     var unlocked=items.filter(function(b){return b[2]>=b[3];}).length;
     var now=new Date(),today=dateKey(now),yearStart=new Date(now.getFullYear(),0,1);
     var challengeIndex=Math.floor((now.getTime()-yearStart.getTime())/86400000)%4,todayReviews=0;
     for(var i=0;i<state.reviewDays.length;i++)if(state.reviewDays[i]===today)todayReviews++;
     var challenges=[
-      {title:"Review "+state.settings.dailyGoal+" cards today",value:todayReviews,target:state.settings.dailyGoal},
-      {title:"Favorite 3 cards you want to revisit",value:st.favorites,target:3},
-      {title:"Complete 10 Good ratings",value:state.dailyGoodRatingsDay===today?state.dailyGoodRatings:0,target:10},
-      {title:"Create 2 new cards",value:state.dailyCardsCreatedDay===today?state.dailyCardsCreated:0,target:2}
+      {title:translate("ac_review_daily").replace("{count}",state.settings.dailyGoal),value:todayReviews,target:state.settings.dailyGoal},
+      {title:translate("ac_favorite_three"),value:st.favorites,target:3},
+      {title:translate("ac_good_ten"),value:state.dailyGoodRatingsDay===today?state.dailyGoodRatings:0,target:10},
+      {title:translate("ac_create_two"),value:state.dailyCardsCreatedDay===today?state.dailyCardsCreated:0,target:2}
     ];
     var challenge=challenges[challengeIndex],challengeValue=Math.min(challenge.value,challenge.target);
-    var out=pageHead(translate("achievement_center"),"Turn every study session into progress.");
-    out+=panel("Achievement Center",'<div class="row between"><strong>'+unlocked+' / '+items.length+' badges unlocked</strong><span class="badge">'+state.streak+' day streak</span></div>'+progressBar(unlocked/Math.max(1,items.length)));
-    out+=panel("Today's Challenge",'<div class="panel-title">'+esc(challenge.title)+'</div><div class="row between" style="margin-top:8px"><span>'+challengeValue+' / '+challenge.target+'</span><span class="muted">'+Math.round(challengeValue/Math.max(1,challenge.target)*100)+'%</span></div>'+progressBar(challengeValue/Math.max(1,challenge.target)));
-    out+=panel("Your Progress",'<div class="grid">'+metric(st.total,"Cards")+metric(st.reviews,"Reviews")+metric(st.favorites,"Favorites")+metric(st.due,"Due")+'</div>');
-    out+='<h2 class="section-title">Badges</h2>';
+    var out=pageHead(translate("achievement_center"),translate("ac_tagline"));
+    out+=panel(translate("achievement_center"),'<div class="row between"><strong>'+unlocked+' / '+items.length+' '+esc(translate("ac_unlocked"))+'</strong><span class="badge">'+state.streak+' '+esc(translate("pc_day_streak"))+'</span></div>'+progressBar(unlocked/Math.max(1,items.length)));
+    out+=panel(translate("ac_challenge"),'<div class="panel-title">'+esc(challenge.title)+'</div><div class="row between" style="margin-top:8px"><span>'+challengeValue+' / '+challenge.target+'</span><span class="muted">'+Math.round(challengeValue/Math.max(1,challenge.target)*100)+'%</span></div>'+progressBar(challengeValue/Math.max(1,challenge.target)));
+    out+=panel(translate("ac_progress"),'<div class="grid">'+metric(st.total,translate("cards"))+metric(st.reviews,translate("ac_reviews"))+metric(st.favorites,translate("ac_favorites"))+metric(st.due,translate("cards_ready"))+'</div>');
+    out+='<h2 class="section-title">'+esc(translate("ac_badges"))+'</h2>';
     for(var j=0;j<items.length;j++){
       var b=items[j],done=b[2]>=b[3],value=Math.min(b[2],b[3]);
-      out+=panel((done?"✓ ":"○ ")+b[0],'<div class="muted">'+esc(b[1])+'</div><div class="row between" style="margin-top:8px"><span>'+value+' / '+b[3]+'</span><span class="badge">'+(done?"Unlocked":"In progress")+'</span></div>'+progressBar(value/Math.max(1,b[3]),done?"#43a047":primaryColor()));
+      out+=panel((done?"✓ ":"○ ")+translate(b[0]),'<div class="muted">'+esc(translate(b[1]))+'</div><div class="row between" style="margin-top:8px"><span>'+value+' / '+b[3]+'</span><span class="badge">'+esc(translate(done?"ac_unlocked":"ac_in_progress"))+'</span></div>'+progressBar(value/Math.max(1,b[3]),done?"#2e7d32":primaryColor()));
     }
     return out;
   }
   function renderPowerCenter() {
-    var st=stats(),out=pageHead(translate("extra"),translate("smart_mix_sub"));
+    var st=stats(),out=pageHead(translate("power_center_title"),translate("smart_mix_sub"));
     var level=1+Math.floor(state.xp/250),levelXp=state.xp%250;
     var hard=0,medium=0,fresh=0,easy=0;
     for(var i=0;i<st.cards.length;i++){
       var c=st.cards[i].card;
-      if((c.lapses||0)>=3||((c.reviews||0)>=4&&(c.box||0)<=1))hard++;
+      if(c.difficulty==="hard")hard++;
+      else if(c.difficulty==="medium")medium++;
+      else if(c.difficulty==="easy")easy++;
+      else if((c.lapses||0)>=3||((c.reviews||0)>=4&&(c.box||0)<=1))hard++;
       else if((c.reviews||0)<=1)fresh++;
       else if((c.box||0)>=3&&!(c.lapses||0))easy++;
       else medium++;
     }
     var today=dateKey(new Date()),reward=50+Math.min(state.streak*5,100);
-    out+=panel(translate("today"),'<div class="grid">'+metric(st.due,translate("cards_ready"))+metric(state.settings.dailyGoal,translate("daily_goal"))+metric(state.xp,"XP")+metric("Lv "+level,"Level")+'</div><div style="margin-top:10px">'+progressBar(levelXp/250)+'</div><p class="muted">'+levelXp+' / 250 XP • '+esc(translate("week_reviews")||"Reviews this week")+': '+weekReviews()+'</p>');
-    out+=panel(translate("daily_reward")||"Daily Reward",'<p class="muted">'+esc(state.lastRewardDay===today?translate("claimed_today")||"Reward already claimed today":translate("daily_reward_sub")||"Claim a small daily XP reward and keep your streak going.")+'</p><div class="row between"><strong>+'+reward+' XP</strong>'+btn(esc(translate("claim_reward")||"Claim reward"),"claim-reward","","button primary")+'</div>');
-    var mix='<p class="muted">'+esc(translate("smart_mix_sub"))+'</p><label class="field" for="smart-mix-size">Cards in study mix</label><select id="smart-mix-size"><option value="10"'+(smartMixSize===10?" selected":"")+'>10 cards</option><option value="20"'+(smartMixSize===20?" selected":"")+'>20 cards</option><option value="30"'+(smartMixSize===30?" selected":"")+'>30 cards</option></select><div style="margin-top:10px">'+btn(esc(translate("smart_mix")),"smart-mix","","button primary")+'</div>';
+    out+=panel(translate("today"),'<div class="grid">'+metric(st.due,translate("cards_ready"))+metric(state.settings.dailyGoal,translate("daily_goal"))+metric(state.xp,"XP")+metric(translate("pc_level")+" "+level,translate("pc_level"))+'</div><div style="margin-top:10px">'+progressBar(levelXp/250)+'</div><p class="muted">'+levelXp+' / 250 XP • '+esc(translate("ac_reviews"))+': '+weekReviews()+'</p>');
+    out+=panel(translate("pc_daily_reward"),'<p class="muted">'+esc(state.lastRewardDay===today?translate("pc_reward_tomorrow"):translate("pc_reward_ready"))+'</p><div class="row between"><strong>'+esc(translate("pc_up_to_xp").replace("{xp}",String(reward)))+'</strong>'+btn(esc(translate("pc_claim")),"claim-reward","","button primary")+'</div>');
+    var mix='<p class="muted">'+esc(translate("smart_mix_sub"))+'</p><label class="field" for="smart-mix-size">'+esc(translate("pc_mix_size"))+'</label><select id="smart-mix-size"><option value="10"'+(smartMixSize===10?" selected":"")+'>10</option><option value="20"'+(smartMixSize===20?" selected":"")+'>20</option><option value="30"'+(smartMixSize===30?" selected":"")+'>30</option></select><div style="margin-top:10px">'+btn(esc(translate("smart_mix")),"smart-mix","","button primary")+'</div>';
     out+=panel(translate("smart_mix"),mix);
     var dots='<div class="row wrap">';
     for(var dayIndex=27;dayIndex>=0;dayIndex--){
       var day=new Date();day.setHours(0,0,0,0);day.setDate(day.getDate()-dayIndex);
       var key=dateKey(day),done=state.reviewDays.indexOf(key)>=0;
-      dots+='<span title="'+attr(key)+'" style="display:inline-block;width:19px;height:19px;border-radius:4px;background:'+(done?primaryColor():'rgba(120,130,150,.18)')+';border:1px solid rgba(120,130,150,.18)"></span>';
+      dots+='<span title="'+attr(key)+'" style="display:inline-block;width:19px;height:19px;border-radius:0;background:'+(done?primaryColor():'rgba(120,130,150,.18)')+';border:1px solid rgba(120,130,150,.18)"></span>';
     }
-    dots+='</div><p class="muted">'+state.streak+' day streak • '+uniqueDays()+' study days recorded</p>';
-    out+=panel("Streak Calendar",dots);
-    out+=panel("Weekly Challenge",'<div class="row between"><strong>Complete 40 reviews this week</strong><span class="muted">'+Math.min(weekReviews(),40)+' / 40</span></div><div style="margin-top:10px">'+progressBar(Math.min(1,weekReviews()/40))+'</div>');
-    out+=panel("Smart Difficulty",'<div class="grid">'+metric(hard,"Hard")+metric(medium,"Medium")+metric(fresh,"New")+metric(easy,"Easy")+'</div>');
-    var levelRows=[[1,"Getting Started"],[3,"Consistent Learner"],[5,"Focus Master"],[10,"Parin Pro"]],rewards='';
+    dots+='</div><p class="muted">'+state.streak+' '+esc(translate("pc_day_streak"))+' • '+uniqueDays()+' '+esc(translate("pc_study_days"))+'</p>';
+    out+=panel(translate("pc_streak_calendar"),dots);
+    out+=panel(translate("pc_weekly_challenge"),'<div class="row between"><strong>'+esc(translate("pc_complete_40"))+'</strong><span class="muted">'+Math.min(weekReviews(),40)+' / 40</span></div><div style="margin-top:10px">'+progressBar(Math.min(1,weekReviews()/40))+'</div>');
+    out+=panel(translate("pc_smart_difficulty"),'<div class="grid">'+metric(hard,translate("hard"))+metric(medium,translate("pc_medium"))+metric(fresh,translate("pc_new"))+metric(easy,translate("easy"))+'</div>');
+    var levelRows=[[1,"pc_started"],[3,"pc_consistent"],[5,"pc_focus_master"],[10,"pc_pro"]],rewards='';
     for(var ri=0;ri<levelRows.length;ri++){
       var unlocked=level>=levelRows[ri][0];
-      rewards+='<div class="setting-row"><span class="setting-copy"><span class="setting-name">'+(unlocked?"✓ ":"🔒 ")+levelRows[ri][1]+'</span></span><span class="badge">Lv '+levelRows[ri][0]+'</span></div>';
+      rewards+='<div class="setting-row"><span class="setting-copy"><span class="setting-name">'+(unlocked?"✓ ":"🔒 ")+esc(translate(levelRows[ri][1]))+'</span></span><span class="badge">'+esc(translate("pc_level"))+' '+levelRows[ri][0]+'</span></div>';
     }
-    out+=panel("Level Rewards",rewards);
+    out+=panel(translate("pc_level_rewards"),rewards);
     out+=panel(translate("achievement_center"),'<div class="row wrap">'+btn(esc(translate("achievement_center")),"goto",' data-page="achievements"',"button primary")+'</div>');
     return out;
   }
-  function renderAbout() {
+    function renderAbout() {
     var out=pageHead(translate("about"),"Parin Litner");
     out+=panel("Parin Litner",'<p>'+esc(translate("about_creator_desc"))+'</p><p class="muted">'+esc(translate("about_ai"))+'</p><p class="muted">'+esc(translate("about_love"))+'</p>'+btn(esc(translate("about_github")),"open-repository","","button primary"));
     out+=panel(translate("about"),'<div class="muted">Version 7.1.0 • Android 4 compatibility target</div>');
@@ -552,7 +566,16 @@
     goto("study",{});
     if(state.settings.musicEnabled){Native.playMusic(state.settings.musicTrack,state.settings.musicVolume);musicPlaying=true;}
     if(state.settings.showTimer)startStudyTimer();
-    if(state.settings.autoReveal)window.setTimeout(function(){if(session&&!session.finished){session.revealed=true;render();}},500);
+    scheduleAutoReveal();
+  }
+  function scheduleAutoReveal() {
+    if(autoRevealTimeout){window.clearTimeout(autoRevealTimeout);autoRevealTimeout=null;}
+    if(!session||session.finished||session.revealed||!state.settings.autoReveal)return;
+    var seconds=Math.max(1,Math.min(30,parseInt(state.settings.autoRevealDelaySeconds,10)||5));
+    autoRevealTimeout=window.setTimeout(function(){
+      autoRevealTimeout=null;
+      if(session&&!session.finished&&!session.revealed){session.revealed=true;render();}
+    },seconds*1000);
   }
   function startStudyTimer() {
     stopStudyTimer();
@@ -560,7 +583,7 @@
       if(session&&!session.finished){session.seconds++;var el=document.getElementById("study-clock");if(el)el.textContent=duration(session.seconds);}
     },1000);
   }
-  function stopStudyTimer(){if(studyInterval){window.clearInterval(studyInterval);studyInterval=null;}}
+  function stopStudyTimer(){if(studyInterval){window.clearInterval(studyInterval);studyInterval=null;}if(autoRevealTimeout){window.clearTimeout(autoRevealTimeout);autoRevealTimeout=null;}}
   function finishStudy() {
     if(!session)return;session.finished=true;stopStudyTimer();persist();
     showModal(translate("done"),'<p>'+esc(session.cards.length+" "+translate("cards_count"))+'</p><p>'+esc(duration(session.seconds))+'</p>',[{label:translate("great"),action:"finish-study",primary:true}]);
@@ -573,12 +596,12 @@
     else if(rating===1){c.box=Math.max(0,Math.min(last,c.box));c.due=new Date(now.getTime()+86400000).toISOString();}
     else if(rating===2){c.box=Math.min(last,Math.max(0,c.box+1));var good=[1,2,4,7,14,30];c.due=new Date(now.getTime()+good[Math.min(c.box,5)]*86400000).toISOString();}
     else {c.box=Math.min(last,Math.max(0,c.box+2));var easy=[2,4,7,14,30,60];c.due=new Date(now.getTime()+easy[Math.min(c.box,5)]*86400000).toISOString();}
-    recordReview();persist();
+    recordReview(rating);persist();
     if(state.settings.haptics){try{Native.vibrate(rating===0?35:18);}catch(e){}}
     if(state.settings.showXp)notify("+12 XP");
     if(session.index>=session.cards.length-1){finishStudy();return;}
     session.index++;session.revealed=false;render();
-    if(state.settings.autoReveal)window.setTimeout(function(){if(session&&!session.finished){session.revealed=true;render();}},320);
+    scheduleAutoReveal();
   }
   function recordReview(rating) {
     var now=new Date(),today=dateKey(now),yesterday=dateKey(new Date(now.getFullYear(),now.getMonth(),now.getDate()-1));
@@ -600,6 +623,8 @@
     if(focusRemaining<=0){
       pauseFocusForNavigation();focusRemaining=0;persist();
       if(state.settings.musicEnabled)Native.stopMusic();
+      try { Native.playAlarm(); } catch(e) {}
+      if(state.settings.haptics){try{Native.vibrate(150);window.setTimeout(function(){try{Native.vibrate(150);}catch(e){}},260);}catch(e){}}
       notify(translate("focus_done"));
       showModal(translate("focus_done"),'<p>'+esc(translate("great"))+'</p>',[{label:translate("close"),action:"close-modal"}]);
     }
@@ -807,7 +832,10 @@
       return;
     }
     if(action==="study-all"){startStudy(null,translate("study"));return;}
-    if(action==="reveal"){if(session&&!session.finished){session.revealed=true;render();}return;}
+    if(action==="reveal"){if(session&&!session.finished){if(autoRevealTimeout){window.clearTimeout(autoRevealTimeout);autoRevealTimeout=null;}session.revealed=true;if(state.settings.haptics){try{Native.vibrate(25);}catch(e){}}render();}return;}
+    if(action==="zoom-image"){var zoomRef=session&&session.cards[session.index],zoomCard=zoomRef?getCard(zoomRef.deckId,zoomRef.cardId):null;if(zoomCard){zoomImageData=session.revealed?zoomCard.backImage:zoomCard.frontImage;zoomScale=1;if(zoomImageData)showZoomImage();}return;}
+    if(action==="zoom-image-more"){zoomScale=Math.min(5,zoomScale+0.5);showZoomImage();return;}
+    if(action==="zoom-image-less"){zoomScale=Math.max(1,zoomScale-0.5);showZoomImage();return;}
     if(action==="rate"){rateCard(parseInt(target.getAttribute("data-rating"),10)||0);return;}
     if(action==="finish-study"){closeModal();session=null;stopStudyTimer();backAfterStudy();return;}
     if(action==="confirm-study-exit"){closeModal();stopStudyTimer();session=null;back();return;}
@@ -822,7 +850,8 @@
     if(action==="replace-import"){applyImport(true);return;}
     if(action==="pick-image"){imageTarget=target.getAttribute("data-side")||"front";try{Native.pickImage();}catch(e){notify(translate("image_error"));}return;}
     if(action==="clear-image"){var dx=getDeck(editCardDeckId);if(dx){if(target.getAttribute("data-side")==="front")dx._editingFrontImage=null;else dx._editingBackImage=null;render();}return;}
-    if(action==="focus-duration"){if(!focusRunning){focusDuration=parseInt(target.getAttribute("data-minutes"),10)||25;focusRemaining=focusDuration*60;render();}return;}
+    if(action==="focus-duration"){if(!focusRunning){focusDuration=parseInt(target.getAttribute("data-minutes"),10)||30;focusRemaining=focusDuration*60;render();}return;}
+    if(action==="focus-duration-custom"){if(!focusRunning){var custom=document.getElementById("focus-custom-duration"),chosen=custom?parseInt(custom.value,10):NaN;if(isNaN(chosen)||chosen<1||chosen>180){notify(translate("focus_custom_invalid"));return;}focusDuration=chosen;state.settings.focusCustomMinutes=chosen;focusRemaining=focusDuration*60;persist();render();}return;}
     if(action==="focus-toggle"){toggleFocus();return;}
     if(action==="focus-reset"){pauseFocusForNavigation();focusRemaining=focusDuration*60;render();return;}
     if(action==="toggle-music"){toggleMusic();return;}
@@ -830,6 +859,13 @@
     if(action==="smart-mix"){smartMix();return;}
     if(action==="open-repository"){try{Native.openUrl("https://github.com/Parin-M/parin-litner");}catch(e){}return;}
     if(action==="confirm-close"){closeModal();return;}
+  }
+  function showZoomImage() {
+    if(!zoomImageData)return;
+    showModal(translate("zoom_image"),
+      '<div class="zoom-image-viewport"><img class="zoomed-study-image" style="width:'+Math.round(zoomScale*100)+'%;max-width:none;max-height:none;height:auto;transform:none" src="'+attr(imageUrl(zoomImageData))+'" alt=""></div><div class="row wrap zoom-image-controls">'+
+      btn("−","zoom-image-less")+'<span class="badge">'+Math.round(zoomScale*100)+'%</span>'+btn("+","zoom-image-more")+'</div>',
+      [{label:translate("close"),action:"close-modal",primary:true}]);
   }
   function backAfterStudy() {
     if(navStack.length)view=navStack.pop();else view={page:"home"};
@@ -863,8 +899,8 @@
   }
   function claimReward() {
     var today=dateKey(new Date());
-    if(state.lastRewardDay===today){notify(translate("claimed_today")||"Already claimed today");return;}
-    state.lastRewardDay=today;state.xp+=50+Math.min(state.streak*5,100);persist();render();notify("+ XP");
+    if(state.lastRewardDay===today){notify(translate("pc_already"));return;}
+    state.lastRewardDay=today;state.xp+=50+Math.min(state.streak*5,100);persist();render();notify(translate("pc_claimed"));
   }
   function smartMix() {
     if(!state.decks.length){notify(translate("no_cards"));return;}
@@ -906,7 +942,7 @@
       state.dailyCardsCreated++;
     }
     card.front=front;card.back=backText;card.tags=document.getElementById("card-tags").value.trim();
-    card.box=parseInt(document.getElementById("card-box").value,10)||0;card.favorite=document.getElementById("card-favorite").checked;
+    card.box=parseInt(document.getElementById("card-box").value,10)||0;card.favorite=document.getElementById("card-favorite").checked;card.difficulty=document.getElementById("card-difficulty").value;
     card.frontImage=frontImg;card.backImage=backImg;
     delete d._editingFrontImage;delete d._editingBackImage;
     persist();replaceView("deck",{deckId:d.id});
@@ -929,7 +965,7 @@
     var key=el.getAttribute("data-setting");if(!key)return;
     var val;
     if(el.type==="checkbox")val=el.checked;
-    else if(key==="themeIndex"||key==="dailyGoal")val=parseInt(el.value,10);
+    else if(key==="themeIndex"||key==="dailyGoal"||key==="autoRevealDelaySeconds"||key==="focusCustomMinutes")val=parseInt(el.value,10);
     else if(key==="glassOpacity")val=parseInt(el.value,10)/100;
     else if(key==="musicVolume")val=parseInt(el.value,10)/100;
     else val=el.value;
@@ -940,6 +976,8 @@
     else if(key==="confirm_exit")key="confirmExit";
     else if(key==="compact_settings")key="compactSettings";
     else if(key==="auto_reveal")key="autoReveal";
+    if(key==="autoRevealDelaySeconds")val=Math.max(1,Math.min(30,isNaN(val)?5:val));
+    if(key==="focusCustomMinutes")val=Math.max(1,Math.min(180,isNaN(val)?60:val));
     if(key==="languageCode"&&!window.PARIN_TRANSLATIONS[val])return;
     if(key==="appearanceMode"&&["light","dark","aero","amoled"].indexOf(val)<0)return;
     if(key==="musicTrack"&&["lofi_night","rainy_focus","deep_focus"].indexOf(val)<0)return;
@@ -963,6 +1001,7 @@
     CONTENT.addEventListener("submit",function(e){e.preventDefault();handleSubmit(e.target);});
     CONTENT.addEventListener("change",function(e){
       var el=e.target;
+      if(el&&el.id==="focus-custom-duration"){ state.settings.focusCustomMinutes=Math.max(1,Math.min(180,parseInt(el.value,10)||60));persist();return; }
       if(el&&el.id==="smart-mix-size"){
         smartMixSize=parseInt(el.value,10)||20;
         if([10,20,30].indexOf(smartMixSize)<0)smartMixSize=20;
