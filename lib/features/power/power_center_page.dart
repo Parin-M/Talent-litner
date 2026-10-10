@@ -48,6 +48,10 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
   }
 
   String _difficulty(FlashCard card) {
+    if (card.difficulty != 'auto' &&
+        ['hard', 'medium', 'easy'].contains(card.difficulty)) {
+      return 'difficulty_${card.difficulty}';
+    }
     if (card.lapses >= 3 || (card.reviews >= 4 && card.boxIndex <= 1)) {
       return 'difficulty_hard';
     }
