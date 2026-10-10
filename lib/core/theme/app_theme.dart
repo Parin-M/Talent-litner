@@ -132,6 +132,13 @@ class AppTheme {
         shape: square,
         elevation: 8,
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: surface,
+        modalBackgroundColor: surface,
+        shape: square,
+        clipBehavior: Clip.antiAlias,
+        showDragHandle: false,
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: dark ? surface : Colors.white,
