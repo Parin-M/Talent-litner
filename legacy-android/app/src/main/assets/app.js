@@ -927,11 +927,14 @@
     var sorted=state.decks.slice(0).sort(function(a,b){return b.cards.length-a.cards.length;});
     var deck=sorted[0],cards=deck.cards.slice(0),now=new Date().getTime();
     function score(c){
-      var value=0;
+      var value=0,difficulty=c.difficulty||"auto";
       if(isDue(c))value+=1000;
       value+=(c.lapses||0)*80;
       value+=Math.max(0,5-(c.box||0))*20;
       value+=Math.min(c.reviews||0,10);
+      if(difficulty==="hard")value+=250;
+      else if(difficulty==="medium")value+=100;
+      else if(difficulty==="easy")value-=50;
       return value;
     }
     cards.sort(function(a,b){return score(b)-score(a);});
