@@ -368,6 +368,20 @@
     out+=panel(translate("add_box"),'<form data-form="boxadd"><label class="field" for="new-box-name">'+esc(translate("box_name"))+'</label><input id="new-box-name" type="text" maxlength="80" required><div style="margin-top:9px">'+btn(esc(translate("create")),"add-box","","button primary")+'</div></form>');
     return out;
   }
+  function zoomStudyImage() {
+    if(!session||session.finished||!session.cards.length)return;
+    var ref=session.cards[session.index],card=getCard(ref.deckId,ref.cardId);
+    if(!card)return;
+    var data=session.revealed?card.backImage:card.frontImage;
+    if(!data)return;
+    zoomScale=1;
+    showModal(translate("zoom_image"),'<div class="legacy-image-zoom"><img id="zoom-study-image" src="'+attr(imageUrl(data))+'" alt="" style="transform:scale(1);transform-origin:center center;max-width:100%;max-height:60vh;object-fit:contain;"></div><div class="row wrap" style="margin-top:10px">'+btn("−","zoom-study-out")+' '+btn("+","zoom-study-in")+'</div>',[{label:translate("close"),action:"close-modal"}]);
+  }
+  function applyStudyZoom() {
+    var img=document.getElementById("zoom-study-image");
+    if(img)img.style.transform="scale("+zoomScale+")";
+  }
+
   function renderStudy() {
     if(!session || !session.cards.length) return pageHead(translate("study"),"")+panel("",'<div class="empty-state">'+esc(translate("no_due"))+'</div>'+btn(esc(translate("back")||translate("home")),"back"));
     if(session.finished) return pageHead(translate("done"),"")+panel("",'<div class="empty-state">'+esc(translate("done"))+'</div>'+btn(esc(translate("great")),"finish-study"));
@@ -379,16 +393,14 @@
     if(state.settings.showTimer)out+='<div class="row between muted" style="margin-bottom:6px"><span>'+esc(translate("timer"))+'</span><strong id="study-clock">'+duration(session.seconds)+'</strong></div>';
     if(state.settings.showProgress)out+=progressBar((session.index+(session.revealed?.9:.1))/session.cards.length);
     out+='<div class="study-card" style="margin-top:13px" data-action="reveal"><div class="muted" style="margin-bottom:12px">'+esc(label)+'</div>';
-    if(img)out+='<img class="study-image" src="'+attr(imageUrl(img))+'" alt="">';
+    if(img)out+='<button type="button" class="study-image-zoom" data-action="zoom-study-image" aria-label="'+attr(translate("zoom_image"))+'"><img class="study-image" src="'+attr(imageUrl(img))+'" alt=""></button>';
     if(content)out+='<div class="study-card-text">'+esc(content)+'</div>';
     if(!content&&!img)out+='<div class="study-card-text">'+esc(translate("image_unavailable"))+'</div>';
     out+='<div class="muted" style="margin-top:16px">'+esc(translate("tap"))+'</div></div>';
     if(session.revealed){
       out+='<div class="rate-grid">'+
-        btn(esc(translate("again")),"rate",' data-rating="0',"button rate-again")+
-        btn(esc(translate("hard")),"rate",' data-rating="1',"button rate-hard")+
-        btn(esc(translate("good")),"rate",' data-rating="2',"button rate-good")+
-        btn(esc(translate("easy")),"rate",' data-rating="3',"button rate-easy")+'</div>';
+        btn(esc(translate("knew_it")),"rate",' data-rating="2',"button metro-known")+
+        btn(esc(translate("did_not_know")),"rate",' data-rating="0',"button metro-unknown")+'</div>';
       out+='<p class="muted" style="text-align:center">'+esc(translate("swipe"))+'</p>';
     } else out+='<div style="margin-top:12px;text-align:center">'+btn(esc(translate("answer")),"reveal","","button primary")+'</div>';
     if(state.settings.musicEnabled)out+='<div class="row wrap" style="margin-top:10px">'+btn(esc(translate("music_btn")),"toggle-music")+'</div>';
@@ -559,7 +571,17 @@
     goto("study",{});
     if(state.settings.musicEnabled){Native.playMusic(state.settings.musicTrack,state.settings.musicVolume);musicPlaying=true;}
     if(state.settings.showTimer)startStudyTimer();
-    if(state.settings.autoReveal)window.setTimeout(function(){if(session&&!session.finished){session.revealed=true;render();}},500);
+    scheduleAutoReveal();
+  }
+  function scheduleAutoReveal() {
+    if(autoRevealHandle){window.clearTimeout(autoRevealHandle);autoRevealHandle=null;}
+    if(!state.settings.autoReveal||!session||session.finished||session.revealed)return;
+    var expected=session,expectedIndex=session.index;
+    var delay=Math.max(1,Math.min(30,parseInt(state.settings.autoRevealDelaySeconds,10)||3))*1000;
+    autoRevealHandle=window.setTimeout(function(){
+      autoRevealHandle=null;
+      if(session===expected&&session.index===expectedIndex&&!session.finished&&!session.revealed){session.revealed=true;render();}
+    },delay);
   }
   function startStudyTimer() {
     stopStudyTimer();
@@ -575,6 +597,7 @@
   function rateCard(rating) {
     if(!session||session.finished||!session.revealed)return;
     var ref=session.cards[session.index],c=getCard(ref.deckId,ref.cardId),d=getDeck(ref.deckId);if(!c||!d)return;
+    if(autoRevealHandle){window.clearTimeout(autoRevealHandle);autoRevealHandle=null;}
     var last=Math.max(0,d.boxes.length-1),now=new Date();c.reviews=(c.reviews||0)+1;
     if(rating===0){c.lapses=(c.lapses||0)+1;c.box=0;c.due=new Date(now.getTime()+10*60000).toISOString();}
     else if(rating===1){c.box=Math.max(0,Math.min(last,c.box));c.due=new Date(now.getTime()+86400000).toISOString();}
@@ -585,7 +608,7 @@
     if(state.settings.showXp)notify("+12 XP");
     if(session.index>=session.cards.length-1){finishStudy();return;}
     session.index++;session.revealed=false;render();
-    if(state.settings.autoReveal)window.setTimeout(function(){if(session&&!session.finished){session.revealed=true;render();}},320);
+    scheduleAutoReveal();
   }
   function recordReview(rating) {
     var now=new Date(),today=dateKey(now),yesterday=dateKey(new Date(now.getFullYear(),now.getMonth(),now.getDate()-1));
@@ -814,8 +837,11 @@
       return;
     }
     if(action==="study-all"){startStudy(null,translate("study"));return;}
-    if(action==="reveal"){if(session&&!session.finished){session.revealed=true;render();}return;}
+    if(action==="reveal"){if(session&&!session.finished){if(autoRevealHandle){window.clearTimeout(autoRevealHandle);autoRevealHandle=null;}session.revealed=true;render();}return;}
     if(action==="rate"){rateCard(parseInt(target.getAttribute("data-rating"),10)||0);return;}
+    if(action==="zoom-study-image"){zoomStudyImage();return;}
+    if(action==="zoom-study-in"){zoomScale=Math.min(6,zoomScale+0.5);applyStudyZoom();return;}
+    if(action==="zoom-study-out"){zoomScale=Math.max(1,zoomScale-0.5);applyStudyZoom();return;}
     if(action==="finish-study"){closeModal();session=null;stopStudyTimer();backAfterStudy();return;}
     if(action==="confirm-study-exit"){closeModal();stopStudyTimer();session=null;back();return;}
     if(action==="manage-boxes"){goto("boxes",{deckId:id});return;}
