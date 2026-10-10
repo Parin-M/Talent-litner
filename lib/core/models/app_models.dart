@@ -65,7 +65,7 @@ class FlashCard {
         favorite: j['favorite'] as bool? ?? false,
         reviews: (j['reviews'] as num?)?.toInt() ?? 0,
         lapses: (j['lapses'] as num?)?.toInt() ?? 0,
-        difficulty: ['hard', 'medium', 'easy'].contains(j['difficulty']) ? j['difficulty'] as String : 'medium',
+        difficulty: ['hard', 'medium', 'easy'].contains(j['difficulty']) ? j['difficulty'] as String : 'auto',
         frontImage: j['frontImage'] as String?,
         backImage: j['backImage'] as String?,
       );
