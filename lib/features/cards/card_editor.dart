@@ -17,6 +17,7 @@ class _CardEditorState extends State<CardEditor> {
   late final TextEditingController back = TextEditingController(text: widget.card?.back ?? '');
   late final TextEditingController tags = TextEditingController(text: widget.card?.tags ?? '');
   late int box = widget.card?.boxIndex ?? 0;
+  late String difficulty = widget.card?.difficulty ?? 'medium';
   String? frontImage;
   String? backImage;
   bool saving = false;
@@ -79,6 +80,7 @@ class _CardEditorState extends State<CardEditor> {
     card.back = back.text.trim();
     card.tags = tags.text.trim();
     card.boxIndex = widget.deck.boxes.isEmpty ? 0 : box.clamp(0, widget.deck.boxes.length - 1).toInt();
+    card.difficulty = difficulty;
     card.frontImage = frontImage;
     card.backImage = backImage;
     if (widget.card == null) widget.deck.cards.insert(0, card);
@@ -145,6 +147,18 @@ class _CardEditorState extends State<CardEditor> {
             _imageSection(frontSide: false, title: s('back_image')),
             const Divider(height: 28),
             TextField(controller: tags, decoration: InputDecoration(labelText: s('tags'), hintText: s('tags_hint'))),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: difficulty,
+              isExpanded: true,
+              decoration: InputDecoration(labelText: s('card_difficulty')),
+              items: [
+                DropdownMenuItem(value: 'hard', child: Text(s('hard'))),
+                DropdownMenuItem(value: 'medium', child: Text(s('medium'))),
+                DropdownMenuItem(value: 'easy', child: Text(s('easy'))),
+              ],
+              onChanged: (value) => setState(() => difficulty = value ?? 'medium'),
+            ),
             const SizedBox(height: 12),
             if (widget.deck.boxes.isNotEmpty)
               DropdownButtonFormField<int>(
