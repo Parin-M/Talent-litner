@@ -400,7 +400,7 @@ class _ActionCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              CircleAvatar(child: Icon(icon)),
+              Container(width: 46, height: 46, color: Theme.of(context).colorScheme.primaryContainer, alignment: Alignment.center, child: Icon(icon, color: Theme.of(context).colorScheme.onPrimaryContainer)),
               const SizedBox(width: 13),
               Expanded(
                 child: Column(
@@ -554,8 +554,12 @@ class _RewardRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        child: Icon(done ? Icons.check : Icons.lock_outline),
+      leading: Container(
+        width: 40,
+        height: 40,
+        color: Theme.of(context).colorScheme.primaryContainer,
+        alignment: Alignment.center,
+        child: Icon(done ? Icons.check : Icons.lock_outline, color: Theme.of(context).colorScheme.onPrimaryContainer),
       ),
       title: Text(
         title,
