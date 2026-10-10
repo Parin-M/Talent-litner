@@ -159,7 +159,7 @@ class _DeckPageState extends State<DeckPage> {
                       ? TweenAnimationBuilder<double>(
                           key: ValueKey(cards[index].id),
                           tween: Tween<double>(begin: 0, end: 1),
-                          duration: Duration(milliseconds: 180 + (index.clamp(0, 5) * 28)),
+                          duration: Duration(milliseconds: 180 + (index.clamp(0, 5) * 28).toInt()),
                           curve: Curves.easeOutCubic,
                           child: _cardTile(cards[index]),
                           builder: (context, value, child) => Opacity(
