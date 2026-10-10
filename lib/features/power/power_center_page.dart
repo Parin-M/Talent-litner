@@ -151,7 +151,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
               const SizedBox(height: 12),
               _ActionCard(
                 icon: Icons.auto_awesome,
-                title: 'Smart Study Mix',
+                title: s(context, 'smart_mix'),
                 subtitle: s(context, 'smart_mix_sub'),
                 trailing: DropdownButton<int>(
                   value: _mixSize,
@@ -570,7 +570,7 @@ class _RewardRow extends StatelessWidget {
         title,
         style: const TextStyle(fontWeight: FontWeight.w800),
       ),
-      trailing: Text('Lv $level'),
+      trailing: Text('${AppStrings.t(context, 'pc_level')} $level'),
     );
   }
 }
