@@ -21,6 +21,7 @@ class FlashCard {
   bool favorite;
   int reviews;
   int lapses;
+  String difficulty;
   String? frontImage;
   String? backImage;
 
@@ -34,6 +35,7 @@ class FlashCard {
     this.favorite = false,
     this.reviews = 0,
     this.lapses = 0,
+    this.difficulty = 'medium',
     this.frontImage,
     this.backImage,
   }) : dueAt = dueAt ?? DateTime.now();
@@ -48,6 +50,7 @@ class FlashCard {
         'favorite': favorite,
         'reviews': reviews,
         'lapses': lapses,
+        'difficulty': difficulty,
         'frontImage': frontImage,
         'backImage': backImage,
       };
@@ -62,6 +65,7 @@ class FlashCard {
         favorite: j['favorite'] as bool? ?? false,
         reviews: (j['reviews'] as num?)?.toInt() ?? 0,
         lapses: (j['lapses'] as num?)?.toInt() ?? 0,
+        difficulty: ['hard', 'medium', 'easy'].contains(j['difficulty']) ? j['difficulty'] as String : 'medium',
         frontImage: j['frontImage'] as String?,
         backImage: j['backImage'] as String?,
       );
