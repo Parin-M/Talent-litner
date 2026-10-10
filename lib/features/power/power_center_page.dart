@@ -325,17 +325,8 @@ class _HeroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [scheme.primary, scheme.secondary],
-        ),
+        color: scheme.primary,
         borderRadius: BorderRadius.zero,
-        boxShadow: [
-          BoxShadow(
-            color: scheme.primary.withValues(alpha: .16),
-            blurRadius: 22,
-            offset: const Offset(0, 9),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
