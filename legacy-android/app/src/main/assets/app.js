@@ -11,6 +11,7 @@
   var session = null, studyInterval = null, focusInterval = null, focusRunning = false, autoRevealHandle = null;
   var focusDuration = 30, focusRemaining = 30 * 60, focusStartedAt = 0, musicPlaying = false, zoomScale = 1;
   var pendingImport = null, downloadedBackupName = null, searchTerm = "", smartMixSize = 20;
+  var pendingStudyRefs = null, pendingStudyLabel = "";
   var languages = [
     ["fa","فارسی"],["en","English"],["de","Deutsch"],["de-CH","Deutsch (Schweiz)"],["de-AT","Deutsch (Österreich)"],
     ["nl","Nederlands"],["es","Español"],["pt","Português"],["fr","Français"],["da","Dansk"],["no","Norsk"],
@@ -566,6 +567,59 @@
       searchTerm=this.value;
     };
   }
+  function effectiveCardDifficulty(card) {
+    var difficulty = card && card.difficulty ? card.difficulty : "auto";
+    if (difficulty === "hard" || difficulty === "medium" || difficulty === "easy") return difficulty;
+    if ((card.lapses || 0) >= 3 || ((card.reviews || 0) >= 4 && (card.box || 0) <= 1)) return "hard";
+    if ((card.box || 0) >= 3 && !(card.lapses || 0)) return "easy";
+    return "medium";
+  }
+  function promptStudyDifficulty(refs, label) {
+    var base = refs;
+    if (!base) {
+      base = [];
+      var allStats = stats();
+      for (var i = 0; i < allStats.cards.length; i++) {
+        if (isDue(allStats.cards[i].card)) {
+          base.push({ deckId: allStats.cards[i].deck.id, cardId: allStats.cards[i].card.id });
+        }
+      }
+    }
+    if (!base.length) {
+      showModal(translate("study"), '<p>' + esc(translate("no_due")) + '</p>', [
+        { label: translate("close"), action: "close-modal" }
+      ]);
+      return;
+    }
+    pendingStudyRefs = base.slice(0);
+    pendingStudyLabel = label || translate("study");
+    showModal(translate("card_difficulty"), '<p>' + esc(translate("study_difficulty_hint")) + '</p>', [
+      { label: translate("difficulty_all"), action: "study-difficulty", extra: ' data-difficulty="all"', primary: true },
+      { label: translate("hard"), action: "study-difficulty", extra: ' data-difficulty="hard"' },
+      { label: translate("difficulty_medium"), action: "study-difficulty", extra: ' data-difficulty="medium"' },
+      { label: translate("easy"), action: "study-difficulty", extra: ' data-difficulty="easy"' },
+      { label: translate("cancel"), action: "close-modal" }
+    ]);
+  }
+  function startStudyWithDifficulty(difficulty) {
+    var filtered = [], refs = pendingStudyRefs || [];
+    for (var i = 0; i < refs.length; i++) {
+      var card = getCard(refs[i].deckId, refs[i].cardId);
+      if (card && (difficulty === "all" || effectiveCardDifficulty(card) === difficulty)) filtered.push(refs[i]);
+    }
+    var label = pendingStudyLabel;
+    pendingStudyRefs = null;
+    pendingStudyLabel = "";
+    closeModal();
+    if (!filtered.length) {
+      showModal(translate("study"), '<p>' + esc(translate("no_review")) + '</p>', [
+        { label: translate("close"), action: "close-modal" }
+      ]);
+      return;
+    }
+    startStudy(filtered, label);
+  }
+
   function startStudy(refs, label) {
     if(session)stopStudyTimer();
     var picked=refs||[],cards=[];
@@ -841,11 +895,12 @@
           var chosenCard=chosenDeck.cards[ci];
           if(mode==="all"||(mode==="favorites"&&chosenCard.favorite)||(mode==="due"&&isDue(chosenCard)))refs.push({deckId:chosenDeck.id,cardId:chosenCard.id});
         }
-        startStudy(refs,chosenDeck.name);
+        promptStudyDifficulty(refs,chosenDeck.name);
       }
       return;
     }
-    if(action==="study-all"){startStudy(null,translate("study"));return;}
+    if(action==="study-all"){promptStudyDifficulty(null,translate("study"));return;}
+    if(action==="study-difficulty"){startStudyWithDifficulty(target.getAttribute("data-difficulty")||"all");return;}
     if(action==="reveal"){if(session&&!session.finished){if(autoRevealHandle){window.clearTimeout(autoRevealHandle);autoRevealHandle=null;}session.revealed=true;render();}return;}
     if(action==="rate"){rateCard(parseInt(target.getAttribute("data-rating"),10)||0);return;}
     if(action==="zoom-study-image"){zoomStudyImage();return;}
@@ -941,7 +996,7 @@
     }
     cards.sort(function(a,b){return score(b)-score(a);});
     var items=cards.slice(0,smartMixSize).map(function(c){return {deckId:deck.id,cardId:c.id};});
-    startStudy(items,translate("smart_mix"));
+    promptStudyDifficulty(items,translate("smart_mix"));
   }
   function saveDeckForm(form) {
     var name=document.getElementById("deck-name").value.trim();
@@ -1061,7 +1116,7 @@
       if(!target||target===this)return;
       var a=target.getAttribute("data-action");
       if(a==="goto"){goto(target.getAttribute("data-page"));return;}
-      if(a==="study-all"){startStudy(null,translate("study"));return;}
+      if(a==="study-all"){promptStudyDifficulty(null,translate("study"));return;}
     };
   }
 
