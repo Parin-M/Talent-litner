@@ -105,7 +105,7 @@
     deck.description = text(deck.description || "");
     deck.color = text(deck.color || "6C63FF");
     if (Object.prototype.toString.call(deck.cards) !== "[object Array]") deck.cards = [];
-    if (!Object.prototype.toString.call(deck.boxes) === "[object Array]") deck.boxes = defaultBoxes();
+    if (Object.prototype.toString.call(deck.boxes) !== "[object Array]") deck.boxes = defaultBoxes();
     deck.cards = deck.cards.filter(function (c) { return c && typeof c === "object"; }).map(normalizeCard);
     deck.boxes = (deck.boxes || []).filter(function (b) { return b && typeof b === "object"; });
     if (!deck.boxes.length) deck.boxes = defaultBoxes();
