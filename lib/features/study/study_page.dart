@@ -56,7 +56,7 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
     autoRevealTimer = null;
     if (!widget.settings.autoReveal || finished || revealed || cards.isEmpty) return;
     autoRevealTimer = Timer(
-      Duration(seconds: widget.settings.autoRevealDelaySeconds.clamp(1, 30)),
+      Duration(seconds: widget.settings.autoRevealDelaySeconds.clamp(1, 30).toInt()),
       () {
         if (mounted && !revealed && !finished && cards.isNotEmpty) _toggleReveal();
       },
