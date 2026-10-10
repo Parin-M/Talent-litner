@@ -113,6 +113,7 @@ public class MainActivity extends Activity {
     private int focusRemainingSeconds = 25 * 60;
     private boolean focusRunning = false;
     private MediaPlayer player;
+    private TextView focusTimerView;
 
     private static class StudyItem {
         JSONObject deck;
@@ -232,6 +233,9 @@ public class MainActivity extends Activity {
     }
 
     private void saveSetting(String key, String value) { putString(key, value); }
+    private void putJson(JSONObject object, String key, Object value) {
+        try { object.put(key, value); } catch (JSONException e) { throw new RuntimeException(e); }
+    }
     private void updateTheme() {
         if (themes == null || themes.length() == 0) return;
         themeIndex = Math.max(0, Math.min(themes.length() - 1, themeIndex));
@@ -485,7 +489,7 @@ public class MainActivity extends Activity {
                 p.addView(label(card.optString("tags",""),12,false));
                 p.addView(label(t("box")+" "+(card.optInt("box",0)+1)+" • "+(due(card)?t("ready_count"):t("done")),12,false));
                 addSecondaryButton(p,card.optBoolean("favorite",false)?"★":"☆",()->{
-                    card.put("favorite",!card.optBoolean("favorite",false)); saveData(); fill.run();
+                    putJson(card,"favorite",!card.optBoolean("favorite",false)); saveData(); fill.run();
                 });
                 addSecondaryButton(p,t("edit_card"),()->editCard(deck,card));
                 LinearLayout.LayoutParams pp=lp(-1,-2); pp.bottomMargin=dp(7); list.addView(p,pp);
@@ -498,7 +502,7 @@ public class MainActivity extends Activity {
     private void renameDeck(final JSONObject deck) {
         final EditText input=edit(t("new_deck_hint"),deck.optString("name",""),1);
         new AlertDialog.Builder(this).setTitle(t("rename")).setView(input).setNegativeButton(t("cancel"),null)
-          .setPositiveButton(t("save"),(d,w)->{String name=input.getText().toString().trim();if(name.length()>0)deck.put("name",name);saveData();showDeck(deck);}).show();
+          .setPositiveButton(t("save"),(d,w)->{String name=input.getText().toString().trim();if(name.length()>0)putJson(deck,"name",name);saveData();showDeck(deck);}).show();
     }
     private void deleteDeck(final JSONObject deck) {
         new AlertDialog.Builder(this).setTitle(t("delete")).setMessage(t("delete_deck_confirm"))
@@ -517,7 +521,7 @@ public class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle(t("boxes")).setItems(names,(dialog,which)->{
             JSONObject box=boxes.optJSONObject(which); final EditText input=edit(t("box"),box.optString("name",""),1);
             new AlertDialog.Builder(this).setTitle(t("rename")).setView(input).setNegativeButton(t("cancel"),null)
-             .setPositiveButton(t("save"),(d,w)->{String name=input.getText().toString().trim();if(name.length()>0)box.put("name",name);saveData();showDeck(deck);}).show();
+             .setPositiveButton(t("save"),(d,w)->{String name=input.getText().toString().trim();if(name.length()>0)putJson(box,"name",name);saveData();showDeck(deck);}).show();
         }).setNegativeButton(t("cancel"),null).show();
     }
 
@@ -548,18 +552,18 @@ public class MainActivity extends Activity {
              .setNegativeButton(t("cancel"),null).setPositiveButton(t("delete"),(d,w)->{
                 JSONArray arr=deck.optJSONArray("cards"), next=new JSONArray();
                 if(arr!=null)for(int i=0;i<arr.length();i++){JSONObject c=arr.optJSONObject(i);if(c!=card && !c.optString("id").equals(card.optString("id")))next.put(c);}
-                deck.put("cards",next);saveData();showDeck(deck);
+                putJson(deck,"cards",next);saveData();showDeck(deck);
              }).show();
         });
         addButton(body,t("save_card"),()->{
             String front=frontField.getText().toString().trim(), back=backField.getText().toString().trim();
             if(front.length()==0 && frontImage==null || back.length()==0 && backImage==null){toast(t("save_card"));return;}
             JSONObject c=card==null?newCardObject("",""):card;
-            c.put("front",front);c.put("back",back);c.put("tags",tagsField.getText().toString().trim());
-            c.put("box",spinner.getSelectedItemPosition());
-            c.put("frontImage",frontImage==null?JSONObject.NULL:frontImage);
-            c.put("backImage",backImage==null?JSONObject.NULL:backImage);
-            if(card==null){JSONArray arr=deck.optJSONArray("cards");if(arr==null){arr=new JSONArray();deck.put("cards",arr);}arr.put(0,c);}
+            putJson(c,"front",front);putJson(c,"back",back);putJson(c,"tags",tagsField.getText().toString().trim());
+            putJson(c,"box",spinner.getSelectedItemPosition());
+            putJson(c,"frontImage",frontImage==null?JSONObject.NULL:frontImage);
+            putJson(c,"backImage",backImage==null?JSONObject.NULL:backImage);
+            if(card==null){JSONArray arr=deck.optJSONArray("cards");if(arr==null){arr=new JSONArray();putJson(deck,"cards",arr);}arr.put(0,c);}
             saveData();showDeck(deck);
         });
     }
@@ -669,10 +673,10 @@ public class MainActivity extends Activity {
         StudyItem item=studyItems.get(studyIndex);JSONObject card=item.card;
         int lastBox=Math.max(0,(item.deck.optJSONArray("boxes")==null?1:item.deck.optJSONArray("boxes").length())-1);
         long now=System.currentTimeMillis();int box=Math.max(0,Math.min(lastBox,card.optInt("box",0)));
-        card.put("reviews",card.optInt("reviews",0)+1);
-        if(rating==0){card.put("lapses",card.optInt("lapses",0)+1);card.put("box",0);card.put("due",iso(new Date(now+10*60*1000L)));}
-        else if(rating==1){card.put("box",box);card.put("due",iso(new Date(now+24*60*60*1000L)));}
-        else if(rating==2){box=Math.min(lastBox,box+1);int[] days={1,2,4,7,14,30};card.put("box",box);card.put("due",iso(new Date(now+days[Math.min(box,5)]*86400000L)));}
+        putJson(card,"reviews",card.optInt("reviews",0)+1);
+        if(rating==0){putJson(card,"lapses",card.optInt("lapses",0)+1);putJson(card,"box",0);putJson(card,"due",iso(new Date(now+10*60*1000L)));}
+        else if(rating==1){putJson(card,"box",box);putJson(card,"due",iso(new Date(now+24*60*60*1000L)));}
+        else if(rating==2){box=Math.min(lastBox,box+1);int[] days={1,2,4,7,14,30};putJson(card,"box",box);putJson(card,"due",iso(new Date(now+days[Math.min(box,5)]*86400000L)));}
         else {box=Math.min(lastBox,box+2);int[] days={2,4,7,14,30,60};card.put("box",box);card.put("due",iso(new Date(now+days[Math.min(box,5)]*86400000L)));}
         saveData();recordReview();vibrate();
         if(studyIndex==studyItems.size()-1){studyFinished=true;showStudyComplete();return;}
@@ -698,7 +702,7 @@ public class MainActivity extends Activity {
           .setPositiveButton(t("great"),(d,w)->{studyFinished=true;showHome();}).setOnCancelListener(d->{studyFinished=true;showHome();}).show();
     }
     private void leaveStudy() {
-        if(!confirmExit||studyFinished){showHome();return;}
+        if(!confirmExit||studyFinished){studyFinished=true;showHome();return;}
         new AlertDialog.Builder(this).setTitle(t("confirm_exit")).setMessage(t("confirm_exit_sub"))
           .setNegativeButton(t("cancel"),null).setPositiveButton(t("close"),(d,w)->{studyFinished=true;showHome();}).show();
     }
@@ -791,7 +795,7 @@ public class MainActivity extends Activity {
     private void showFocus() {
         page(t("focus_mode"),false,()->{stopMusic();showHome();});
         body.addView(label(t("focus_sub"),15,false));
-        final TextView timer=label(formatDuration(focusRemainingSeconds),42,true);timer.setGravity(Gravity.CENTER);body.addView(timer,lp(-1,110));
+        final TextView timer=label(formatDuration(focusRemainingSeconds),42,true);focusTimerView=timer;timer.setGravity(Gravity.CENTER);body.addView(timer,lp(-1,110));
         LinearLayout row=horizontal();
         for(final int minutes:new int[]{5,15,25,45,60}) {
             Button b=secondaryButton(String.valueOf(minutes),()->{focusRemainingSeconds=minutes*60;focusRunning=false;timer.setText(formatDuration(focusRemainingSeconds));});
@@ -800,8 +804,9 @@ public class MainActivity extends Activity {
         body.addView(row,lp(-1,-2));
         addButton(body,focusRunning?t("pause"):t("start"),()->{
             focusRunning=!focusRunning;
-            if(focusRunning){startFocusTimer(timer);if(musicEnabled)playMusic();}else if(focusTick!=null)handler.removeCallbacks(focusTick);
+            if(focusTick!=null)handler.removeCallbacks(focusTick);
             showFocus();
+            if(focusRunning){startFocusTimer(focusTimerView);if(musicEnabled)playMusic();}
         });
         addSecondaryButton(body,t("reset"),()->{if(focusTick!=null)handler.removeCallbacks(focusTick);focusRunning=false;focusRemainingSeconds=25*60;stopMusic();showFocus();});
         addSecondaryButton(body,t("music_study")+" • "+musicTrack,()->{musicEnabled=!musicEnabled;putBool("music_enabled",musicEnabled);if(musicEnabled)playMusic();else stopMusic();showFocus();});
@@ -987,7 +992,7 @@ public class MainActivity extends Activity {
                   JSONObject copy=new JSONObject(old.toString());copy.put("id",uid());decks.put(copy);
               }catch(Exception ignored){}}
               saveData();showHome();
-          }).setPositiveButton(t("replace"),(d,w)->{decks=new JSONArray(incoming.toString());saveData();showHome();}).show();
+          }).setPositiveButton(t("replace"),(d,w)->{try{decks=new JSONArray(incoming.toString());saveData();showHome();}catch(Exception e){toast(t("backup_invalid"));}}).show();
     }
 
     private void toast(String message) { Toast.makeText(this,message,Toast.LENGTH_LONG).show(); }
