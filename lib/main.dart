@@ -99,7 +99,7 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
       locale: settings.locale,
       supportedLocales: AppStrings.supportedLocales,
       localizationsDelegates: const [AppStrings.delegate, GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
-      theme: AppTheme.build(settings.themeIndex, mode: settings.appearanceMode, glass: settings.glass, glassOpacity: settings.glassOpacity),
+      theme: AppTheme.build(settings.themeIndex, mode: settings.appearanceMode, glass: settings.glass, glassOpacity: settings.glassOpacity, animations: settings.animations),
       builder: (context, child) => Directionality(textDirection: settings.language.rtl ? TextDirection.rtl : TextDirection.ltr, child: child ?? const SizedBox.shrink()),
       home: loading ? const Scaffold(body: Center(child: CircularProgressIndicator())) : HomePage(decks: decks, onChanged: _save, onImport: _import, onExport: _export, settings: settings),
     ),
