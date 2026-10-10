@@ -144,6 +144,29 @@ jobs:
           write_track('rainy_focus.wav', rainy)
           write_track('deep_focus.wav', deep)
 
+          # A dedicated audible timer alarm, separate from the ambient focus tracks.
+          alarm_path = OUT / 'focus_alarm.wav'
+          alarm_segments = [(880.0, .22), (0.0, .10), (660.0, .24),
+                            (0.0, .10), (880.0, .34), (0.0, .20)] * 2
+          with wave.open(str(alarm_path), 'wb') as alarm:
+              alarm.setnchannels(1)
+              alarm.setsampwidth(2)
+              alarm.setframerate(SR)
+              frames = bytearray()
+              for frequency, duration in alarm_segments:
+                  count = int(SR * duration)
+                  for i in range(count):
+                      if frequency == 0.0:
+                          sample = 0.0
+                      else:
+                          fade_in = min(1.0, i / max(1.0, SR * .012))
+                          fade_out = min(1.0, (count - i - 1) / max(1.0, SR * .025))
+                          envelope = min(fade_in, fade_out)
+                          sample = .78 * envelope * math.sin(2 * math.pi * frequency * i / SR)
+                      frames += struct.pack('<h', int(max(-1.0, min(1.0, sample)) * 32767))
+              alarm.writeframes(frames)
+          print(alarm_path, alarm_path.stat().st_size, 'bytes')
+
           b=open('assets/parin_litner_icon.png','rb').read(); assert b[:8]==b'\x89PNG\r\n\x1a\n'
           pos=8
           while pos<len(b):
