@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/i18n/app_strings.dart';
 import '../../core/models/app_models.dart';
@@ -116,7 +117,12 @@ class _SettingsPageState extends State<SettingsPage> {
       title: Text(s(key), style: const TextStyle(fontWeight: FontWeight.w700)),
       subtitle: Text(s('${key}_sub')),
       value: value,
-      onChanged: (v) => widget.settings.setBool(key, v),
+      onChanged: (v) async {
+        await widget.settings.setBool(key, v);
+        if (key == 'haptics' && v) {
+          try { await HapticFeedback.vibrate(); } catch (_) {}
+        }
+      },
     );
   }
 
