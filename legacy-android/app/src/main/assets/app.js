@@ -868,7 +868,7 @@
     if(action==="focus-custom"){
       if(!focusRunning){
         showModal(translate("custom_minutes"),
-          '<label class="field" for="custom-focus-minutes">'+esc(translate("enter_minutes"))+'</label><input id="custom-focus-minutes" type="number" min="1" max="600" value="30"><p class="muted">'+esc(translate("minutes_range"))+'</p>',
+          '<label class="field" for="custom-focus-minutes">'+esc(translate("enter_minutes"))+'</label><input id="custom-focus-minutes" type="number" min="1" max="600" value="'+focusDuration+'"><p class="muted">'+esc(translate("minutes_range"))+'</p>',
           [{label:translate("cancel"),action:"close-modal"},{label:translate("save"),action:"focus-custom-apply",primary:true}]);
       }
       return;
@@ -919,8 +919,10 @@
   }
   function claimReward() {
     var today=dateKey(new Date());
-    if(state.lastRewardDay===today){notify(translate("claimed_today")||"Already claimed today");return;}
-    state.lastRewardDay=today;state.xp+=50+Math.min(state.streak*5,100);persist();render();notify("+ XP");
+    if(state.lastRewardDay===today){notify(translate("pc_reward_already_claimed"));return;}
+    var points=50+Math.min(state.streak*5,100);
+    state.lastRewardDay=today;state.xp+=points;persist();render();
+    notify(translate("pc_reward_claimed")+" +"+points+" XP");
   }
   function smartMix() {
     if(!state.decks.length){notify(translate("no_cards"));return;}
