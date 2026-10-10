@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ThemeOption {
   final String name;
@@ -118,6 +119,13 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         toolbarHeight: 58,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: dark ? background : accent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+          systemNavigationBarColor: dark ? Colors.black : background,
+          systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+        ),
         titleTextStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.w300, letterSpacing: .2),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
