@@ -467,10 +467,8 @@ public class MainActivity extends Activity {
         addButton(body, t("study_type") + " • " + t("all"), () -> startStudy(deck,"all"));
         addButton(body, t("study") + " • " + t("cards_ready"), () -> startStudy(deck,"due"));
         addButton(body, t("favorite_only"), () -> startStudy(deck,"favorite"));
-        LinearLayout tools=horizontal();
-        addButton(tools,t("rename"),()->renameDeck(deck));
-        addButton(tools,t("delete"),()->deleteDeck(deck));
-        body.addView(tools,lp(-1,-2));
+        addSecondaryButton(body,t("rename"),()->renameDeck(deck));
+        addSecondaryButton(body,t("delete"),()->deleteDeck(deck));
         addButton(body,t("boxes"),()->manageBoxes(deck));
         final EditText search=edit(t("search"),"",1);
         LinearLayout searchRow=horizontal(); searchRow.addView(search,new LinearLayout.LayoutParams(0,dp(46),1));
@@ -677,7 +675,7 @@ public class MainActivity extends Activity {
         if(rating==0){putJson(card,"lapses",card.optInt("lapses",0)+1);putJson(card,"box",0);putJson(card,"due",iso(new Date(now+10*60*1000L)));}
         else if(rating==1){putJson(card,"box",box);putJson(card,"due",iso(new Date(now+24*60*60*1000L)));}
         else if(rating==2){box=Math.min(lastBox,box+1);int[] days={1,2,4,7,14,30};putJson(card,"box",box);putJson(card,"due",iso(new Date(now+days[Math.min(box,5)]*86400000L)));}
-        else {box=Math.min(lastBox,box+2);int[] days={2,4,7,14,30,60};card.put("box",box);card.put("due",iso(new Date(now+days[Math.min(box,5)]*86400000L)));}
+        else {box=Math.min(lastBox,box+2);int[] days={2,4,7,14,30,60};putJson(card,"box",box);putJson(card,"due",iso(new Date(now+days[Math.min(box,5)]*86400000L)));}
         saveData();recordReview();vibrate();
         if(studyIndex==studyItems.size()-1){studyFinished=true;showStudyComplete();return;}
         studyIndex++;answerRevealed=false;showStudy();
