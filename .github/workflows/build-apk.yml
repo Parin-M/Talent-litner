@@ -260,23 +260,6 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android 4 compatible build SDK
-        run: sdkmanager --install "platforms;android-28" "build-tools;28.0.3"
-
-      - name: Setup Java 8 for the legacy Gradle toolchain
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '8'
-
-      - name: Setup legacy Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '4.10.3'
-
       - name: Validate legacy web assets
         run: |
           node --check legacy-android/app/src/main/assets/app.js
@@ -288,9 +271,32 @@ jobs:
           themes = json.loads((root / 'themes.json').read_text())
           assert len(translations) == 21, f'Expected 21 languages, got {len(translations)}'
           assert len(themes) == 50, f'Expected 50 themes, got {len(themes)}'
-          assert all('app.js' in (root / 'index.html').read_text() for _ in [0])
+          index = (root / 'index.html').read_text()
+          for script in ('i18n.js', 'palettes.js', 'app.js'):
+              assert script in index, f'Missing script reference: {script}'
           print(f'Legacy assets verified: {len(translations)} languages, {len(themes)} themes')
           PY
+
+      - name: Install Android 4 compatible build SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
+          fi
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-28" "build-tools;28.0.3"
+
+      - name: Setup Java 8 for the legacy Gradle toolchain
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Setup legacy Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '4.10.3'
 
       - name: Verify Android 4.0 minimum SDK
         run: |
