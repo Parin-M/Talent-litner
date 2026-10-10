@@ -98,8 +98,8 @@
       {id:"b5",name:"خانه ۵",color:4293881264}
     ];
   }
-  function normalizeDeck(deck) {
-    if (!deck || typeof deck !== "object") return null;
+    if (Object.prototype.toString.call(deck.cards) !== "[object Array]") deck.cards = [];
+    if (!deck.boxes || !deck.boxes.length) deck.boxes = defaultBoxes();
     deck.id = text(deck.id || uid()); deck.name = text(deck.name || "Untitled deck");
     deck.description = text(deck.description || ""); deck.color = text(deck.color || "6C63FF");
     if (!Object.prototype.toString.call(deck.cards) === "[object Array]") deck.cards = [];
@@ -165,10 +165,12 @@
     HEADER_SUBTITLE.textContent = view.page==="home" ? translate("ready") : translate(view.page==="deck" ? "decks" : view.page==="settings" ? "settings" : view.page==="study" ? "study" : view.page==="focus" ? "focus_mode" : view.page==="stats" ? "experience" : view.page==="about" ? "about" : "extra");
     if (view.page === "home") HEADER_SUBTITLE.textContent = "Android 4.0+ • " + translate("ready");
     var navButtons=document.querySelectorAll("#bottom-nav button");
+    var navLabels=[translate("home"),translate("study"),translate("focus_mode"),translate("experience")];
     for(var i=0;i<navButtons.length;i++){
       var p=navButtons[i].getAttribute("data-page");
       var act=navButtons[i].getAttribute("data-action");
       navButtons[i].className = ((p && p===view.page) || (act==="study-all"&&view.page==="study")) ? "active" : "";
+      var small=navButtons[i].querySelector("small");if(small)small.textContent=navLabels[i]||"";
     }
   }
   function notify(message) {
@@ -259,7 +261,7 @@
       for(var j=0;j<d.cards.length;j++)if(isDue(d.cards[j]))dDue++;
       var col=paletteForDeck(d);
       out+='<section class="panel deck-card" style="border-left-color:'+col+'"><div class="row between"><div class="grow" data-action="open-deck" data-id="'+attr(d.id)+'"><div class="deck-title">'+esc(d.name)+'</div><div class="deck-description">'+esc(d.description)+'</div></div><span class="badge">'+dDue+' '+esc(translate("ready_count"))+'</span></div><div class="row wrap" style="margin-top:10px">'+
-        smallBtn(esc(translate("study")),"study-deck",' data-id="'+attr(d.id)+'',"button primary")+' '+smallBtn(esc(translate("new_card")),"new-card",' data-deck="'+attr(d.id)+'"')+' '+smallBtn(esc(translate("rename")),"edit-deck",' data-id="'+attr(d.id)+'')+'</div></section>';
+        smallBtn(esc(translate("study")),"study-deck",' data-id="'+attr(d.id)+'"',"button primary")+' '+smallBtn(esc(translate("new_card")),"new-card",' data-deck="'+attr(d.id)+'"')+' '+smallBtn(esc(translate("rename")),"edit-deck",' data-id="'+attr(d.id)+'"')+'</div></section>';
     }
     out+=panel(translate("backup"),'<div class="row wrap">'+btn(esc(translate("export")),"export-backup","","button primary")+' '+btn(esc(translate("import")),"import-backup")+'</div>');
     return out;
@@ -283,7 +285,7 @@
         var c=d.cards[j],box=d.boxes[Math.min(c.box,d.boxes.length-1)]||d.boxes[0],filter=(c.front+" "+c.back+" "+c.tags).toLowerCase();
         out+='<div class="card-row" data-filter="'+attr(filter)+'"><div class="row between"><div class="grow"><div class="card-text">'+esc(c.front || translate("image_unavailable"))+'</div><div class="card-back-preview">'+esc(c.back)+'</div><div style="margin-top:4px">'+badge(box?box.name:"Box "+(c.box+1),box?colorFromValue(box.color):primaryColor())+(c.favorite?badge("★ "+translate("favorite_only")):"")+(c.tags?badge(c.tags):"")+'</div><div class="muted" style="margin-top:4px">'+esc(isDue(c)?translate("cards_ready"):translate("next_review")+": "+fmtDate(c.due))+' • '+esc(translate("reviews")||"Reviews")+': '+c.reviews+'</div></div>';
         if(c.frontImage)out+='<img src="'+attr(imageUrl(c.frontImage))+'" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:4px;margin:0 5px;">';
-        out+='</div><div class="row wrap" style="margin-top:7px">'+smallBtn(esc(translate("edit_card")),"edit-card",' data-deck="'+attr(d.id)+'" data-id="'+attr(c.id)+'')+' '+smallBtn(c.favorite?"★":"☆","favorite-card",' data-deck="'+attr(d.id)+'" data-id="'+attr(c.id)+'')+' '+smallBtn(esc(translate("delete")),"delete-card",' data-deck="'+attr(d.id)+'" data-id="'+attr(c.id)+'',"button danger")+'</div></div>';
+        out+='</div><div class="row wrap" style="margin-top:7px">'+smallBtn(esc(translate("edit_card")),"edit-card",' data-deck="'+attr(d.id)+'" data-id="'+attr(c.id)+'"')+' '+smallBtn(c.favorite?"★":"☆","favorite-card",' data-deck="'+attr(d.id)+'" data-id="'+attr(c.id)+'"')+' '+smallBtn(esc(translate("delete")),"delete-card",' data-deck="'+attr(d.id)+'" data-id="'+attr(c.id)+'"',"button danger")+'</div></div>';
       }
       out+='</section>';
     }
@@ -846,6 +848,11 @@
       var target=e.target;
       while(target&&target!==CONTENT&&!target.getAttribute("data-action"))target=target.parentNode;
       if(target&&target!==CONTENT){e.preventDefault();handleAction(target);}
+    });
+    MODAL.addEventListener("click",function(e){
+      var target=e.target;
+      while(target&&target!==MODAL&&!target.getAttribute("data-action"))target=target.parentNode;
+      if(target&&target!==MODAL){e.preventDefault();handleAction(target);}
     });
     CONTENT.addEventListener("submit",function(e){e.preventDefault();handleSubmit(e.target);});
     CONTENT.addEventListener("change",function(e){
