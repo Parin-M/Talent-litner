@@ -288,7 +288,7 @@ Uint8List _makeAlarmWave() {
       final edge = math.min(1.0, math.min(pos / .015, (segmentSeconds - pos) / .015));
       value = math.sin(2 * math.pi * freq * t) * .72 * edge;
     }
-    view.setInt16(44 + i * 2, (value * 32767).round().clamp(-32768, 32767), Endian.little);
+    view.setInt16(44 + i * 2, (value * 32767).round().clamp(-32768, 32767).toInt(), Endian.little);
   }
   return bytes;
 }
