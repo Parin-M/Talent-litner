@@ -38,6 +38,9 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
         value += card.lapses * 80;
         value += max(0, 5 - card.boxIndex) * 20;
         value += min(card.reviews, 10);
+        if (card.difficulty == 'hard') value += 250;
+        if (card.difficulty == 'medium') value += 100;
+        if (card.difficulty == 'easy') value -= 50;
         return value;
       }
 
@@ -569,7 +572,7 @@ class _RewardRow extends StatelessWidget {
         title,
         style: const TextStyle(fontWeight: FontWeight.w800),
       ),
-      trailing: Text('Lv $level'),
+      trailing: Text('${AppStrings.t(context, 'level')} $level'),
     );
   }
 }
