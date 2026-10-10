@@ -17,7 +17,7 @@ class _CardEditorState extends State<CardEditor> {
   late final TextEditingController back = TextEditingController(text: widget.card?.back ?? '');
   late final TextEditingController tags = TextEditingController(text: widget.card?.tags ?? '');
   late int box = widget.card?.boxIndex ?? 0;
-  late String difficulty = widget.card?.difficulty ?? 'medium';
+  late String difficulty = ['hard', 'medium', 'easy'].contains(widget.card?.difficulty) ? widget.card!.difficulty : 'medium';
   String? frontImage;
   String? backImage;
   bool saving = false;
