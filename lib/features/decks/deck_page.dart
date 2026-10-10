@@ -155,7 +155,22 @@ class _DeckPageState extends State<DeckPage> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => _cardTile(cards[index]),
+                  (context, index) => widget.settings.animations
+                      ? TweenAnimationBuilder<double>(
+                          key: ValueKey(cards[index].id),
+                          tween: Tween<double>(begin: 0, end: 1),
+                          duration: Duration(milliseconds: 180 + (index.clamp(0, 5) * 28)),
+                          curve: Curves.easeOutCubic,
+                          child: _cardTile(cards[index]),
+                          builder: (context, value, child) => Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset(0, 12 * (1 - value)),
+                              child: child,
+                            ),
+                          ),
+                        )
+                      : _cardTile(cards[index]),
                   childCount: cards.length,
                 ),
               ),
@@ -298,11 +313,58 @@ class _DeckPageState extends State<DeckPage> {
       ),
     );
     if (!mounted || choice == null) return;
-    final selected = choice == 'all'
+    final pool = choice == 'all'
         ? List<FlashCard>.from(widget.deck.cards)
         : choice == 'favorites'
             ? widget.deck.cards.where((card) => card.favorite).toList()
             : due;
+    if (pool.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('no_review'))));
+      return;
+    }
+
+    // Difficulty is a second, optional filter. "all" keeps the selected
+    // source (due, all cards, or favorites) unchanged.
+    final difficulty = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(s('card_difficulty'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+              ),
+            ),
+            for (final option in const ['all', 'hard', 'medium', 'easy'])
+              ListTile(
+                leading: Icon(
+                  option == 'all' ? Icons.all_inclusive
+                    : option == 'hard' ? Icons.trending_down
+                    : option == 'medium' ? Icons.horizontal_rule
+                    : Icons.bolt_outlined,
+                ),
+                title: Text(option == 'all' ? s('difficulty_all')
+                    : option == 'hard' ? s('hard')
+                    : option == 'medium' ? s('difficulty_medium')
+                    : s('easy')),
+                subtitle: Text(
+                  '${pool.where((card) => option == 'all' || _effectiveDifficulty(card) == option).length} ${s('cards_count')}',
+                ),
+                onTap: () => Navigator.pop(sheetContext, option),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || difficulty == null) return;
+    final selected = difficulty == 'all'
+        ? pool
+        : pool.where((card) => _effectiveDifficulty(card) == difficulty).toList();
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('no_review'))));
       return;
@@ -312,6 +374,19 @@ class _DeckPageState extends State<DeckPage> {
       MaterialPageRoute(builder: (_) => StudyPage(deck: widget.deck, settings: widget.settings, studyCards: selected, onChanged: widget.onChanged)),
     );
     if (mounted) setState(() {});
+  }
+
+  String _effectiveDifficulty(FlashCard card) {
+    if (const ['hard', 'medium', 'easy'].contains(card.difficulty)) {
+      return card.difficulty;
+    }
+    if (card.lapses >= 3 || (card.reviews >= 4 && card.boxIndex <= 1)) {
+      return 'hard';
+    }
+    if (card.boxIndex >= 3 && card.lapses == 0) return 'easy';
+    // New and unclassified cards stay in the medium bucket, so all cards
+    // remain discoverable even before enough review history is available.
+    return 'medium';
   }
 
   Future<void> _manageBoxes() async {
