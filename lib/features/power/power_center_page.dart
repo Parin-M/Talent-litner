@@ -215,7 +215,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       s(context, 'pc_complete_40'),
                       style: TextStyle(
                         fontSize: 16,
