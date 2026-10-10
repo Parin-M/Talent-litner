@@ -383,8 +383,8 @@
     out+='<div class="muted" style="margin-top:16px">'+esc(translate("tap"))+'</div></div>';
     if(session.revealed){
       out+='<div class="rate-grid">'+
-        btn(esc(translate("didnt_know")),"rate",' data-rating="0',"button rate-didnt-know")+
-        btn(esc(translate("knew")),"rate",' data-rating="2',"button rate-knew")+'</div>';
+        btn(esc(translate("didnt_know")),"rate",' data-rating="0"',"button rate-didnt-know")+
+        btn(esc(translate("knew")),"rate",' data-rating="2"',"button rate-knew")+'</div>';
       out+='<p class="muted" style="text-align:center">'+esc(translate("swipe"))+'</p>';
     } else out+='<div style="margin-top:12px;text-align:center">'+btn(esc(translate("answer")),"reveal","","button primary")+'</div>';
     if(state.settings.musicEnabled)out+='<div class="row wrap" style="margin-top:10px">'+btn(esc(translate("music_btn")),"toggle-music")+'</div>';
