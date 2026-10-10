@@ -13,7 +13,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Vibrator;
-import android.provider.OpenableColumns;
 import android.view.KeyEvent;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
@@ -126,7 +125,7 @@ public class MainActivity extends Activity {
         try {
             cursor = getContentResolver().query(uri, null, null, null, null);
             if (cursor != null && cursor.moveToFirst()) {
-                int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                int index = cursor.getColumnIndex("_display_name");
                 if (index >= 0) return cursor.getString(index);
             }
         } catch (Exception ignored) {
