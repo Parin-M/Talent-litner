@@ -27,7 +27,8 @@
         confirmExit: true, compactSettings: false, glassOpacity: 0.62, dailyGoal: 20,
         musicEnabled: false, musicTrack: "lofi_night", musicVolume: 0.35
       },
-      xp: 0, streak: 0, lastStudyDay: null, lastRewardDay: null, reviewDays: []
+      xp: 0, streak: 0, lastStudyDay: null, lastRewardDay: null, reviewDays: [],
+      dailyGoodRatings: 0, dailyGoodRatingsDay: null, dailyCardsCreated: 0, dailyCardsCreatedDay: null
     };
   }
 
@@ -134,6 +135,10 @@
       state.streak = Math.max(0,parseInt(loaded.streak,10)||0);
       state.lastStudyDay = loaded.lastStudyDay || null; state.lastRewardDay = loaded.lastRewardDay || null;
       state.reviewDays = Object.prototype.toString.call(loaded.reviewDays)==="[object Array]" ? loaded.reviewDays : [];
+      state.dailyGoodRatings = Math.max(0,parseInt(loaded.dailyGoodRatings,10)||0);
+      state.dailyGoodRatingsDay = loaded.dailyGoodRatingsDay || null;
+      state.dailyCardsCreated = Math.max(0,parseInt(loaded.dailyCardsCreated,10)||0);
+      state.dailyCardsCreatedDay = loaded.dailyCardsCreatedDay || null;
     }
     state.decks = state.decks.map(normalizeDeck).filter(function(d){return !!d;});
     state.settings.themeIndex = Math.max(0, Math.min(49, parseInt(state.settings.themeIndex,10)||0));
@@ -438,17 +443,31 @@
       ["First Steps","Create your first flashcard",st.total,1],
       ["Card Builder","Build a collection of 25 cards",st.total,25],
       ["Reviewer","Complete 50 reviews",st.reviews,50],
-      ["Dedicated Learner","Complete 250 reviews",st.reviews,250],
-      ["Study Streak","Study on 7 different days",uniqueDays(),7],
-      ["Favorites Collector","Save 10 favorite cards",st.favorites,10],
-      ["Deck Organizer","Create 5 decks",state.decks.length,5],
-      ["Daily Goal","Reach your daily review target",Math.max(0,state.settings.dailyGoal-st.due),1]
+      ["Dedicated","Complete 200 reviews",st.reviews,200],
+      ["Collector","Favorite 10 cards",st.favorites,10],
+      ["Deck Master","Create 5 learning decks",state.decks.length,5],
+      ["Box Explorer","Use 10 Leitner boxes",st.boxes,10],
+      ["Centurion","Reach 1000 total reviews",st.reviews,1000]
     ];
-    var out=pageHead(translate("achievement_center"),translate("achievement_center_sub"));
-    out+='<div class="grid">'+metric(items.filter(function(x){return x[2]>=x[3];}).length+"/"+items.length,translate("achievement_center"))+metric(state.streak,translate("streak")||"Streak")+'</div>';
-    for(var i=0;i<items.length;i++){
-      var x=items[i],done=x[2]>=x[3];
-      out+=panel((done?"✓ ":"○ ")+x[0],'<div class="muted">'+esc(x[1])+'</div><div class="row between" style="margin-top:8px"><span>'+Math.min(x[2],x[3])+' / '+x[3]+'</span><span class="badge">'+(done?"Unlocked":"In progress")+'</span></div>'+progressBar(Math.min(1,x[2]/x[3]),done?"#43a047":primaryColor()));
+    var unlocked=items.filter(function(b){return b[2]>=b[3];}).length;
+    var now=new Date(),today=dateKey(now),yearStart=new Date(now.getFullYear(),0,1);
+    var challengeIndex=Math.floor((now.getTime()-yearStart.getTime())/86400000)%4,todayReviews=0;
+    for(var i=0;i<state.reviewDays.length;i++)if(state.reviewDays[i]===today)todayReviews++;
+    var challenges=[
+      {title:"Review "+state.settings.dailyGoal+" cards today",value:todayReviews,target:state.settings.dailyGoal},
+      {title:"Favorite 3 cards you want to revisit",value:st.favorites,target:3},
+      {title:"Complete 10 Good ratings",value:state.dailyGoodRatingsDay===today?state.dailyGoodRatings:0,target:10},
+      {title:"Create 2 new cards",value:state.dailyCardsCreatedDay===today?state.dailyCardsCreated:0,target:2}
+    ];
+    var challenge=challenges[challengeIndex],challengeValue=Math.min(challenge.value,challenge.target);
+    var out=pageHead(translate("achievement_center"),"Turn every study session into progress.");
+    out+=panel("Achievement Center",'<div class="row between"><strong>'+unlocked+' / '+items.length+' badges unlocked</strong><span class="badge">'+state.streak+' day streak</span></div>'+progressBar(unlocked/Math.max(1,items.length)));
+    out+=panel("Today's Challenge",'<div class="panel-title">'+esc(challenge.title)+'</div><div class="row between" style="margin-top:8px"><span>'+challengeValue+' / '+challenge.target+'</span><span class="muted">'+Math.round(challengeValue/Math.max(1,challenge.target)*100)+'%</span></div>'+progressBar(challengeValue/Math.max(1,challenge.target)));
+    out+=panel("Your Progress",'<div class="grid">'+metric(st.total,"Cards")+metric(st.reviews,"Reviews")+metric(st.favorites,"Favorites")+metric(st.due,"Due")+'</div>');
+    out+='<h2 class="section-title">Badges</h2>';
+    for(var j=0;j<items.length;j++){
+      var b=items[j],done=b[2]>=b[3],value=Math.min(b[2],b[3]);
+      out+=panel((done?"✓ ":"○ ")+b[0],'<div class="muted">'+esc(b[1])+'</div><div class="row between" style="margin-top:8px"><span>'+value+' / '+b[3]+'</span><span class="badge">'+(done?"Unlocked":"In progress")+'</span></div>'+progressBar(value/Math.max(1,b[3]),done?"#43a047":primaryColor()));
     }
     return out;
   }
@@ -561,11 +580,13 @@
     session.index++;session.revealed=false;render();
     if(state.settings.autoReveal)window.setTimeout(function(){if(session&&!session.finished){session.revealed=true;render();}},320);
   }
-  function recordReview() {
+  function recordReview(rating) {
     var now=new Date(),today=dateKey(now),yesterday=dateKey(new Date(now.getFullYear(),now.getMonth(),now.getDate()-1));
     state.xp+=12;
     if(state.lastStudyDay===today){} else if(state.lastStudyDay===yesterday)state.streak+=1;else state.streak=1;
     state.lastStudyDay=today;state.reviewDays.push(today);if(state.reviewDays.length>300)state.reviewDays=state.reviewDays.slice(-300);
+    if(state.dailyGoodRatingsDay!==today){state.dailyGoodRatingsDay=today;state.dailyGoodRatings=0;}
+    if(rating===2)state.dailyGoodRatings++;
   }
   function pauseFocusForNavigation() {
     if(focusInterval){window.clearInterval(focusInterval);focusInterval=null;}
@@ -877,7 +898,13 @@
     var frontImg=d._editingFrontImage||null,backImg=d._editingBackImage||null;
     if((!front&&!frontImg)||(!backText&&!backImg)){notify(translate("save_card"));return;}
     var card=editCardId?getCard(editCardDeckId,editCardId):null;
-    if(!card){card=normalizeCard({id:uid(),front:front,back:backText,due:new Date().toISOString(),box:0});d.cards.unshift(card);}
+    if(!card){
+      card=normalizeCard({id:uid(),front:front,back:backText,due:new Date().toISOString(),box:0});
+      d.cards.unshift(card);
+      var createdDay=dateKey(new Date());
+      if(state.dailyCardsCreatedDay!==createdDay){state.dailyCardsCreatedDay=createdDay;state.dailyCardsCreated=0;}
+      state.dailyCardsCreated++;
+    }
     card.front=front;card.back=backText;card.tags=document.getElementById("card-tags").value.trim();
     card.box=parseInt(document.getElementById("card-box").value,10)||0;card.favorite=document.getElementById("card-favorite").checked;
     card.frontImage=frontImg;card.backImage=backImg;
