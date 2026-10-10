@@ -863,7 +863,7 @@
   function showZoomImage() {
     if(!zoomImageData)return;
     showModal(translate("zoom_image"),
-      '<div class="zoom-image-viewport"><img class="zoomed-study-image" style="transform:scale('+zoomScale+')" src="'+attr(imageUrl(zoomImageData))+'" alt=""></div><div class="row wrap zoom-image-controls">'+
+      '<div class="zoom-image-viewport"><img class="zoomed-study-image" style="width:'+Math.round(zoomScale*100)+'%;max-width:none;max-height:none;height:auto;transform:none" src="'+attr(imageUrl(zoomImageData))+'" alt=""></div><div class="row wrap zoom-image-controls">'+
       btn("−","zoom-image-less")+'<span class="badge">'+Math.round(zoomScale*100)+'%</span>'+btn("+","zoom-image-more")+'</div>',
       [{label:translate("close"),action:"close-modal",primary:true}]);
   }
