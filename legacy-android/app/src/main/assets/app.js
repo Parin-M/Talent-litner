@@ -464,69 +464,72 @@
   }
   function renderAchievements() {
     var st=stats(),items=[
-      ["First Steps","Create your first flashcard",st.total,1],
-      ["Card Builder","Build a collection of 25 cards",st.total,25],
-      ["Reviewer","Complete 50 reviews",st.reviews,50],
-      ["Dedicated","Complete 200 reviews",st.reviews,200],
-      ["Collector","Favorite 10 cards",st.favorites,10],
-      ["Deck Master","Create 5 learning decks",state.decks.length,5],
-      ["Box Explorer","Use 10 Leitner boxes",st.boxes,10],
-      ["Centurion","Reach 1000 total reviews",st.reviews,1000]
+      [translate("ach_first_steps"),translate("ach_first_steps_desc"),st.total,1],
+      [translate("ach_card_builder"),translate("ach_card_builder_desc"),st.total,25],
+      [translate("ach_reviewer"),translate("ach_reviewer_desc"),st.reviews,50],
+      [translate("ach_dedicated"),translate("ach_dedicated_desc"),st.reviews,200],
+      [translate("ach_collector"),translate("ach_collector_desc"),st.favorites,10],
+      [translate("ach_deck_master"),translate("ach_deck_master_desc"),state.decks.length,5],
+      [translate("ach_box_explorer"),translate("ach_box_explorer_desc"),st.boxes,10],
+      [translate("ach_centurion"),translate("ach_centurion_desc"),st.reviews,1000]
     ];
     var unlocked=items.filter(function(b){return b[2]>=b[3];}).length;
-    var now=new Date(),today=dateKey(now),yearStart=new Date(now.getFullYear(),0,1);
-    var challengeIndex=Math.floor((now.getTime()-yearStart.getTime())/86400000)%4,todayReviews=0;
+    var today=dateKey(new Date()),challengeIndex=Math.floor((new Date().getTime()-new Date(new Date().getFullYear(),0,1).getTime())/86400000)%4,todayReviews=0;
     for(var i=0;i<state.reviewDays.length;i++)if(state.reviewDays[i]===today)todayReviews++;
     var challenges=[
-      {title:"Review "+state.settings.dailyGoal+" cards today",value:todayReviews,target:state.settings.dailyGoal},
-      {title:"Favorite 3 cards you want to revisit",value:st.favorites,target:3},
-      {title:"Complete 10 Good ratings",value:state.dailyGoodRatingsDay===today?state.dailyGoodRatings:0,target:10},
-      {title:"Create 2 new cards",value:state.dailyCardsCreatedDay===today?state.dailyCardsCreated:0,target:2}
+      {title:translate("challenge_review_today").replace("{count}",state.settings.dailyGoal),value:todayReviews,target:state.settings.dailyGoal},
+      {title:translate("challenge_favorite_3"),value:st.favorites,target:3},
+      {title:translate("challenge_good_10"),value:state.dailyGoodRatingsDay===today?state.dailyGoodRatings:0,target:10},
+      {title:translate("challenge_create_2"),value:state.dailyCardsCreatedDay===today?state.dailyCardsCreated:0,target:2}
     ];
     var challenge=challenges[challengeIndex],challengeValue=Math.min(challenge.value,challenge.target);
-    var out=pageHead(translate("achievement_center"),"Turn every study session into progress.");
-    out+=panel("Achievement Center",'<div class="row between"><strong>'+unlocked+' / '+items.length+' badges unlocked</strong><span class="badge">'+state.streak+' day streak</span></div>'+progressBar(unlocked/Math.max(1,items.length)));
-    out+=panel("Today's Challenge",'<div class="panel-title">'+esc(challenge.title)+'</div><div class="row between" style="margin-top:8px"><span>'+challengeValue+' / '+challenge.target+'</span><span class="muted">'+Math.round(challengeValue/Math.max(1,challenge.target)*100)+'%</span></div>'+progressBar(challengeValue/Math.max(1,challenge.target)));
-    out+=panel("Your Progress",'<div class="grid">'+metric(st.total,"Cards")+metric(st.reviews,"Reviews")+metric(st.favorites,"Favorites")+metric(st.due,"Due")+'</div>');
-    out+='<h2 class="section-title">Badges</h2>';
+    var out=pageHead(translate("achievement_center"),translate("achievement_center_sub"));
+    out+=panel(translate("achievement_center"),'<div class="row between"><strong>'+unlocked+' / '+items.length+' '+esc(translate("ach_badges"))+'</strong><span class="badge">'+state.streak+' '+esc(translate("streak_days"))+'</span></div>'+progressBar(unlocked/Math.max(1,items.length)));
+    out+=panel(translate("today"),'<div class="panel-title">'+esc(challenge.title)+'</div><div class="row between" style="margin-top:8px"><span>'+challengeValue+' / '+challenge.target+'</span><span class="muted">'+Math.round(challengeValue/Math.max(1,challenge.target)*100)+'%</span></div>'+progressBar(challengeValue/Math.max(1,challenge.target)));
+    out+=panel(translate("experience"),'<div class="grid">'+metric(st.total,translate("cards"))+metric(st.reviews,translate("reviews"))+metric(st.favorites,translate("favorite_only"))+metric(st.due,translate("cards_ready"))+'</div>');
+    out+='<h2 class="section-title">'+esc(translate("ach_badges"))+'</h2>';
     for(var j=0;j<items.length;j++){
       var b=items[j],done=b[2]>=b[3],value=Math.min(b[2],b[3]);
-      out+=panel((done?"✓ ":"○ ")+b[0],'<div class="muted">'+esc(b[1])+'</div><div class="row between" style="margin-top:8px"><span>'+value+' / '+b[3]+'</span><span class="badge">'+(done?"Unlocked":"In progress")+'</span></div>'+progressBar(value/Math.max(1,b[3]),done?"#43a047":primaryColor()));
+      out+=panel((done?"✓ ":"○ ")+b[0],'<div class="muted">'+esc(b[1])+'</div><div class="row between" style="margin-top:8px"><span>'+value+' / '+b[3]+'</span><span class="badge">'+esc(translate(done?"ach_unlocked":"ach_in_progress"))+'</span></div>'+progressBar(value/Math.max(1,b[3]),done?"#43a047":primaryColor()));
     }
     return out;
   }
   function renderPowerCenter() {
-    var st=stats(),out=pageHead(translate("extra"),translate("smart_mix_sub"));
+    var st=stats(),out=pageHead(translate("power_center"),translate("smart_mix_sub"));
     var level=1+Math.floor(state.xp/250),levelXp=state.xp%250;
     var hard=0,medium=0,fresh=0,easy=0;
     for(var i=0;i<st.cards.length;i++){
-      var c=st.cards[i].card;
-      if((c.lapses||0)>=3||((c.reviews||0)>=4&&(c.box||0)<=1))hard++;
-      else if((c.reviews||0)<=1)fresh++;
-      else if((c.box||0)>=3&&!(c.lapses||0))easy++;
+      var c=st.cards[i].card,difficulty=c.difficulty||"auto";
+      if(difficulty==="hard"||(difficulty==="auto"&&((c.lapses||0)>=3||((c.reviews||0)>=4&&(c.box||0)<=1))))hard++;
+      else if(difficulty==="medium")medium++;
+      else if(difficulty==="easy"||(difficulty==="auto"&&(c.box||0)>=3&&!(c.lapses||0)))easy++;
+      else if(difficulty==="auto"&&(c.reviews||0)<=1)fresh++;
       else medium++;
     }
     var today=dateKey(new Date()),reward=50+Math.min(state.streak*5,100);
-    out+=panel(translate("today"),'<div class="grid">'+metric(st.due,translate("cards_ready"))+metric(state.settings.dailyGoal,translate("daily_goal"))+metric(state.xp,"XP")+metric("Lv "+level,"Level")+'</div><div style="margin-top:10px">'+progressBar(levelXp/250)+'</div><p class="muted">'+levelXp+' / 250 XP • '+esc(translate("week_reviews")||"Reviews this week")+': '+weekReviews()+'</p>');
-    out+=panel(translate("daily_reward")||"Daily Reward",'<p class="muted">'+esc(state.lastRewardDay===today?translate("claimed_today")||"Reward already claimed today":translate("daily_reward_sub")||"Claim a small daily XP reward and keep your streak going.")+'</p><div class="row between"><strong>+'+reward+' XP</strong>'+btn(esc(translate("claim_reward")||"Claim reward"),"claim-reward","","button primary")+'</div>');
-    var mix='<p class="muted">'+esc(translate("smart_mix_sub"))+'</p><label class="field" for="smart-mix-size">Cards in study mix</label><select id="smart-mix-size"><option value="10"'+(smartMixSize===10?" selected":"")+'>10 cards</option><option value="20"'+(smartMixSize===20?" selected":"")+'>20 cards</option><option value="30"'+(smartMixSize===30?" selected":"")+'>30 cards</option></select><div style="margin-top:10px">'+btn(esc(translate("smart_mix")),"smart-mix","","button primary")+'</div>';
+    out+=panel(translate("today"),'<div class="grid">'+metric(st.due,translate("cards_ready"))+metric(state.settings.dailyGoal,translate("daily_goal"))+metric(state.xp,"XP")+metric(translate("level")+" "+level,translate("level"))+'</div><div style="margin-top:10px">'+progressBar(levelXp/250)+'</div><p class="muted">'+levelXp+' / 250 XP • '+esc(translate("week_reviews"))+': '+weekReviews()+'</p>');
+    out+=panel(translate("pc_daily_reward"),'<p class="muted">'+esc(state.lastRewardDay===today?translate("pc_reward_already_claimed"):translate("pc_reward_ready"))+'</p><div class="row between"><strong>'+esc(translate("pc_up_to_xp"))+' +'+reward+' XP</strong>'+btn(esc(translate("pc_claim_reward")),"claim-reward","","button primary")+'</div>');
+    var mix='<p class="muted">'+esc(translate("smart_mix_sub"))+'</p><label class="field" for="smart-mix-size">'+esc(translate("cards"))+'</label><select id="smart-mix-size"><option value="10"'+(smartMixSize===10?" selected":"")+'>'+
+      '10</option><option value="20"'+(smartMixSize===20?" selected":"")+'>'+
+      '20</option><option value="30"'+(smartMixSize===30?" selected":"")+'>'+
+      '30</option></select><div style="margin-top:10px">'+btn(esc(translate("smart_mix")),"smart-mix","","button primary")+'</div>';
     out+=panel(translate("smart_mix"),mix);
     var dots='<div class="row wrap">';
     for(var dayIndex=27;dayIndex>=0;dayIndex--){
       var day=new Date();day.setHours(0,0,0,0);day.setDate(day.getDate()-dayIndex);
       var key=dateKey(day),done=state.reviewDays.indexOf(key)>=0;
-      dots+='<span title="'+attr(key)+'" style="display:inline-block;width:19px;height:19px;border-radius:4px;background:'+(done?primaryColor():'rgba(120,130,150,.18)')+';border:1px solid rgba(120,130,150,.18)"></span>';
+      dots+='<span title="'+attr(key)+'" style="display:inline-block;width:19px;height:19px;border-radius:0;background:'+(done?primaryColor():'rgba(120,130,150,.18)')+';border:1px solid rgba(120,130,150,.18)"></span>';
     }
-    dots+='</div><p class="muted">'+state.streak+' day streak • '+uniqueDays()+' study days recorded</p>';
-    out+=panel("Streak Calendar",dots);
-    out+=panel("Weekly Challenge",'<div class="row between"><strong>Complete 40 reviews this week</strong><span class="muted">'+Math.min(weekReviews(),40)+' / 40</span></div><div style="margin-top:10px">'+progressBar(Math.min(1,weekReviews()/40))+'</div>');
-    out+=panel("Smart Difficulty",'<div class="grid">'+metric(hard,"Hard")+metric(medium,"Medium")+metric(fresh,"New")+metric(easy,"Easy")+'</div>');
-    var levelRows=[[1,"Getting Started"],[3,"Consistent Learner"],[5,"Focus Master"],[10,"Parin Pro"]],rewards='';
+    dots+='</div><p class="muted">'+state.streak+' '+esc(translate("streak_days"))+' • '+uniqueDays()+' '+esc(translate("pc_study_days"))+'</p>';
+    out+=panel(translate("pc_streak_calendar"),dots);
+    out+=panel(translate("pc_weekly_challenge"),'<div class="row between"><strong>'+esc(translate("pc_complete_40_reviews"))+'</strong><span class="muted">'+Math.min(weekReviews(),40)+' / 40</span></div><div style="margin-top:10px">'+progressBar(Math.min(1,weekReviews()/40))+'</div>');
+    out+=panel(translate("pc_smart_difficulty"),'<div class="grid">'+metric(hard,translate("hard"))+metric(medium,translate("difficulty_medium"))+metric(fresh,translate("new_card"))+metric(easy,translate("easy"))+'</div>');
+    var levelRows=[[1,"pc_level_getting_started"],[3,"pc_level_consistent"],[5,"pc_level_focus"],[10,"pc_level_pro"]],rewards='';
     for(var ri=0;ri<levelRows.length;ri++){
       var unlocked=level>=levelRows[ri][0];
-      rewards+='<div class="setting-row"><span class="setting-copy"><span class="setting-name">'+(unlocked?"✓ ":"🔒 ")+levelRows[ri][1]+'</span></span><span class="badge">Lv '+levelRows[ri][0]+'</span></div>';
+      rewards+='<div class="setting-row"><span class="setting-copy"><span class="setting-name">'+(unlocked?"✓ ":"🔒 ")+esc(translate(levelRows[ri][1]))+'</span></span><span class="badge">'+esc(translate("level"))+' '+levelRows[ri][0]+'</span></div>';
     }
-    out+=panel("Level Rewards",rewards);
+    out+=panel(translate("pc_level_rewards"),rewards);
     out+=panel(translate("achievement_center"),'<div class="row wrap">'+btn(esc(translate("achievement_center")),"goto",' data-page="achievements"',"button primary")+'</div>');
     return out;
   }
