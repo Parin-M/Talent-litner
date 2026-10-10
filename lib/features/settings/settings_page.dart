@@ -163,14 +163,14 @@ class _SettingsPageState extends State<SettingsPage> {
                         final theme = AppTheme.themes[index];
                         final active = index == widget.settings.themeIndex;
                         return InkWell(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.zero,
                           onTap: () => widget.settings.setTheme(index),
                           child: Container(
                             width: 128,
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(colors: [theme.primary, theme.secondary]),
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.zero,
                               border: Border.all(color: active ? Colors.white : Colors.white54, width: active ? 3 : 1),
                             ),
                             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -259,10 +259,10 @@ class _Section extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: scheme.brightness == Brightness.dark ? .96 : .88),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.outline.withValues(alpha: .20)),
-        boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: scheme.brightness == Brightness.dark ? .05 : .08), blurRadius: 16, offset: const Offset(0, 5))],
+        color: scheme.surface,
+        borderRadius: BorderRadius.zero,
+        border: Border.all(color: scheme.outlineVariant),
+        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
