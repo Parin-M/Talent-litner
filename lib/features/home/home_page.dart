@@ -249,8 +249,9 @@ class _HomePageState extends State<HomePage> {
                   if (result == 'deleted') {
                     decks.removeWhere((item) => item.id == deck.id);
                     widget.onChanged();
-                    setState(() {});
                   }
+                  // Returning from a deck refreshes its count and any newly edited cards.
+                  setState(() {});
                 },
               ),
             ],
