@@ -759,7 +759,32 @@
     if(action==="delete-card"){var c2=getCard(deckId,id);if(c2)showModal(translate("delete_card"),'<p>'+esc(translate("delete_card_confirm"))+'</p>',[{label:translate("cancel"),action:"close-modal"},{label:translate("delete"),action:"confirm-delete-card",extra:' data-deck="'+attr(deckId)+'" data-id="'+attr(id)+'"',primary:true}]);return;}
     if(action==="confirm-delete-card"){var d3=getDeck(deckId);if(d3)d3.cards=d3.cards.filter(function(c){return c.id!==id;});closeModal();persist();render();return;}
     if(action==="favorite-card"){var fav=getCard(deckId,id);if(fav){fav.favorite=!fav.favorite;persist();render();}return;}
-    if(action==="study-deck"){var d4=getDeck(id);if(d4){var refs=[];for(var i=0;i<d4.cards.length;i++)if(isDue(d4.cards[i]))refs.push({deckId:d4.id,cardId:d4.cards[i].id});startStudy(refs,d4.name);}return;}
+    if(action==="study-deck"){
+      var deckChoice=getDeck(id);
+      if(deckChoice){
+        var dueCountNow=0,favCountNow=0;
+        for(var dc=0;dc<deckChoice.cards.length;dc++){if(isDue(deckChoice.cards[dc]))dueCountNow++;if(deckChoice.cards[dc].favorite)favCountNow++;}
+        showModal(translate("study_type"),'<p>'+esc(deckChoice.name)+'</p>',[
+          {label:translate("cards_ready")+" ("+dueCountNow+")",action:"study-deck-mode",extra:' data-id="'+attr(id)+'" data-mode="due"',primary:true},
+          {label:translate("all")+" ("+deckChoice.cards.length+")",action:"study-deck-mode",extra:' data-id="'+attr(id)+'" data-mode="all"'},
+          {label:translate("favorite_only")+" ("+favCountNow+")",action:"study-deck-mode",extra:' data-id="'+attr(id)+'" data-mode="favorites"'},
+          {label:translate("cancel"),action:"close-modal"}
+        ]);
+      }
+      return;
+    }
+    if(action==="study-deck-mode"){
+      var chosenDeck=getDeck(id),mode=target.getAttribute("data-mode"),refs=[];
+      closeModal();
+      if(chosenDeck){
+        for(var ci=0;ci<chosenDeck.cards.length;ci++){
+          var chosenCard=chosenDeck.cards[ci];
+          if(mode==="all"||(mode==="favorites"&&chosenCard.favorite)||(mode==="due"&&isDue(chosenCard)))refs.push({deckId:chosenDeck.id,cardId:chosenCard.id});
+        }
+        startStudy(refs,chosenDeck.name);
+      }
+      return;
+    }
     if(action==="study-all"){startStudy(null,translate("study"));return;}
     if(action==="reveal"){if(session&&!session.finished){session.revealed=true;render();}return;}
     if(action==="rate"){rateCard(parseInt(target.getAttribute("data-rating"),10)||0);return;}
