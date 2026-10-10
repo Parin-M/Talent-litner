@@ -21,6 +21,7 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
   late final List<FlashCard> cards;
   late final AnimationController flip;
   Timer? timer;
+  Timer? autoRevealTimer;
   int index = 0;
   int seconds = 0;
   bool revealed = false;
@@ -35,12 +36,46 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
     flip = AnimationController(vsync: this, duration: Duration(milliseconds: widget.settings.animations ? 400 : 1));
     if (widget.settings.showTimer) timer = Timer.periodic(const Duration(seconds: 1), (_) { if (mounted && !finished) setState(() => seconds++); });
     if (cards.isNotEmpty && widget.settings.musicEnabled) _playMusic();
-    if (cards.isNotEmpty && widget.settings.autoReveal) Future.delayed(const Duration(milliseconds: 500), () { if (mounted) _toggleReveal(); });
+    _scheduleAutoReveal();
   }
 
   Future<void> _playMusic() async { try { await MusicService.instance.play(widget.settings.musicTrack, volume: widget.settings.musicVolume); if (mounted) setState(() => musicPlaying = true); } catch (_) {} }
-  void _buzz({bool heavy = false}) { if (!widget.settings.haptics) return; if (heavy) { HapticFeedback.heavyImpact(); } else { HapticFeedback.selectionClick(); } }
-  void _toggleReveal() { if (finished || cards.isEmpty) return; setState(() => revealed = !revealed); if (revealed) { flip.forward(); } else { flip.reverse(); } _buzz(); }
+  void _buzz({bool heavy = false}) {
+    if (!widget.settings.haptics) return;
+    // Use the platform vibration primitive rather than a low-intensity selection
+    // tick that many Android devices suppress when system haptics are conservative.
+    if (heavy) {
+      HapticFeedback.vibrate();
+    } else {
+      HapticFeedback.mediumImpact();
+    }
+  }
+
+  void _scheduleAutoReveal() {
+    autoRevealTimer?.cancel();
+    autoRevealTimer = null;
+    if (!widget.settings.autoReveal || finished || revealed || cards.isEmpty) return;
+    autoRevealTimer = Timer(
+      Duration(seconds: widget.settings.autoRevealDelaySeconds.clamp(1, 30)),
+      () {
+        if (mounted && !revealed && !finished && cards.isNotEmpty) _toggleReveal();
+      },
+    );
+  }
+
+  void _toggleReveal() {
+    if (finished || cards.isEmpty) return;
+    autoRevealTimer?.cancel();
+    autoRevealTimer = null;
+    setState(() => revealed = !revealed);
+    if (revealed) {
+      flip.forward();
+    } else {
+      flip.reverse();
+      _scheduleAutoReveal();
+    }
+    _buzz();
+  }
 
   void _rate(int rating) {
     if (finished || cards.isEmpty || !revealed) return;
@@ -59,13 +94,13 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
     if (index == cards.length - 1) { finished = true; _buzz(heavy: true); _finish(); return; }
     setState(() { index++; revealed = false; });
     flip.reset();
-    if (widget.settings.autoReveal) Future.delayed(const Duration(milliseconds: 320), () { if (mounted && !finished) _toggleReveal(); });
+    _scheduleAutoReveal();
   }
 
   void _swipe(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
     if (!revealed || finished) return;
-    if (velocity > 450) { _rate(2); } else if (velocity < -450) { _rate(1); }
+    if (velocity > 450) { _rate(2); } else if (velocity < -450) { _rate(0); }
   }
 
   Future<void> _finish() async {
@@ -84,7 +119,7 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
   String _time() => '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
 
   @override
-  void dispose() { timer?.cancel(); flip.dispose(); if (musicPlaying) MusicService.instance.stop(); super.dispose(); }
+  void dispose() { timer?.cancel(); autoRevealTimer?.cancel(); flip.dispose(); if (musicPlaying) MusicService.instance.stop(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +132,21 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
         if (widget.settings.showProgress) ...[LinearProgressIndicator(value: progress, minHeight: 7), const SizedBox(height: 14)],
         Expanded(child: GestureDetector(onTap: _toggleReveal, onHorizontalDragEnd: _swipe, child: AnimatedBuilder(animation: flip, builder: (context, child) { final angle = flip.value * pi; final front = angle <= pi / 2; final face = _CardFace(text: front ? card.front : card.back, image: front ? card.frontImage : card.backImage, label: front ? s('tap') : s('answer')); final visible = front ? face : Transform(alignment: Alignment.center, transform: Matrix4.rotationY(pi), child: face); return Transform(alignment: Alignment.center, transform: Matrix4.identity()..setEntry(3,2,.0012)..rotateY(angle), child: visible); }))),
         const SizedBox(height: 12),
-        if (revealed) Row(children: [Expanded(child: _Rate(label:s('again'), icon:Icons.refresh_outlined, onTap:()=>_rate(0))), const SizedBox(width:6), Expanded(child: _Rate(label:s('hard'), icon:Icons.trending_down, onTap:()=>_rate(1))), const SizedBox(width:6), Expanded(child: _Rate(label:s('good'), icon:Icons.check, onTap:()=>_rate(2))), const SizedBox(width:6), Expanded(child: _Rate(label:s('easy'), icon:Icons.bolt, onTap:()=>_rate(3)))]),
+        if (revealed) Row(children: [
+          Expanded(child: SizedBox(height: 52, child: FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF16823B), foregroundColor: Colors.white, shape: const RoundedRectangleBorder()),
+            onPressed: () => _rate(2),
+            icon: const Icon(Icons.check_circle_outline),
+            label: Text(s('knew_it'), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+          ))),
+          const SizedBox(width: 10),
+          Expanded(child: SizedBox(height: 52, child: FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFC62828), foregroundColor: Colors.white, shape: const RoundedRectangleBorder()),
+            onPressed: () => _rate(0),
+            icon: const Icon(Icons.close),
+            label: Text(s('did_not_know'), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+          ))),
+        ]),
         Padding(padding: const EdgeInsets.only(top:6), child: Text(revealed ? s('swipe') : s('tap'), textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
       ]))),
     ));
@@ -107,7 +156,47 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
 class _CardFace extends StatelessWidget {
   final String text; final String? image; final String label;
   const _CardFace({required this.text, required this.image, required this.label});
-  @override Widget build(BuildContext context) => Card(elevation: 2, clipBehavior: Clip.antiAlias, child: Padding(padding: const EdgeInsets.all(22), child: Center(child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.style_outlined, size: 46), const SizedBox(height:14), SafeMemoryImage(base64:image, height:190, width:double.infinity, fit:BoxFit.contain, borderRadius:BorderRadius.zero), if(text.trim().isNotEmpty) ...[const SizedBox(height:14), Text(text, textAlign:TextAlign.center, textDirection:Directionality.of(context), style:const TextStyle(fontSize:26,fontWeight:FontWeight.w800,height:1.35))], const SizedBox(height:18), Text(label,textAlign:TextAlign.center,style:TextStyle(color:Theme.of(context).colorScheme.onSurfaceVariant))])))));
+  @override Widget build(BuildContext context) => Card(elevation: 2, clipBehavior: Clip.antiAlias, child: Padding(padding: const EdgeInsets.all(22), child: Center(child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.style_outlined, size: 46), const SizedBox(height:14), if (image != null && image!.isNotEmpty) GestureDetector(
+  onTap: () => _showZoom(context, image!),
+  child: SafeMemoryImage(base64:image, height:190, width:double.infinity, fit:BoxFit.contain, borderRadius:BorderRadius.zero),
+) else const SizedBox.shrink(), if(text.trim().isNotEmpty) ...[const SizedBox(height:14), Text(text, textAlign:TextAlign.center, textDirection:Directionality.of(context), style:const TextStyle(fontSize:26,fontWeight:FontWeight.w800,height:1.35))], const SizedBox(height:18), Text(label,textAlign:TextAlign.center,style:TextStyle(color:Theme.of(context).colorScheme.onSurfaceVariant))])))));
+}
+
+Future<void> _showZoom(BuildContext context, String? base64) async {
+  final bytes = tryDecodeBase64Image(base64);
+  if (bytes == null) return;
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      insetPadding: const EdgeInsets.all(12),
+      shape: const RoundedRectangleBorder(),
+      child: SizedBox(
+        width: double.maxFinite,
+        height: MediaQuery.sizeOf(dialogContext).height * .78,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: InteractiveViewer(
+                minScale: .75,
+                maxScale: 6,
+                boundaryMargin: const EdgeInsets.all(80),
+                child: Center(child: Image.memory(bytes, fit: BoxFit.contain)),
+              ),
+            ),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: IconButton.filled(
+                tooltip: AppStrings.t(dialogContext, 'close'),
+                onPressed: () => Navigator.pop(dialogContext),
+                icon: const Icon(Icons.close),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _Rate extends StatelessWidget {
