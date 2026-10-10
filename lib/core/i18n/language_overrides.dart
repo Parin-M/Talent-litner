@@ -29,7 +29,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"شروع یادگیری",
     'pc_level_consistent':"یادگیرنده پیوسته",
     'pc_level_focus':"استاد تمرکز",
-    'pc_level_pro':"حرفه‌ای پارین",
+    'pc_level_pro': "بالاترین سطح در پرین (Parin)",
     'pc_create_cards_first':"ابتدا چند کارت بسازید.",
     'level':"سطح",
     'ach_badges':"نشان‌ها",
@@ -56,6 +56,8 @@ class LanguageOverrides {
     'zoom_image':"بزرگ‌نمایی تصویر",
     'ach_unlocked':"بازشده",
     'ach_in_progress':"در حال پیشرفت",
+    'difficulty_all': "همهٔ سختی‌ها",
+    'study_difficulty_hint': "می‌توانید مرور را بر اساس سختی کارت محدود کنید.",
   };
 
   static const _en = <String, String>{
@@ -88,7 +90,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Getting Started",
     'pc_level_consistent':"Consistent Learner",
     'pc_level_focus':"Focus Master",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Highest level in Parin (Parin)",
     'pc_create_cards_first':"Create some cards first.",
     'level':"Level",
     'ach_badges':"Badges",
@@ -115,6 +117,8 @@ class LanguageOverrides {
     'zoom_image':"Zoom image",
     'ach_unlocked':"Unlocked",
     'ach_in_progress':"In progress",
+    'difficulty_all': "All difficulties",
+    'study_difficulty_hint': "Optionally filter this review by card difficulty.",
   };
 
   static const _de = <String, String>{
@@ -147,7 +151,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Erste Schritte",
     'pc_level_consistent':"Konstant Lernender",
     'pc_level_focus':"Fokusmeister",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Höchste Stufe in Parin (Parin)",
     'pc_create_cards_first':"Erstelle zuerst einige Karten.",
     'level':"Level",
     'ach_badges':"Abzeichen",
@@ -174,6 +178,8 @@ class LanguageOverrides {
     'zoom_image':"Bild vergrößern",
     'ach_unlocked':"Freigeschaltet",
     'ach_in_progress':"In Bearbeitung",
+    'difficulty_all': "Alle Schwierigkeitsgrade",
+    'study_difficulty_hint': "Du kannst diese Wiederholung nach Kartenschwierigkeit filtern.",
   };
 
   static const _da = <String, String>{
@@ -206,7 +212,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Første skridt",
     'pc_level_consistent':"Vedholdende lærende",
     'pc_level_focus':"Fokusmester",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Højeste niveau i Parin (Parin)",
     'pc_create_cards_first':"Opret nogle kort først.",
     'level':"Niveau",
     'ach_badges':"Mærker",
@@ -233,6 +239,8 @@ class LanguageOverrides {
     'zoom_image':"Zoom billede",
     'ach_unlocked':"Låst op",
     'ach_in_progress':"I gang",
+    'difficulty_all': "Alle sværhedsgrader",
+    'study_difficulty_hint': "Filtrér eventuelt denne repetition efter kortets sværhedsgrad.",
   };
 
   static const _es = <String, String>{
@@ -265,7 +273,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Primeros pasos",
     'pc_level_consistent':"Aprendiz constante",
     'pc_level_focus':"Maestro del enfoque",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Nivel más alto en Parin (Parin)",
     'pc_create_cards_first':"Primero crea algunas tarjetas.",
     'level':"Nivel",
     'ach_badges':"Insignias",
@@ -292,6 +300,8 @@ class LanguageOverrides {
     'zoom_image':"Ampliar imagen",
     'ach_unlocked':"Desbloqueado",
     'ach_in_progress':"En progreso",
+    'difficulty_all': "Todas las dificultades",
+    'study_difficulty_hint': "Puedes filtrar este repaso por dificultad.",
   };
 
   static const _pt = <String, String>{
@@ -324,7 +334,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Primeiros passos",
     'pc_level_consistent':"Aprendiz consistente",
     'pc_level_focus':"Mestre do foco",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Nível mais alto em Parin (Parin)",
     'pc_create_cards_first':"Crie alguns cartões primeiro.",
     'level':"Nível",
     'ach_badges':"Emblemas",
@@ -351,6 +361,8 @@ class LanguageOverrides {
     'zoom_image':"Ampliar imagem",
     'ach_unlocked':"Desbloqueado",
     'ach_in_progress':"Em progresso",
+    'difficulty_all': "Todas as dificuldades",
+    'study_difficulty_hint': "Pode filtrar esta revisão por dificuldade.",
   };
 
   static const _fr = <String, String>{
@@ -383,7 +395,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Premiers pas",
     'pc_level_consistent':"Apprenant régulier",
     'pc_level_focus':"Maître de la concentration",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Niveau le plus élevé dans Parin (Parin)",
     'pc_create_cards_first':"Créez d’abord quelques cartes.",
     'level':"Niveau",
     'ach_badges':"Badges",
@@ -410,6 +422,8 @@ class LanguageOverrides {
     'zoom_image':"Agrandir l’image",
     'ach_unlocked':"Débloqué",
     'ach_in_progress':"En cours",
+    'difficulty_all': "Toutes les difficultés",
+    'study_difficulty_hint': "Vous pouvez filtrer cette révision par difficulté.",
   };
 
   static const _it = <String, String>{
@@ -442,7 +456,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Primi passi",
     'pc_level_consistent':"Studente costante",
     'pc_level_focus':"Maestro della concentrazione",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Livello più alto in Parin (Parin)",
     'pc_create_cards_first':"Crea prima alcune carte.",
     'level':"Livello",
     'ach_badges':"Distintivi",
@@ -469,6 +483,8 @@ class LanguageOverrides {
     'zoom_image':"Ingrandisci immagine",
     'ach_unlocked':"Sbloccato",
     'ach_in_progress':"In corso",
+    'difficulty_all': "Tutte le difficoltà",
+    'study_difficulty_hint': "Puoi filtrare questa revisione per difficoltà.",
   };
 
   static const _tr = <String, String>{
@@ -501,7 +517,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"İlk adımlar",
     'pc_level_consistent':"Düzenli öğrenen",
     'pc_level_focus':"Odak ustası",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Parin'deki en yüksek seviye (Parin)",
     'pc_create_cards_first':"Önce birkaç kart oluşturun.",
     'level':"Seviye",
     'ach_badges':"Rozetler",
@@ -528,6 +544,8 @@ class LanguageOverrides {
     'zoom_image':"Görseli yakınlaştır",
     'ach_unlocked':"Açıldı",
     'ach_in_progress':"Devam ediyor",
+    'difficulty_all': "Tüm zorluklar",
+    'study_difficulty_hint': "Bu tekrarı kart zorluğuna göre filtreleyebilirsiniz.",
   };
 
   static const _nl = <String, String>{
@@ -560,7 +578,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Eerste stappen",
     'pc_level_consistent':"Consequente leerling",
     'pc_level_focus':"Focusmeester",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Hoogste niveau in Parin (Parin)",
     'pc_create_cards_first':"Maak eerst enkele kaarten.",
     'level':"Level",
     'ach_badges':"Badges",
@@ -587,6 +605,8 @@ class LanguageOverrides {
     'zoom_image':"Afbeelding vergroten",
     'ach_unlocked':"Ontgrendeld",
     'ach_in_progress':"Bezig",
+    'difficulty_all': "Alle moeilijkheidsgraden",
+    'study_difficulty_hint': "Je kunt deze herhaling filteren op moeilijkheid.",
   };
 
   static const _sv = <String, String>{
@@ -619,7 +639,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Första stegen",
     'pc_level_consistent':"Konsekvent lärande",
     'pc_level_focus':"Fokusmästare",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Högsta nivån i Parin (Parin)",
     'pc_create_cards_first':"Skapa några kort först.",
     'level':"Nivå",
     'ach_badges':"Märken",
@@ -646,6 +666,8 @@ class LanguageOverrides {
     'zoom_image':"Zooma bild",
     'ach_unlocked':"Upplåst",
     'ach_in_progress':"Pågår",
+    'difficulty_all': "Alla svårighetsgrader",
+    'study_difficulty_hint': "Filtrera repetitionen efter svårighetsgrad vid behov.",
   };
 
   static const _no = <String, String>{
@@ -678,7 +700,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Første steg",
     'pc_level_consistent':"Jevn lærende",
     'pc_level_focus':"Fokusmester",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Høyeste nivå i Parin (Parin)",
     'pc_create_cards_first':"Opprett noen kort først.",
     'level':"Nivå",
     'ach_badges':"Merker",
@@ -705,6 +727,8 @@ class LanguageOverrides {
     'zoom_image':"Zoom bilde",
     'ach_unlocked':"Låst opp",
     'ach_in_progress':"Pågår",
+    'difficulty_all': "Alle vanskelighetsgrader",
+    'study_difficulty_hint': "Filtrer repetisjonen etter vanskelighetsgrad ved behov.",
   };
 
   static const _fi = <String, String>{
@@ -737,7 +761,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Ensiaskeleet",
     'pc_level_consistent':"Säännöllinen oppija",
     'pc_level_focus':"Keskittymisen mestari",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Korkein taso Parinissa (Parin)",
     'pc_create_cards_first':"Luo ensin muutama kortti.",
     'level':"Taso",
     'ach_badges':"Merkit",
@@ -764,6 +788,8 @@ class LanguageOverrides {
     'zoom_image':"Suurenna kuvaa",
     'ach_unlocked':"Avattu",
     'ach_in_progress':"Kesken",
+    'difficulty_all': "Kaikki vaikeustasot",
+    'study_difficulty_hint': "Voit suodattaa kertausta vaikeustason mukaan.",
   };
 
   static const _is = <String, String>{
@@ -796,7 +822,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Fyrstu skref",
     'pc_level_consistent':"Reglulegur nemandi",
     'pc_level_focus':"Einbeitingarmeistari",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Hæsta stig í Parin (Parin)",
     'pc_create_cards_first':"Búðu fyrst til nokkur spjöld.",
     'level':"Stig",
     'ach_badges':"Merki",
@@ -823,6 +849,8 @@ class LanguageOverrides {
     'zoom_image':"Stækka mynd",
     'ach_unlocked':"Opnað",
     'ach_in_progress':"Í vinnslu",
+    'difficulty_all': "Öll erfiðleikastig",
+    'study_difficulty_hint': "Þú getur síað upprifjun eftir erfiðleikastigi.",
   };
 
   static const _ja = <String, String>{
@@ -855,7 +883,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"はじめの一歩",
     'pc_level_consistent':"継続する学習者",
     'pc_level_focus':"集中マスター",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Parin（Parin）の最高レベル",
     'pc_create_cards_first':"先にカードを作成してください。",
     'level':"レベル",
     'ach_badges':"バッジ",
@@ -882,6 +910,8 @@ class LanguageOverrides {
     'zoom_image':"画像を拡大",
     'ach_unlocked':"解除済み",
     'ach_in_progress':"進行中",
+    'difficulty_all': "すべての難易度",
+    'study_difficulty_hint': "カードの難易度で復習を絞り込めます。",
   };
 
   static const _ko = <String, String>{
@@ -914,7 +944,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"첫걸음",
     'pc_level_consistent':"꾸준한 학습자",
     'pc_level_focus':"집중 마스터",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Parin(Parin)의 최고 레벨",
     'pc_create_cards_first':"먼저 카드를 만들어 주세요.",
     'level':"레벨",
     'ach_badges':"배지",
@@ -941,6 +971,8 @@ class LanguageOverrides {
     'zoom_image':"이미지 확대",
     'ach_unlocked':"잠금 해제",
     'ach_in_progress':"진행 중",
+    'difficulty_all': "모든 난이도",
+    'study_difficulty_hint': "카드 난이도에 따라 복습을 필터링할 수 있어요.",
   };
 
   static const _he = <String, String>{
@@ -973,7 +1005,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"צעדים ראשונים",
     'pc_level_consistent':"לומד עקבי",
     'pc_level_focus':"אמן ריכוז",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "הרמה הגבוהה ביותר ב־Parin (Parin)",
     'pc_create_cards_first':"צור כמה כרטיסים תחילה.",
     'level':"רמה",
     'ach_badges':"תגים",
@@ -1000,6 +1032,8 @@ class LanguageOverrides {
     'zoom_image':"הגדל תמונה",
     'ach_unlocked':"נפתח",
     'ach_in_progress':"בתהליך",
+    'difficulty_all': "כל רמות הקושי",
+    'study_difficulty_hint': "אפשר לסנן את החזרה לפי רמת הקושי.",
   };
 
   static const _ar = <String, String>{
@@ -1032,7 +1066,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"البدايات الأولى",
     'pc_level_consistent':"متعلم منتظم",
     'pc_level_focus':"خبير التركيز",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "أعلى مستوى في بارين (Parin)",
     'pc_create_cards_first':"أنشئ بعض البطاقات أولًا.",
     'level':"المستوى",
     'ach_badges':"الشارات",
@@ -1059,6 +1093,8 @@ class LanguageOverrides {
     'zoom_image':"تكبير الصورة",
     'ach_unlocked':"تم الفتح",
     'ach_in_progress':"قيد التقدم",
+    'difficulty_all': "كل مستويات الصعوبة",
+    'study_difficulty_hint': "يمكنك تصفية المراجعة حسب صعوبة البطاقة.",
   };
 
   static const _el = <String, String>{
@@ -1091,7 +1127,7 @@ class LanguageOverrides {
     'pc_level_getting_started':"Πρώτα βήματα",
     'pc_level_consistent':"Συνεπής μαθητής",
     'pc_level_focus':"Μάστερ συγκέντρωσης",
-    'pc_level_pro':"Parin Pro",
+    'pc_level_pro': "Υψηλότερο επίπεδο στο Parin (Parin)",
     'pc_create_cards_first':"Δημιουργήστε πρώτα μερικές κάρτες.",
     'level':"Επίπεδο",
     'ach_badges':"Σήματα",
@@ -1118,6 +1154,8 @@ class LanguageOverrides {
     'zoom_image':"Μεγέθυνση εικόνας",
     'ach_unlocked':"Ξεκλειδώθηκε",
     'ach_in_progress':"Σε εξέλιξη",
+    'difficulty_all': "Όλες οι δυσκολίες",
+    'study_difficulty_hint': "Μπορείτε να φιλτράρετε την επανάληψη ανά δυσκολία.",
   };
 
   static const _svFallback = <String, String>{};
