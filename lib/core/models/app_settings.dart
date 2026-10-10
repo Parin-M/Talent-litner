@@ -40,6 +40,10 @@ class AppSettings extends ChangeNotifier {
   String? lastStudyDay;
   String? lastRewardDay;
   List<String> reviewDays = [];
+  int dailyGoodRatings = 0;
+  String? dailyGoodRatingsDay;
+  int dailyCardsCreated = 0;
+  String? dailyCardsCreatedDay;
 
   AppLanguage get language => languages.firstWhere((x) => x.code == languageCode, orElse: () => languages.first);
   Locale get locale {
@@ -91,6 +95,10 @@ class AppSettings extends ChangeNotifier {
     lastStudyDay = p.getString('last_study_day');
     lastRewardDay = p.getString('last_reward_day');
     reviewDays = p.getStringList('review_days') ?? <String>[];
+    dailyGoodRatings = maxInt(0, p.getInt('daily_good_ratings') ?? 0);
+    dailyGoodRatingsDay = p.getString('daily_good_ratings_day');
+    dailyCardsCreated = maxInt(0, p.getInt('daily_cards_created') ?? 0);
+    dailyCardsCreatedDay = p.getString('daily_cards_created_day');
     notifyListeners();
   }
 
@@ -162,10 +170,15 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> recordReview() async {
+  Future<void> recordReview({bool knew = false}) async {
     final now = DateTime.now();
     final key = _dayKey(now);
     final yesterday = _dayKey(now.subtract(const Duration(days: 1)));
+    if (dailyGoodRatingsDay != key) {
+      dailyGoodRatingsDay = key;
+      dailyGoodRatings = 0;
+    }
+    if (knew) dailyGoodRatings++;
     xp += 12;
     if (lastStudyDay == key) {
       // Same-day reviews do not extend the streak twice.
@@ -182,6 +195,21 @@ class AppSettings extends ChangeNotifier {
     await p.setInt('streak', streak);
     await p.setString('last_study_day', key);
     await p.setStringList('review_days', reviewDays);
+    await p.setInt('daily_good_ratings', dailyGoodRatings);
+    await p.setString('daily_good_ratings_day', dailyGoodRatingsDay!);
+    notifyListeners();
+  }
+
+  Future<void> recordCardCreated() async {
+    final key = _dayKey(DateTime.now());
+    if (dailyCardsCreatedDay != key) {
+      dailyCardsCreatedDay = key;
+      dailyCardsCreated = 0;
+    }
+    dailyCardsCreated++;
+    final p = await SharedPreferences.getInstance();
+    await p.setInt('daily_cards_created', dailyCardsCreated);
+    await p.setString('daily_cards_created_day', dailyCardsCreatedDay!);
     notifyListeners();
   }
 
