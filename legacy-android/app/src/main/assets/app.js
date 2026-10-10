@@ -702,53 +702,65 @@
     else {try{Native.playMusic(state.settings.musicTrack,state.settings.musicVolume);musicPlaying=true;notify(translate("music_btn"));}catch(e){notify(translate("image_error"));}}
     render();
   }
-  function createBackupBinary() {
-    var assets=[],decks=clone(state.decks),n=0;
-    for(var i=0;i<decks.length;i++){
-      var cards=decks[i].cards||[];
-      for(var j=0;j<cards.length;j++){
-        var c=cards[j];
-        ["front","back"].forEach(function(side){
-          var key=side+"Image",data=c[key];
-          if(data&&typeof data==="string"&&data.length){
-            var raw;try{raw=window.atob(data.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/,"").replace(/\s/g,""));}catch(e){throw new Error("Invalid image data in card "+c.id);}
-            if(raw.length){n++;var name="image_"+("000000"+n).slice(-6)+".bin";assets.push({name:name,data:raw});c[side+"ImageAsset"]=name;}
-          }else c[side+"ImageAsset"]=null;
-          delete c[key];
+  function createBackupPayload() {
+    var assets = [], decks = clone(state.decks), n = 0;
+    for (var i = 0; i < decks.length; i++) {
+      var cards = decks[i].cards || [];
+      for (var j = 0; j < cards.length; j++) {
+        var card = cards[j];
+        ["front", "back"].forEach(function (side) {
+          var key = side + "Image", data = card[key];
+          if (data && typeof data === "string" && data.length) {
+            var encoded = data
+              .replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "")
+              .replace(/\s/g, "");
+            if (!encoded || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded) || encoded.length % 4 !== 0) {
+              throw new Error("Invalid image data in card " + card.id);
+            }
+            n++;
+            var name = "image_" + ("000000" + n).slice(-6) + ".bin";
+            assets.push({ name: name, data: encoded });
+            card[side + "ImageAsset"] = name;
+          } else {
+            card[side + "ImageAsset"] = null;
+          }
+          delete card[key];
         });
       }
     }
-    var manifest={app:"Parin Litner",format:1,exportedAt:new Date().toISOString(),imageCount:assets.length,decks:decks};
-    var mb=utf8Binary(JSON.stringify(manifest));
-    if(mb.length>64*1024*1024)throw new Error("Backup metadata is too large.");
-    var out="PLITBK01"+u32(mb.length)+mb;
-    for(var k=0;k<assets.length;k++){
-      var nameBytes=utf8Binary(assets[k].name);
-      out+=u16(nameBytes.length)+nameBytes+u32(assets[k].data.length)+assets[k].data;
-    }
-    return out;
+    var manifest = {
+      app: "Parin Litner",
+      format: 1,
+      exportedAt: new Date().toISOString(),
+      imageCount: assets.length,
+      decks: decks
+    };
+    return { manifest: JSON.stringify(manifest), assets: assets };
   }
-  function u16(n){return String.fromCharCode((n>>>8)&255,n&255);}
-  function u32(n){return String.fromCharCode((n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255);}
-  function utf8Binary(s){return unescape(encodeURIComponent(s));}
-  function decodeUtf8(s){return decodeURIComponent(escape(s));}
-  function base64OfBinary(binary) {
-    var parts=[],step=8192;
-    for(var i=0;i<binary.length;i+=step){
-      var end=Math.min(i+step,binary.length),a=[];
-      for(var j=i;j<end;j++)a.push(binary.charCodeAt(j));
-      parts.push(String.fromCharCode.apply(null,a));
-    }
-    return window.btoa(parts.join(""));
-  }
+
   function exportBackup() {
+    var started = false;
     try {
-      var binary=createBackupBinary();
-      if(binary.length>100000000)throw new Error("Backup is too large for this device.");
-      var b64=base64OfBinary(binary);
-      var result=Native.exportBackup(b64,"parin_litner_backup.plbackup");
-      if(result&&result!=="ERROR")notify(translate("backup_saved")||"Backup saved in Downloads");
-    } catch(e) {notify(translate("backup_error")||e.message||"Backup export failed");}
+      var payload = createBackupPayload();
+      var result = Native.beginBackupExport(payload.manifest, "parin_litner_backup.plbackup");
+      if (result !== "OK") throw new Error(translate("backup_error") || "Could not start writing the backup.");
+      started = true;
+      for (var i = 0; i < payload.assets.length; i++) {
+        var asset = payload.assets[i];
+        result = Native.appendBackupImage(asset.name, asset.data);
+        if (result !== "OK") throw new Error(translate("backup_error") || "Could not write an image to the backup.");
+      }
+      result = Native.finishBackupExport();
+      started = false;
+      if (!result || result === "ERROR") throw new Error(translate("backup_error") || "Could not finish the backup.");
+      notify(translate("backup_saved") || "Backup saved successfully");
+    } catch (e) {
+      if (started) {
+        try { Native.cancelBackupExport(); } catch (ignored) {}
+      }
+      var detail = e && e.message ? e.message : "";
+      notify((translate("backup_error") || "Backup export failed") + (detail ? " • " + detail : ""));
+    }
   }
   function importBackupBinary(binary) {
     if(binary.indexOf("PLITBK01")===0){
