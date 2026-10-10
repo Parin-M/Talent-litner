@@ -21,24 +21,24 @@ class AchievementsPage extends StatelessWidget {
     final due = decks.fold<int>(0, (sum, d) => sum + dueCount(d));
     final boxes = decks.fold<int>(0, (sum, d) => sum + d.boxes.length);
     final badgeData = <_Badge>[
-      _Badge('First Steps', 'Create your first flashcard', Icons.rocket_launch_outlined, total, 1),
-      _Badge('Card Builder', 'Build a collection of 25 cards', Icons.style_outlined, total, 25),
-      _Badge('Reviewer', 'Complete 50 reviews', Icons.school_outlined, reviews, 50),
-      _Badge('Dedicated', 'Complete 200 reviews', Icons.local_fire_department_outlined, reviews, 200),
-      _Badge('Collector', 'Favorite 10 cards', Icons.star_outline, favorites, 10),
-      _Badge('Deck Master', 'Create 5 learning decks', Icons.layers_outlined, decks.length, 5),
-      _Badge('Box Explorer', 'Use 10 Leitner boxes', Icons.grid_view_rounded, boxes, 10),
-      _Badge('Centurion', 'Reach 1000 total reviews', Icons.workspace_premium_outlined, reviews, 1000),
+      _Badge(s(context, 'ach_first_steps'), s(context, 'ach_first_steps_desc'), Icons.rocket_launch_outlined, total, 1),
+      _Badge(s(context, 'ach_card_builder'), s(context, 'ach_card_builder_desc'), Icons.style_outlined, total, 25),
+      _Badge(s(context, 'ach_reviewer'), s(context, 'ach_reviewer_desc'), Icons.school_outlined, reviews, 50),
+      _Badge(s(context, 'ach_dedicated'), s(context, 'ach_dedicated_desc'), Icons.local_fire_department_outlined, reviews, 200),
+      _Badge(s(context, 'ach_collector'), s(context, 'ach_collector_desc'), Icons.star_outline, favorites, 10),
+      _Badge(s(context, 'ach_deck_master'), s(context, 'ach_deck_master_desc'), Icons.layers_outlined, decks.length, 5),
+      _Badge(s(context, 'ach_box_explorer'), s(context, 'ach_box_explorer_desc'), Icons.grid_view_rounded, boxes, 10),
+      _Badge(s(context, 'ach_centurion'), s(context, 'ach_centurion_desc'), Icons.workspace_premium_outlined, reviews, 1000),
     ];
     final unlocked = badgeData.where((b) => b.done).length;
     final target = max(1, settings.dailyGoal);
     final challengeDone = min(due, target);
     final day = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
     final challenge = <String>[
-      'Review $target cards today',
-      'Favorite 3 cards you want to revisit',
-      'Complete 10 Good ratings',
-      'Create 2 new cards',
+      s(context, 'challenge_review_today').replaceAll('{count}', '$target'),
+      s(context, 'challenge_favorite_3'),
+      s(context, 'challenge_good_10'),
+      s(context, 'challenge_create_2'),
     ][day % 4];
 
     return Scaffold(
@@ -46,9 +46,9 @@ class AchievementsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
-          _HeroCard(title: 'Achievement Center', subtitle: 'Turn every study session into progress.', value: '$unlocked/${badgeData.length}'),
+          _HeroCard(title: s(context, 'ach_title'), subtitle: s(context, 'ach_subtitle'), value: '$unlocked/${badgeData.length}'),
           const SizedBox(height: 12),
-          _SectionCard(title: "Today's Challenge", icon: Icons.bolt_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _SectionCard(title: s(context, 'ach_today_challenge'), icon: Icons.bolt_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(challenge, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
             LinearProgressIndicator(value: challengeDone / target),
@@ -56,7 +56,7 @@ class AchievementsPage extends StatelessWidget {
             Text('$challengeDone / $target', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ])),
           const SizedBox(height: 12),
-          _SectionCard(title: 'Your Progress', icon: Icons.insights_outlined, child: GridView.count(
+          _SectionCard(title: s(context, 'ach_progress'), icon: Icons.insights_outlined, child: GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -64,14 +64,14 @@ class AchievementsPage extends StatelessWidget {
             mainAxisSpacing: 10,
             childAspectRatio: 1.7,
             children: [
-              _Metric('Cards', '$total', Icons.style_outlined),
-              _Metric('Reviews', '$reviews', Icons.school_outlined),
-              _Metric('Favorites', '$favorites', Icons.star_outline),
-              _Metric('Due', '$due', Icons.today_outlined),
+              _Metric(s(context, 'ach_cards'), '$total', Icons.style_outlined),
+              _Metric(s(context, 'ach_reviews'), '$reviews', Icons.school_outlined),
+              _Metric(s(context, 'ach_favorites'), '$favorites', Icons.star_outline),
+              _Metric(s(context, 'ach_due'), '$due', Icons.today_outlined),
             ],
           )),
           const SizedBox(height: 12),
-          _SectionCard(title: 'Badges', icon: Icons.workspace_premium_outlined, child: Column(children: [for (final badge in badgeData) _BadgeTile(badge: badge)])),
+          _SectionCard(title: s(context, 'ach_badges'), icon: Icons.workspace_premium_outlined, child: Column(children: [for (final badge in badgeData) _BadgeTile(badge: badge)])),
         ],
       ),
     );
