@@ -408,11 +408,16 @@
   }
   function renderFocus() {
     var out=pageHead(translate("focus_title"),translate("focus_sub"));
-    out+=panel(translate("select_duration"),'<div class="row wrap">'+btn("15 "+translate("focus_minutes"),"focus-duration",' data-minutes="15"',focusDuration===15?"button primary":"button")+' '+btn("25 "+translate("focus_minutes"),"focus-duration",' data-minutes="25"',focusDuration===25?"button primary":"button")+' '+btn("45 "+translate("focus_minutes"),"focus-duration",' data-minutes="45"',focusDuration===45?"button primary":"button")+'</div>');
-    out+=panel("",'<div id="focus-clock" style="font-size:48px;font-weight:800;text-align:center;padding:16px 0">'+duration(focusRemaining)+'</div><div class="row">'+btn(esc(focusRunning?translate("pause"):translate("start_focus")),"focus-toggle","","button primary")+' '+btn(esc(translate("reset")),"focus-reset")+'</div><label class="setting-row"><input type="checkbox" data-setting="musicEnabled"'+(state.settings.musicEnabled?" checked":"")+'><span class="setting-copy"><span class="setting-name">'+esc(translate("focus_music"))+'</span></span></label>'+
-      '<label class="field">'+esc(translate("music"))+'</label><select data-setting="musicTrack"><option value="lofi_night"'+(state.settings.musicTrack==="lofi_night"?" selected":"")+'>Lo-fi Night</option><option value="rainy_focus"'+(state.settings.musicTrack==="rainy_focus"?" selected":"")+'>Rainy Focus</option><option value="deep_focus"'+(state.settings.musicTrack==="deep_focus"?" selected":"")+'>Deep Focus</option></select>');
+    out+=panel(translate("select_duration"),'<div class="row wrap">'+
+      btn("15 "+translate("focus_minutes"),"focus-duration",' data-minutes="15"',focusDuration===15?"button primary":"button")+' '+
+      btn("30 "+translate("focus_minutes"),"focus-duration",' data-minutes="30"',focusDuration===30?"button primary":"button")+' '+
+      btn("45 "+translate("focus_minutes"),"focus-duration",' data-minutes="45"',focusDuration===45?"button primary":"button")+' '+
+      btn(esc(translate("custom_minutes")),"focus-custom","","button")+'</div>');
+    out+=panel("",'<div id="focus-clock" style="font-size:48px;font-weight:300;text-align:center;padding:16px 0">'+duration(focusRemaining)+'</div><div class="row">'+btn(esc(focusRunning?translate("pause"):translate("start_focus")),"focus-toggle","","button primary")+' '+btn(esc(translate("reset")),"focus-reset")+'</div><label class="setting-row"><input type="checkbox" data-setting="musicEnabled"'+(state.settings.musicEnabled?" checked":"")+'><span class="setting-copy"><span class="setting-name">'+esc(translate("focus_music"))+'</span></span></label>'+
+      '<label class="field">'+esc(translate("music"))+'</label><select data-setting="musicTrack"><option value="lofi_night"'+(state.settings.musicTrack==="lofi_night"?" selected":"")+' >Lo-fi Night</option><option value="rainy_focus"'+(state.settings.musicTrack==="rainy_focus"?" selected":"")+' >Rainy Focus</option><option value="deep_focus"'+(state.settings.musicTrack==="deep_focus"?" selected":"")+' >Deep Focus</option></select>');
     return out;
   }
+
   function settingRow(key, subkey, checked) {
     return '<label class="setting-row"><span class="setting-copy"><span class="setting-name">'+esc(translate(key))+'</span><span class="setting-sub">'+esc(subkey?translate(subkey):"")+'</span></span><input type="checkbox" data-setting="'+attr(key)+'"'+(checked?" checked":"")+'></label>';
   }
@@ -426,7 +431,7 @@
     for(var j=0;j<window.PARIN_THEMES.length;j++)mo+='<option value="'+j+'"'+(s.themeIndex===j?" selected":"")+'>'+esc(window.PARIN_THEMES[j].name)+'</option>';
     mo+='</select>'+settingRow("glass","glass_sub",s.glass)+'<label class="field">'+esc(translate("glass"))+' • '+Math.round(s.glassOpacity*100)+'%</label><input type="range" min="30" max="90" value="'+Math.round(s.glassOpacity*100)+'" data-setting="glassOpacity">';
     out+=panel(translate("appearance"),mo);
-    out+=panel(translate("study_preferences"),settingRow("animations",null,s.animations)+settingRow("haptics",null,s.haptics)+settingRow("auto_reveal",null,s.autoReveal)+settingRow("progress",null,s.showProgress)+settingRow("timer",null,s.showTimer)+settingRow("show_xp","show_xp_sub",s.showXp)+settingRow("confirm_exit","confirm_exit_sub",s.confirmExit)+settingRow("compact_settings","compact_settings_sub",s.compactSettings));
+    out+=panel(translate("study_preferences"),settingRow("animations",null,s.animations)+settingRow("haptics",null,s.haptics)+settingRow("auto_reveal",null,s.autoReveal)+(s.autoReveal?'<label class="field">'+esc(translate("auto_reveal_delay"))+' • '+(parseInt(s.autoRevealDelaySeconds,10)||3)+'s</label><input type="range" min="1" max="30" value="'+(parseInt(s.autoRevealDelaySeconds,10)||3)+'" data-setting="autoRevealDelaySeconds">':"")+settingRow("progress",null,s.showProgress)+settingRow("timer",null,s.showTimer)+settingRow("show_xp","show_xp_sub",s.showXp)+settingRow("confirm_exit","confirm_exit_sub",s.confirmExit)+settingRow("compact_settings","compact_settings_sub",s.compactSettings));
     out+=panel(translate("music"),settingRow("music_study",null,s.musicEnabled)+'<label class="field">'+esc(translate("music"))+'</label><select data-setting="musicTrack"><option value="lofi_night"'+(s.musicTrack==="lofi_night"?" selected":"")+'>Lo-fi Night</option><option value="rainy_focus"'+(s.musicTrack==="rainy_focus"?" selected":"")+'>Rainy Focus</option><option value="deep_focus"'+(s.musicTrack==="deep_focus"?" selected":"")+'>Deep Focus</option></select><label class="field">'+esc(translate("volume")||"Volume")+' • '+Math.round(s.musicVolume*100)+'%</label><input type="range" min="0" max="100" value="'+Math.round(s.musicVolume*100)+'" data-setting="musicVolume"><div class="row wrap" style="margin-top:9px">'+btn(esc(translate("music_btn")),"toggle-music")+'</div>');
     out+=panel(translate("daily_goal"),'<label class="field">'+esc(translate("daily_goal"))+' (5–100)</label><input type="number" min="5" max="100" value="'+s.dailyGoal+'" data-setting="dailyGoal">');
     out+=panel(translate("backup"),'<div class="row wrap">'+btn(esc(translate("export")),"export-backup","","button primary")+' '+btn(esc(translate("import")),"import-backup")+'</div>');
@@ -962,7 +967,7 @@
     var key=el.getAttribute("data-setting");if(!key)return;
     var val;
     if(el.type==="checkbox")val=el.checked;
-    else if(key==="themeIndex"||key==="dailyGoal")val=parseInt(el.value,10);
+    else if(key==="themeIndex"||key==="dailyGoal"||key==="autoRevealDelaySeconds")val=parseInt(el.value,10);
     else if(key==="glassOpacity")val=parseInt(el.value,10)/100;
     else if(key==="musicVolume")val=parseInt(el.value,10)/100;
     else val=el.value;
@@ -977,6 +982,7 @@
     if(key==="appearanceMode"&&["light","dark","aero","amoled"].indexOf(val)<0)return;
     if(key==="musicTrack"&&["lofi_night","rainy_focus","deep_focus"].indexOf(val)<0)return;
     state.settings[key]=val;
+    if(key==="haptics"&&val){try{Native.vibrate(80);}catch(e){}}
     if(key==="musicVolume"){try{Native.setMusicVolume(val);}catch(e){}}
     if(key==="musicEnabled"&&!val){try{Native.stopMusic();}catch(e){}musicPlaying=false;}
     if(key==="musicEnabled"&&val&&(view.page==="study"||view.page==="focus")){try{Native.playMusic(state.settings.musicTrack,state.settings.musicVolume);musicPlaying=true;}catch(e){}}
