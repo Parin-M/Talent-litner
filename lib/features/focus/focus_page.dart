@@ -21,7 +21,6 @@ class _FocusPageState extends State<FocusPage> {
   Timer? _timer;
   int _selectedMinutes = 30;
   int _remaining = 30 * 60;
-  int _customMinutes = 60;
   final TextEditingController _customController = TextEditingController(text: '60');
   final AudioPlayer _alarmPlayer = AudioPlayer();
   bool _running = false;
@@ -53,7 +52,6 @@ class _FocusPageState extends State<FocusPage> {
       return;
     }
     setState(() {
-      _customMinutes = value;
       _selectedMinutes = value;
       _remaining = value * 60;
     });
