@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/i18n/app_strings.dart';
 import '../../core/models/app_settings.dart';
 import '../../core/services/music_service.dart';
@@ -14,19 +15,73 @@ class FocusPage extends StatefulWidget {
 
 class _FocusPageState extends State<FocusPage> {
   Timer? _timer;
-  int _selectedMinutes = 25;
-  int _remaining = 25 * 60;
+  int _selectedMinutes = 30;
+  int _remaining = 30 * 60;
   bool _running = false;
   bool _musicPlaying = false;
 
   String s(String key) => AppStrings.t(context, key);
 
   void _selectMinutes(int minutes) {
-    if (_running) return;
+    if (_running || minutes < 1 || minutes > 600) return;
     setState(() {
       _selectedMinutes = minutes;
       _remaining = minutes * 60;
     });
+  }
+
+  Future<void> _chooseCustomDuration() async {
+    if (_running) return;
+    final controller = TextEditingController(
+      text: [15, 30, 45].contains(_selectedMinutes) ? '' : '$_selectedMinutes',
+    );
+    final value = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(s('custom_minutes')),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          maxLength: 3,
+          decoration: InputDecoration(
+            labelText: s('enter_minutes'),
+            helperText: s('minutes_range'),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(s('cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              final minutes = int.tryParse(controller.text.trim());
+              if (minutes != null && minutes >= 1 && minutes <= 600) {
+                Navigator.pop(dialogContext, minutes);
+              }
+            },
+            child: Text(s('save')),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value != null && mounted) _selectMinutes(value);
+  }
+
+  Future<void> _playAlarm() async {
+    // Android's platform alert sound is audible without requiring a bundled asset.
+    // Repeat it so the completion signal isn't missed, and also trigger vibration.
+    try {
+      HapticFeedback.vibrate();
+    } catch (_) {}
+    for (var i = 0; i < 3; i++) {
+      try {
+        await SystemSound.play(SystemSoundType.alert);
+      } catch (_) {}
+      if (i < 2) await Future<void>.delayed(const Duration(milliseconds: 450));
+    }
   }
 
   Future<void> _toggle() async {
@@ -38,13 +93,16 @@ class _FocusPageState extends State<FocusPage> {
     setState(() => _running = true);
     if (widget.settings.musicEnabled && !_musicPlaying) {
       try {
-        await MusicService.instance.play(widget.settings.musicTrack, volume: widget.settings.musicVolume);
+        await MusicService.instance.play(
+          widget.settings.musicTrack,
+          volume: widget.settings.musicVolume,
+        );
         if (mounted) setState(() => _musicPlaying = true);
       } catch (_) {}
     }
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
-      if (!mounted) return;
+      if (!mounted || !_running) return;
       if (_remaining <= 1) {
         _timer?.cancel();
         setState(() {
@@ -55,16 +113,21 @@ class _FocusPageState extends State<FocusPage> {
           await MusicService.instance.stop();
           if (mounted) setState(() => _musicPlaying = false);
         }
-        if (mounted) {
-          await showDialog<void>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(s('focus_done')),
-              content: Text('${_selectedMinutes} ${s('focus_minutes')}'),
-              actions: [FilledButton(onPressed: () => Navigator.pop(context), child: Text(s('great')))],
-            ),
-          );
-        }
+        await _playAlarm();
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(s('focus_done')),
+            content: Text('$_selectedMinutes ${s('focus_minutes')}'),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(s('great')),
+              ),
+            ],
+          ),
+        );
         return;
       }
       setState(() => _remaining--);
@@ -100,48 +163,87 @@ class _FocusPageState extends State<FocusPage> {
     return Scaffold(
       appBar: AppBar(title: Text(s('focus_mode'))),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 36),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(26),
-              child: Column(
-                children: [
-                  Icon(Icons.self_improvement_outlined, size: 54, color: scheme.primary),
-                  const SizedBox(height: 10),
-                  Text(s('focus_title'), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 4),
-                  Text(s('focus_sub'), textAlign: TextAlign.center, style: TextStyle(color: scheme.onSurfaceVariant)),
-                  const SizedBox(height: 28),
-                  Stack(alignment: Alignment.center, children: [
-                    SizedBox(width: 220, height: 220, child: CircularProgressIndicator(value: progress, strokeWidth: 12)),
-                    Text(_formatTime(), style: const TextStyle(fontSize: 46, fontWeight: FontWeight.w900)),
-                  ]),
-                  const SizedBox(height: 28),
-                  Text(s('select_duration'), style: const TextStyle(fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 12),
-                  SegmentedButton<int>(segments: [
-                    ButtonSegment(value: 15, label: Text(s('minutes_15'))),
-                    ButtonSegment(value: 25, label: Text(s('minutes_25'))),
-                    ButtonSegment(value: 45, label: Text(s('minutes_45'))),
-                  ], selected: {_selectedMinutes}, onSelectionChanged: (value) => _selectMinutes(value.first)),
-                  const SizedBox(height: 22),
-                  Row(children: [
-                    Expanded(child: FilledButton.icon(onPressed: _toggle, icon: Icon(_running ? Icons.pause : Icons.play_arrow), label: Text(_running ? s('pause') : s('start_focus')))),
-                    const SizedBox(width: 10),
-                    IconButton.filledTonal(onPressed: _reset, tooltip: s('reset'), icon: const Icon(Icons.restart_alt)),
-                  ]),
-                  if (widget.settings.musicEnabled) ...[
-                    const SizedBox(height: 10),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(_musicPlaying ? Icons.music_note : Icons.music_off),
-                      title: Text(s('focus_music')),
-                      trailing: Switch(value: _musicPlaying, onChanged: (_) => _toggleMusic()),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: scheme.surface,
+              border: Border.all(color: scheme.outlineVariant),
+              borderRadius: BorderRadius.zero,
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  color: scheme.primary,
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.self_improvement_outlined, size: 30, color: Colors.white),
+                ),
+                const SizedBox(height: 10),
+                Text(s('focus_title'), style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w300)),
+                const SizedBox(height: 4),
+                Text(s('focus_sub'), textAlign: TextAlign.center, style: TextStyle(color: scheme.onSurfaceVariant)),
+                const SizedBox(height: 22),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(width: 190, height: 190, child: CircularProgressIndicator(value: progress, strokeWidth: 8)),
+                    Text(_formatTime(), style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w300)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(s('select_duration'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final minutes in [15, 30, 45])
+                      ChoiceChip(
+                        label: Text('$minutes ${s('focus_minutes')}'),
+                        selected: _selectedMinutes == minutes,
+                        onSelected: _running ? null : (_) => _selectMinutes(minutes),
+                      ),
+                    OutlinedButton.icon(
+                      onPressed: _running ? null : _chooseCustomDuration,
+                      icon: const Icon(Icons.edit_outlined),
+                      label: Text(
+                        [15, 30, 45].contains(_selectedMinutes)
+                            ? s('custom_minutes')
+                            : '$_selectedMinutes ${s('focus_minutes')}',
+                      ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _toggle,
+                        icon: Icon(_running ? Icons.pause : Icons.play_arrow),
+                        label: Text(_running ? s('pause') : s('start_focus')),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    IconButton.filledTonal(onPressed: _reset, tooltip: s('reset'), icon: const Icon(Icons.restart_alt)),
+                  ],
+                ),
+                if (widget.settings.musicEnabled) ...[
+                  const SizedBox(height: 10),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(_musicPlaying ? Icons.music_note : Icons.music_off),
+                    title: Text(s('focus_music')),
+                    trailing: Switch(value: _musicPlaying, onChanged: (_) => _toggleMusic()),
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
         ],
