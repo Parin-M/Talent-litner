@@ -57,7 +57,7 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
     if (!widget.settings.haptics) return;
     try {
       if (await Vibration.hasVibrator() == true) {
-        await Vibration.vibrate(duration: heavy ? 100 : 35);
+        await Vibration.vibrate(duration: heavy ? 190 : 90);
         return;
       }
     } catch (_) {}
@@ -142,19 +142,19 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
           children: [
             Expanded(
               child: _Rate(
-                label: s('didnt_know'),
-                icon: Icons.close,
-                color: Theme.of(context).colorScheme.error,
-                onTap: () => _rate(0),
+                label: s('knew'),
+                icon: Icons.check,
+                color: const Color(0xFF2E7D32),
+                onTap: () => _rate(2),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _Rate(
-                label: s('knew'),
-                icon: Icons.check,
-                color: const Color(0xFF2E7D32),
-                onTap: () => _rate(2),
+                label: s('didnt_know'),
+                icon: Icons.close,
+                color: Theme.of(context).colorScheme.error,
+                onTap: () => _rate(0),
               ),
             ),
           ],
