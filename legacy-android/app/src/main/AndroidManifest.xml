@@ -14,7 +14,7 @@
         android:hardwareAccelerated="true">
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.parin.parin_litner.MainActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:screenOrientation="unspecified">
             <intent-filter>
