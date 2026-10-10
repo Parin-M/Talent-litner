@@ -21,42 +21,48 @@ class AchievementsPage extends StatelessWidget {
     final due = decks.fold<int>(0, (sum, d) => sum + dueCount(d));
     final boxes = decks.fold<int>(0, (sum, d) => sum + d.boxes.length);
     final badgeData = <_Badge>[
-      _Badge('First Steps', 'Create your first flashcard', Icons.rocket_launch_outlined, total, 1),
-      _Badge('Card Builder', 'Build a collection of 25 cards', Icons.style_outlined, total, 25),
-      _Badge('Reviewer', 'Complete 50 reviews', Icons.school_outlined, reviews, 50),
-      _Badge('Dedicated', 'Complete 200 reviews', Icons.local_fire_department_outlined, reviews, 200),
-      _Badge('Collector', 'Favorite 10 cards', Icons.star_outline, favorites, 10),
-      _Badge('Deck Master', 'Create 5 learning decks', Icons.layers_outlined, decks.length, 5),
-      _Badge('Box Explorer', 'Use 10 Leitner boxes', Icons.grid_view_rounded, boxes, 10),
-      _Badge('Centurion', 'Reach 1000 total reviews', Icons.workspace_premium_outlined, reviews, 1000),
+      _Badge(s(context, 'ac_first_steps'), s(context, 'ac_first_steps_desc'), Icons.rocket_launch_outlined, total, 1),
+      _Badge(s(context, 'ac_card_builder'), s(context, 'ac_card_builder_desc'), Icons.style_outlined, total, 25),
+      _Badge(s(context, 'ac_reviewer'), s(context, 'ac_reviewer_desc'), Icons.school_outlined, reviews, 50),
+      _Badge(s(context, 'ac_dedicated'), s(context, 'ac_dedicated_desc'), Icons.local_fire_department_outlined, reviews, 200),
+      _Badge(s(context, 'ac_collector'), s(context, 'ac_collector_desc'), Icons.star_outline, favorites, 10),
+      _Badge(s(context, 'ac_deck_master'), s(context, 'ac_deck_master_desc'), Icons.layers_outlined, decks.length, 5),
+      _Badge(s(context, 'ac_box_explorer'), s(context, 'ac_box_explorer_desc'), Icons.grid_view_rounded, boxes, 10),
+      _Badge(s(context, 'ac_centurion'), s(context, 'ac_centurion_desc'), Icons.workspace_premium_outlined, reviews, 1000),
     ];
     final unlocked = badgeData.where((b) => b.done).length;
     final target = max(1, settings.dailyGoal);
-    final challengeDone = min(due, target);
-    final day = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    final now = DateTime.now();
+    final todayKey = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final todayReviews = settings.reviewDays.where((key) => key == todayKey).length;
+    final day = now.difference(DateTime(now.year, 1, 1)).inDays;
+    final challengeIndex = day % 4;
     final challenge = <String>[
-      'Review $target cards today',
-      'Favorite 3 cards you want to revisit',
-      'Complete 10 Good ratings',
-      'Create 2 new cards',
-    ][day % 4];
+      s(context, 'ac_review_daily').replaceAll('{count}', '$target'),
+      s(context, 'ac_favorite_three'),
+      s(context, 'ac_good_ten'),
+      s(context, 'ac_create_two'),
+    ][challengeIndex];
+    final challengeTarget = <int>[target, 3, 10, 2][challengeIndex];
+    final challengeValue = <int>[todayReviews, favorites, settings.dailyGoodRatings, settings.dailyCardsCreated][challengeIndex];
+    final challengeDone = min(challengeValue, challengeTarget);
 
     return Scaffold(
       appBar: AppBar(title: Text(s(context, 'extra'))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
-          _HeroCard(title: 'Achievement Center', subtitle: 'Turn every study session into progress.', value: '$unlocked/${badgeData.length}'),
+          _HeroCard(title: s(context, 'achievement_center'), subtitle: s(context, 'ac_tagline'), value: '$unlocked/${badgeData.length}'),
           const SizedBox(height: 12),
-          _SectionCard(title: "Today's Challenge", icon: Icons.bolt_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _SectionCard(title: s(context, 'ac_challenge'), icon: Icons.bolt_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(challenge, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
-            LinearProgressIndicator(value: challengeDone / target),
+            LinearProgressIndicator(value: challengeDone / challengeTarget),
             const SizedBox(height: 8),
-            Text('$challengeDone / $target', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text('$challengeDone / $challengeTarget', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ])),
           const SizedBox(height: 12),
-          _SectionCard(title: 'Your Progress', icon: Icons.insights_outlined, child: GridView.count(
+          _SectionCard(title: s(context, 'ac_progress'), icon: Icons.insights_outlined, child: GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -64,14 +70,14 @@ class AchievementsPage extends StatelessWidget {
             mainAxisSpacing: 10,
             childAspectRatio: 1.7,
             children: [
-              _Metric('Cards', '$total', Icons.style_outlined),
-              _Metric('Reviews', '$reviews', Icons.school_outlined),
-              _Metric('Favorites', '$favorites', Icons.star_outline),
-              _Metric('Due', '$due', Icons.today_outlined),
+              _Metric(s(context, 'cards'), '$total', Icons.style_outlined),
+              _Metric(s(context, 'reviews'), '$reviews', Icons.school_outlined),
+              _Metric(s(context, 'favorites'), '$favorites', Icons.star_outline),
+              _Metric(s(context, 'cards_ready'), '$due', Icons.today_outlined),
             ],
           )),
           const SizedBox(height: 12),
-          _SectionCard(title: 'Badges', icon: Icons.workspace_premium_outlined, child: Column(children: [for (final badge in badgeData) _BadgeTile(badge: badge)])),
+          _SectionCard(title: s(context, 'ac_badges'), icon: Icons.workspace_premium_outlined, child: Column(children: [for (final badge in badgeData) _BadgeTile(badge: badge)])),
         ],
       ),
     );
