@@ -276,8 +276,8 @@
     var due=0,fav=0;for(var i=0;i<d.cards.length;i++){if(isDue(d.cards[i]))due++;if(d.cards[i].favorite)fav++;}
     var out=pageHead(d.name,d.description);
     out+='<div class="grid">'+metric(d.cards.length,translate("cards"))+metric(due,translate("cards_ready"))+metric(fav,translate("favorite_only"))+'</div>';
-    out+=panel("",'<div class="row wrap">'+btn(esc(translate("study")),"study-deck",' data-id="'+attr(d.id)+'',"button primary")+' '+btn(esc(translate("new_card")),"new-card",' data-deck="'+attr(d.id)+'')+' '+btn(esc(translate("boxes")),"manage-boxes",' data-id="'+attr(d.id)+'')+'</div>'+
-      '<div class="row wrap" style="margin-top:8px">'+btn(esc(translate("rename")),"edit-deck",' data-id="'+attr(d.id)+'')+' '+btn(esc(translate("delete")),"delete-deck",' data-id="'+attr(d.id)+'',"button danger")+'</div>');
+    out+=panel("",'<div class="row wrap">'+btn(esc(translate("study")),"study-deck",' data-id="'+attr(d.id)+'"',"button primary")+' '+btn(esc(translate("new_card")),"new-card",' data-deck="'+attr(d.id)+'"')+' '+btn(esc(translate("boxes")),"manage-boxes",' data-id="'+attr(d.id)+'"')+'</div>'+
+      '<div class="row wrap" style="margin-top:8px">'+btn(esc(translate("rename")),"edit-deck",' data-id="'+attr(d.id)+'"')+' '+btn(esc(translate("delete")),"delete-deck",' data-id="'+attr(d.id)+'"',"button danger")+'</div>');
     out+='<label class="field">'+esc(translate("search"))+'</label><input type="search" class="search-box" placeholder="'+attr(translate("search"))+'" value="'+attr(searchTerm)+'" data-search="cards">';
     if(!d.cards.length) out+=panel("",'<div class="empty-state">'+esc(translate("no_cards"))+'</div>');
     else {
