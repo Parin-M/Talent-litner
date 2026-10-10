@@ -1,0 +1,29 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.parin.parin_litner'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.parin.parin_litner'
+        minSdk 14
+        targetSdk 28
+        versionCode 22
+        versionName '7.1.0-android4'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    buildTypes {
+        release {
+            // CI replaces this with an ephemeral release key. Use a stable signing key for public releases.
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+        }
+    }
+}
