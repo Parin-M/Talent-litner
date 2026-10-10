@@ -163,9 +163,9 @@ class _CardEditorState extends State<CardEditor> {
               decoration: InputDecoration(labelText: s('card_difficulty')),
               items: [
                 DropdownMenuItem(value: 'auto', child: Text(s('difficulty_auto'))),
-                DropdownMenuItem(value: 'easy', child: Text(s('difficulty_easy'))),
+                DropdownMenuItem(value: 'easy', child: Text(s('easy'))),
                 DropdownMenuItem(value: 'medium', child: Text(s('difficulty_medium'))),
-                DropdownMenuItem(value: 'hard', child: Text(s('difficulty_hard'))),
+                DropdownMenuItem(value: 'hard', child: Text(s('hard'))),
               ],
               onChanged: (value) => setState(() => difficulty = value ?? 'auto'),
             ),
