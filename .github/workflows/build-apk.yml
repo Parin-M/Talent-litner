@@ -304,7 +304,21 @@ jobs:
           grep -q 'android:minSdkVersion="14"' legacy-android/app/src/main/AndroidManifest.xml
 
       - name: Build native legacy APK
-        run: gradle -p legacy-android --no-daemon clean assembleRelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if gradle -p legacy-android --no-daemon clean assembleRelease; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              delay=$((attempt * 20))
+              echo "Legacy Gradle build failed (attempt $attempt); retrying in ${delay}s. This can recover from Maven Central rate limits."
+              sleep "$delay"
+            fi
+          done
+          echo "Legacy Gradle build failed after three attempts." >&2
+          exit 1
 
       - name: Verify APK package and minimum SDK
         run: |
