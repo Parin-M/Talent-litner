@@ -246,3 +246,83 @@ jobs:
           path: build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30
+
+  build-legacy-android4:
+    name: Build native Android 4.0 compatibility APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java for Android SDK tools
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android 4 compatible build SDK
+        run: sdkmanager --install "platforms;android-28" "build-tools;28.0.3"
+
+      - name: Setup Java 8 for the legacy Gradle toolchain
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Setup legacy Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '4.10.3'
+
+      - name: Validate legacy web assets
+        run: |
+          node --check legacy-android/app/src/main/assets/app.js
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('legacy-android/app/src/main/assets')
+          translations = json.loads((root / 'translations.json').read_text())
+          themes = json.loads((root / 'themes.json').read_text())
+          assert len(translations) == 21, f'Expected 21 languages, got {len(translations)}'
+          assert len(themes) == 50, f'Expected 50 themes, got {len(themes)}'
+          assert all('app.js' in (root / 'index.html').read_text() for _ in [0])
+          print(f'Legacy assets verified: {len(translations)} languages, {len(themes)} themes')
+          PY
+
+      - name: Verify Android 4.0 minimum SDK
+        run: |
+          grep -q 'minSdkVersion 14' legacy-android/app/build.gradle
+          grep -q 'android:minSdkVersion="14"' legacy-android/app/src/main/AndroidManifest.xml
+
+      - name: Build native legacy APK
+        run: gradle -p legacy-android --no-daemon clean assembleRelease
+
+      - name: Verify APK package and minimum SDK
+        run: |
+          set -euo pipefail
+          APK=legacy-android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/28.0.3/aapt" dump badging "$APK" | grep -q "sdkVersion:'14'"
+          "$ANDROID_HOME/build-tools/28.0.3/aapt" dump badging "$APK" | grep -q "package: name='com.parin.parin_litner.legacy'"
+          python3 - "$APK" <<'PY'
+          import sys, zipfile
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              bad = z.testzip()
+              if bad: raise SystemExit('Corrupt APK entry: ' + bad)
+              names = set(z.namelist())
+              for asset in ('assets/index.html','assets/app.js','assets/i18n.js','assets/palettes.js'):
+                  if asset not in names: raise SystemExit('Missing legacy asset: ' + asset)
+              if 'classes.dex' not in names: raise SystemExit('APK missing classes.dex')
+          print('Android 4 APK integrity check: OK')
+          PY
+
+      - name: Upload Android 4 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: parin-litner-android4-legacy-apk
+          path: legacy-android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
