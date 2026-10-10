@@ -10,7 +10,7 @@
   var editDeckId = null, editCardDeckId = null, editCardId = null, imageTarget = "front";
   var session = null, studyInterval = null, focusInterval = null, focusRunning = false;
   var focusDuration = 25, focusRemaining = 25 * 60, focusStartedAt = 0, musicPlaying = false;
-  var pendingImport = null, downloadedBackupName = null, searchTerm = "";
+  var pendingImport = null, downloadedBackupName = null, searchTerm = "", smartMixSize = 20;
   var languages = [
     ["fa","فارسی"],["en","English"],["de","Deutsch"],["de-CH","Deutsch (Schweiz)"],["de-AT","Deutsch (Österreich)"],
     ["nl","Nederlands"],["es","Español"],["pt","Português"],["fr","Français"],["da","Dansk"],["no","Norsk"],
@@ -454,10 +454,37 @@
   }
   function renderPowerCenter() {
     var st=stats(),out=pageHead(translate("extra"),translate("smart_mix_sub"));
-    out+=panel(translate("today"),'<div class="grid">'+metric(st.due,translate("cards_ready"))+metric(state.settings.dailyGoal,translate("daily_goal"))+metric(state.xp,"XP")+'</div><div style="margin-top:10px">'+progressBar(Math.min(1,Math.max(0,state.settings.dailyGoal-st.due)/state.settings.dailyGoal))+'</div>');
-    out+=panel(translate("daily_reward")||"Daily reward",'<p class="muted">'+esc(state.lastRewardDay===dateKey(new Date())?translate("claimed_today")||"Reward already claimed today":translate("daily_reward_sub")||"Claim a small daily XP reward and keep your streak going.")+'</p>'+btn(esc(translate("claim_reward")||"Claim reward"),"claim-reward","","button primary"));
-    out+=panel(translate("smart_mix"),'<p class="muted">'+esc(translate("smart_mix_sub"))+'</p>'+btn(esc(translate("smart_mix")),"smart-mix","","button primary"));
-    out+=panel(translate("achievement_center"),btn(esc(translate("achievement_center")),"goto",' data-page="achievements"'));
+    var level=1+Math.floor(state.xp/250),levelXp=state.xp%250;
+    var hard=0,medium=0,fresh=0,easy=0;
+    for(var i=0;i<st.cards.length;i++){
+      var c=st.cards[i].card;
+      if((c.lapses||0)>=3||((c.reviews||0)>=4&&(c.box||0)<=1))hard++;
+      else if((c.reviews||0)<=1)fresh++;
+      else if((c.box||0)>=3&&!(c.lapses||0))easy++;
+      else medium++;
+    }
+    var today=dateKey(new Date()),reward=50+Math.min(state.streak*5,100);
+    out+=panel(translate("today"),'<div class="grid">'+metric(st.due,translate("cards_ready"))+metric(state.settings.dailyGoal,translate("daily_goal"))+metric(state.xp,"XP")+metric("Lv "+level,"Level")+'</div><div style="margin-top:10px">'+progressBar(levelXp/250)+'</div><p class="muted">'+levelXp+' / 250 XP • '+esc(translate("week_reviews")||"Reviews this week")+': '+weekReviews()+'</p>');
+    out+=panel(translate("daily_reward")||"Daily Reward",'<p class="muted">'+esc(state.lastRewardDay===today?translate("claimed_today")||"Reward already claimed today":translate("daily_reward_sub")||"Claim a small daily XP reward and keep your streak going.")+'</p><div class="row between"><strong>+'+reward+' XP</strong>'+btn(esc(translate("claim_reward")||"Claim reward"),"claim-reward","","button primary")+'</div>');
+    var mix='<p class="muted">'+esc(translate("smart_mix_sub"))+'</p><label class="field" for="smart-mix-size">Cards in study mix</label><select id="smart-mix-size"><option value="10"'+(smartMixSize===10?" selected":"")+'>10 cards</option><option value="20"'+(smartMixSize===20?" selected":"")+'>20 cards</option><option value="30"'+(smartMixSize===30?" selected":"")+'>30 cards</option></select><div style="margin-top:10px">'+btn(esc(translate("smart_mix")),"smart-mix","","button primary")+'</div>';
+    out+=panel(translate("smart_mix"),mix);
+    var dots='<div class="row wrap">';
+    for(var dayIndex=27;dayIndex>=0;dayIndex--){
+      var day=new Date();day.setHours(0,0,0,0);day.setDate(day.getDate()-dayIndex);
+      var key=dateKey(day),done=state.reviewDays.indexOf(key)>=0;
+      dots+='<span title="'+attr(key)+'" style="display:inline-block;width:19px;height:19px;border-radius:4px;background:'+(done?primaryColor():'rgba(120,130,150,.18)')+';border:1px solid rgba(120,130,150,.18)"></span>';
+    }
+    dots+='</div><p class="muted">'+state.streak+' day streak • '+uniqueDays()+' study days recorded</p>';
+    out+=panel("Streak Calendar",dots);
+    out+=panel("Weekly Challenge",'<div class="row between"><strong>Complete 40 reviews this week</strong><span class="muted">'+Math.min(weekReviews(),40)+' / 40</span></div><div style="margin-top:10px">'+progressBar(Math.min(1,weekReviews()/40))+'</div>');
+    out+=panel("Smart Difficulty",'<div class="grid">'+metric(hard,"Hard")+metric(medium,"Medium")+metric(fresh,"New")+metric(easy,"Easy")+'</div>');
+    var levelRows=[[1,"Getting Started"],[3,"Consistent Learner"],[5,"Focus Master"],[10,"Parin Pro"]],rewards='';
+    for(var ri=0;ri<levelRows.length;ri++){
+      var unlocked=level>=levelRows[ri][0];
+      rewards+='<div class="setting-row"><span class="setting-copy"><span class="setting-name">'+(unlocked?"✓ ":"🔒 ")+levelRows[ri][1]+'</span></span><span class="badge">Lv '+levelRows[ri][0]+'</span></div>';
+    }
+    out+=panel("Level Rewards",rewards);
+    out+=panel(translate("achievement_center"),'<div class="row wrap">'+btn(esc(translate("achievement_center")),"goto",' data-page="achievements"',"button primary")+'</div>');
     return out;
   }
   function renderAbout() {
@@ -794,10 +821,19 @@
     state.lastRewardDay=today;state.xp+=50+Math.min(state.streak*5,100);persist();render();notify("+ XP");
   }
   function smartMix() {
-    var st=stats(),items=[];
-    for(var i=0;i<st.cards.length;i++)if(isDue(st.cards[i].card))items.push({deckId:st.cards[i].deck.id,cardId:st.cards[i].card.id,score:(st.cards[i].card.lapses||0)*3-(st.cards[i].card.reviews||0)*.05});
-    items.sort(function(a,b){return b.score-a.score;});
-    items=items.slice(0,state.settings.dailyGoal);
+    if(!state.decks.length){notify(translate("no_cards"));return;}
+    var sorted=state.decks.slice(0).sort(function(a,b){return b.cards.length-a.cards.length;});
+    var deck=sorted[0],cards=deck.cards.slice(0),now=new Date().getTime();
+    function score(c){
+      var value=0;
+      if(isDue(c))value+=1000;
+      value+=(c.lapses||0)*80;
+      value+=Math.max(0,5-(c.box||0))*20;
+      value+=Math.min(c.reviews||0,10);
+      return value;
+    }
+    cards.sort(function(a,b){return score(b)-score(a);});
+    var items=cards.slice(0,smartMixSize).map(function(c){return {deckId:deck.id,cardId:c.id};});
     startStudy(items,translate("smart_mix"));
   }
   function saveDeckForm(form) {
@@ -875,6 +911,12 @@
     CONTENT.addEventListener("submit",function(e){e.preventDefault();handleSubmit(e.target);});
     CONTENT.addEventListener("change",function(e){
       var el=e.target;
+      if(el&&el.id==="smart-mix-size"){
+        smartMixSize=parseInt(el.value,10)||20;
+        if([10,20,30].indexOf(smartMixSize)<0)smartMixSize=20;
+        render();
+        return;
+      }
       if(el&&el.getAttribute&&el.getAttribute("data-setting"))changeSetting(el);
     });
     CONTENT.addEventListener("input",function(e){
