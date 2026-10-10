@@ -26,6 +26,7 @@ import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -114,6 +115,15 @@ public class MainActivity extends Activity {
     private boolean focusRunning = false;
     private MediaPlayer player;
     private TextView focusTimerView;
+    private TextView studyTimerView;
+    private final Runnable studyTick = new Runnable() {
+        @Override public void run() {
+            if (studyTimerView != null && studyItems.size() > 0 && !studyFinished) {
+                studyTimerView.setText(t("timer") + " • " + formatDuration((System.currentTimeMillis()-studyStartedAt)/1000));
+                handler.postDelayed(this, 1000);
+            }
+        }
+    };
 
     private static class StudyItem {
         JSONObject deck;
@@ -359,6 +369,7 @@ public class MainActivity extends Activity {
         body = vertical(); body.setPadding(dp(14), dp(14), dp(14), dp(24)); scroll.addView(body);
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
         setContentView(root);
+        if (animations) { AlphaAnimation a = new AlphaAnimation(0.0f, 1.0f); a.setDuration(160); root.startAnimation(a); }
     }
 
     private JSONObject newDeckObject(String name, String description) {
@@ -654,7 +665,15 @@ public class MainActivity extends Activity {
             addButton(body,t("good"),()->rateCard(2));
             addSecondaryButton(body,t("easy"),()->rateCard(3));
         }
-        if(showTimer)body.addView(label(t("timer")+" • "+formatDuration((System.currentTimeMillis()-studyStartedAt)/1000),13,false));
+        if(showTimer) {
+            studyTimerView=label(t("timer")+" • "+formatDuration((System.currentTimeMillis()-studyStartedAt)/1000),13,false);
+            body.addView(studyTimerView);
+            handler.removeCallbacks(studyTick);
+            handler.postDelayed(studyTick,1000);
+        } else {
+            studyTimerView=null;
+            handler.removeCallbacks(studyTick);
+        }
         addSecondaryButton(body,t("confirm_exit"),()->leaveStudy());
     }
 
@@ -695,14 +714,15 @@ public class MainActivity extends Activity {
     private String dayKey(Date date) { return new SimpleDateFormat("yyyy-MM-dd",Locale.US).format(date); }
     private String formatDuration(long seconds) { return String.format(Locale.US,"%02d:%02d",seconds/60,seconds%60); }
     private void showStudyComplete() {
+        handler.removeCallbacks(studyTick); studyTimerView=null;
         long seconds=(System.currentTimeMillis()-studyStartedAt)/1000;
         new AlertDialog.Builder(this).setTitle(t("done")).setMessage(studyItems.size()+" "+t("cards_count")+"\n"+formatDuration(seconds))
           .setPositiveButton(t("great"),(d,w)->{studyFinished=true;showHome();}).setOnCancelListener(d->{studyFinished=true;showHome();}).show();
     }
     private void leaveStudy() {
-        if(!confirmExit||studyFinished){studyFinished=true;showHome();return;}
+        if(!confirmExit||studyFinished){studyFinished=true;handler.removeCallbacks(studyTick);studyTimerView=null;showHome();return;}
         new AlertDialog.Builder(this).setTitle(t("confirm_exit")).setMessage(t("confirm_exit_sub"))
-          .setNegativeButton(t("cancel"),null).setPositiveButton(t("close"),(d,w)->{studyFinished=true;showHome();}).show();
+          .setNegativeButton(t("cancel"),null).setPositiveButton(t("close"),(d,w)->{studyFinished=true;handler.removeCallbacks(studyTick);studyTimerView=null;showHome();}).show();
     }
     private void vibrate() {
         if(!haptics)return;
@@ -747,7 +767,7 @@ public class MainActivity extends Activity {
     }
 
     private void addCheck(LinearLayout into, final String key, String titleKey, boolean value) {
-        CheckBox c=new CheckBox(this); c.setText(t(titleKey));c.setTextColor(textColor());c.setTextSize(15);c.setChecked(value);c.setPadding(dp(5),dp(5),dp(5),dp(5));
+        CheckBox c=new CheckBox(this); c.setText(t(titleKey));c.setTextColor(textColor());c.setTextSize(15);c.setChecked(value);int pad=compactSettings?1:5;c.setPadding(dp(5),dp(pad),dp(5),dp(pad));
         c.setOnCheckedChangeListener((button,checked)->{
             if("glass".equals(key))glass=checked;
             else if("animations".equals(key))animations=checked;
@@ -791,7 +811,7 @@ public class MainActivity extends Activity {
     }
 
     private void showFocus() {
-        page(t("focus_mode"),false,()->{stopMusic();showHome();});
+        page(t("focus_mode"),false,()->{focusRunning=false;if(focusTick!=null)handler.removeCallbacks(focusTick);stopMusic();showHome();});
         body.addView(label(t("focus_sub"),15,false));
         final TextView timer=label(formatDuration(focusRemainingSeconds),42,true);focusTimerView=timer;timer.setGravity(Gravity.CENTER);body.addView(timer,lp(-1,110));
         LinearLayout row=horizontal();
@@ -815,7 +835,8 @@ public class MainActivity extends Activity {
         if(focusTick!=null)handler.removeCallbacks(focusTick);
         focusTick=new Runnable(){public void run(){
             if(!focusRunning)return;
-            focusRemainingSeconds=Math.max(0,focusRemainingSeconds-1);timer.setText(formatDuration(focusRemainingSeconds));
+            focusRemainingSeconds=Math.max(0,focusRemainingSeconds-1);
+            if(focusTimerView!=null)focusTimerView.setText(formatDuration(focusRemainingSeconds));
             if(focusRemainingSeconds==0){focusRunning=false;stopMusic();new AlertDialog.Builder(MainActivity.this).setTitle(t("done")).setMessage(t("focus_mode")).setPositiveButton(t("great"),null).show();return;}
             handler.postDelayed(this,1000);
         }};
@@ -1004,6 +1025,7 @@ public class MainActivity extends Activity {
     @Override protected void onDestroy() {
         super.onDestroy();
         if(focusTick!=null)handler.removeCallbacks(focusTick);
+        handler.removeCallbacks(studyTick);
         stopMusic();
     }
 }
