@@ -451,39 +451,39 @@
   }
   function renderAchievements() {
     var st=stats(),items=[
-      ["First Steps","Create your first flashcard",st.total,1],
-      ["Card Builder","Build a collection of 25 cards",st.total,25],
-      ["Reviewer","Complete 50 reviews",st.reviews,50],
-      ["Dedicated","Complete 200 reviews",st.reviews,200],
-      ["Collector","Favorite 10 cards",st.favorites,10],
-      ["Deck Master","Create 5 learning decks",state.decks.length,5],
-      ["Box Explorer","Use 10 Leitner boxes",st.boxes,10],
-      ["Centurion","Reach 1000 total reviews",st.reviews,1000]
+      ["ac_first_steps","ac_first_steps_desc",st.total,1],
+      ["ac_card_builder","ac_card_builder_desc",st.total,25],
+      ["ac_reviewer","ac_reviewer_desc",st.reviews,50],
+      ["ac_dedicated","ac_dedicated_desc",st.reviews,200],
+      ["ac_collector","ac_collector_desc",st.favorites,10],
+      ["ac_deck_master","ac_deck_master_desc",state.decks.length,5],
+      ["ac_box_explorer","ac_box_explorer_desc",st.boxes,10],
+      ["ac_centurion","ac_centurion_desc",st.reviews,1000]
     ];
     var unlocked=items.filter(function(b){return b[2]>=b[3];}).length;
     var now=new Date(),today=dateKey(now),yearStart=new Date(now.getFullYear(),0,1);
     var challengeIndex=Math.floor((now.getTime()-yearStart.getTime())/86400000)%4,todayReviews=0;
     for(var i=0;i<state.reviewDays.length;i++)if(state.reviewDays[i]===today)todayReviews++;
     var challenges=[
-      {title:"Review "+state.settings.dailyGoal+" cards today",value:todayReviews,target:state.settings.dailyGoal},
-      {title:"Favorite 3 cards you want to revisit",value:st.favorites,target:3},
-      {title:"Complete 10 Good ratings",value:state.dailyGoodRatingsDay===today?state.dailyGoodRatings:0,target:10},
-      {title:"Create 2 new cards",value:state.dailyCardsCreatedDay===today?state.dailyCardsCreated:0,target:2}
+      {title:translate("ac_review_daily").replace("{count}",state.settings.dailyGoal),value:todayReviews,target:state.settings.dailyGoal},
+      {title:translate("ac_favorite_three"),value:st.favorites,target:3},
+      {title:translate("ac_good_ten"),value:state.dailyGoodRatingsDay===today?state.dailyGoodRatings:0,target:10},
+      {title:translate("ac_create_two"),value:state.dailyCardsCreatedDay===today?state.dailyCardsCreated:0,target:2}
     ];
     var challenge=challenges[challengeIndex],challengeValue=Math.min(challenge.value,challenge.target);
-    var out=pageHead(translate("achievement_center"),"Turn every study session into progress.");
-    out+=panel("Achievement Center",'<div class="row between"><strong>'+unlocked+' / '+items.length+' badges unlocked</strong><span class="badge">'+state.streak+' day streak</span></div>'+progressBar(unlocked/Math.max(1,items.length)));
-    out+=panel("Today's Challenge",'<div class="panel-title">'+esc(challenge.title)+'</div><div class="row between" style="margin-top:8px"><span>'+challengeValue+' / '+challenge.target+'</span><span class="muted">'+Math.round(challengeValue/Math.max(1,challenge.target)*100)+'%</span></div>'+progressBar(challengeValue/Math.max(1,challenge.target)));
-    out+=panel("Your Progress",'<div class="grid">'+metric(st.total,"Cards")+metric(st.reviews,"Reviews")+metric(st.favorites,"Favorites")+metric(st.due,"Due")+'</div>');
-    out+='<h2 class="section-title">Badges</h2>';
+    var out=pageHead(translate("achievement_center"),translate("ac_tagline"));
+    out+=panel(translate("achievement_center"),'<div class="row between"><strong>'+unlocked+' / '+items.length+' '+esc(translate("ac_unlocked"))+'</strong><span class="badge">'+state.streak+' '+esc(translate("pc_day_streak"))+'</span></div>'+progressBar(unlocked/Math.max(1,items.length)));
+    out+=panel(translate("ac_challenge"),'<div class="panel-title">'+esc(challenge.title)+'</div><div class="row between" style="margin-top:8px"><span>'+challengeValue+' / '+challenge.target+'</span><span class="muted">'+Math.round(challengeValue/Math.max(1,challenge.target)*100)+'%</span></div>'+progressBar(challengeValue/Math.max(1,challenge.target)));
+    out+=panel(translate("ac_progress"),'<div class="grid">'+metric(st.total,translate("cards"))+metric(st.reviews,translate("ac_reviews"))+metric(st.favorites,translate("ac_favorites"))+metric(st.due,translate("cards_ready"))+'</div>');
+    out+='<h2 class="section-title">'+esc(translate("ac_badges"))+'</h2>';
     for(var j=0;j<items.length;j++){
       var b=items[j],done=b[2]>=b[3],value=Math.min(b[2],b[3]);
-      out+=panel((done?"✓ ":"○ ")+b[0],'<div class="muted">'+esc(b[1])+'</div><div class="row between" style="margin-top:8px"><span>'+value+' / '+b[3]+'</span><span class="badge">'+(done?"Unlocked":"In progress")+'</span></div>'+progressBar(value/Math.max(1,b[3]),done?"#43a047":primaryColor()));
+      out+=panel((done?"✓ ":"○ ")+translate(b[0]),'<div class="muted">'+esc(translate(b[1]))+'</div><div class="row between" style="margin-top:8px"><span>'+value+' / '+b[3]+'</span><span class="badge">'+esc(translate(done?"ac_unlocked":"ac_in_progress"))+'</span></div>'+progressBar(value/Math.max(1,b[3]),done?"#2e7d32":primaryColor()));
     }
     return out;
   }
   function renderPowerCenter() {
-    var st=stats(),out=pageHead(translate("extra"),translate("smart_mix_sub"));
+    var st=stats(),out=pageHead(translate("power_center_title"),translate("smart_mix_sub"));
     var level=1+Math.floor(state.xp/250),levelXp=state.xp%250;
     var hard=0,medium=0,fresh=0,easy=0;
     for(var i=0;i<st.cards.length;i++){
@@ -497,30 +497,30 @@
       else medium++;
     }
     var today=dateKey(new Date()),reward=50+Math.min(state.streak*5,100);
-    out+=panel(translate("today"),'<div class="grid">'+metric(st.due,translate("cards_ready"))+metric(state.settings.dailyGoal,translate("daily_goal"))+metric(state.xp,"XP")+metric("Lv "+level,"Level")+'</div><div style="margin-top:10px">'+progressBar(levelXp/250)+'</div><p class="muted">'+levelXp+' / 250 XP • '+esc(translate("week_reviews")||"Reviews this week")+': '+weekReviews()+'</p>');
-    out+=panel(translate("daily_reward")||"Daily Reward",'<p class="muted">'+esc(state.lastRewardDay===today?translate("claimed_today")||"Reward already claimed today":translate("daily_reward_sub")||"Claim a small daily XP reward and keep your streak going.")+'</p><div class="row between"><strong>+'+reward+' XP</strong>'+btn(esc(translate("claim_reward")||"Claim reward"),"claim-reward","","button primary")+'</div>');
-    var mix='<p class="muted">'+esc(translate("smart_mix_sub"))+'</p><label class="field" for="smart-mix-size">Cards in study mix</label><select id="smart-mix-size"><option value="10"'+(smartMixSize===10?" selected":"")+'>10 cards</option><option value="20"'+(smartMixSize===20?" selected":"")+'>20 cards</option><option value="30"'+(smartMixSize===30?" selected":"")+'>30 cards</option></select><div style="margin-top:10px">'+btn(esc(translate("smart_mix")),"smart-mix","","button primary")+'</div>';
+    out+=panel(translate("today"),'<div class="grid">'+metric(st.due,translate("cards_ready"))+metric(state.settings.dailyGoal,translate("daily_goal"))+metric(state.xp,"XP")+metric(translate("pc_level")+" "+level,translate("pc_level"))+'</div><div style="margin-top:10px">'+progressBar(levelXp/250)+'</div><p class="muted">'+levelXp+' / 250 XP • '+esc(translate("week_reviews"))+': '+weekReviews()+'</p>');
+    out+=panel(translate("pc_daily_reward"),'<p class="muted">'+esc(state.lastRewardDay===today?translate("pc_reward_tomorrow"):translate("pc_reward_ready"))+'</p><div class="row between"><strong>'+esc(translate("pc_up_to_xp").replace("{xp}",String(reward)))+'</strong>'+btn(esc(translate("pc_claim")),"claim-reward","","button primary")+'</div>');
+    var mix='<p class="muted">'+esc(translate("smart_mix_sub"))+'</p><label class="field" for="smart-mix-size">'+esc(translate("pc_mix_size"))+'</label><select id="smart-mix-size"><option value="10"'+(smartMixSize===10?" selected":"")+'>10</option><option value="20"'+(smartMixSize===20?" selected":"")+'>20</option><option value="30"'+(smartMixSize===30?" selected":"")+'>30</option></select><div style="margin-top:10px">'+btn(esc(translate("smart_mix")),"smart-mix","","button primary")+'</div>';
     out+=panel(translate("smart_mix"),mix);
     var dots='<div class="row wrap">';
     for(var dayIndex=27;dayIndex>=0;dayIndex--){
       var day=new Date();day.setHours(0,0,0,0);day.setDate(day.getDate()-dayIndex);
       var key=dateKey(day),done=state.reviewDays.indexOf(key)>=0;
-      dots+='<span title="'+attr(key)+'" style="display:inline-block;width:19px;height:19px;border-radius:4px;background:'+(done?primaryColor():'rgba(120,130,150,.18)')+';border:1px solid rgba(120,130,150,.18)"></span>';
+      dots+='<span title="'+attr(key)+'" style="display:inline-block;width:19px;height:19px;border-radius:0;background:'+(done?primaryColor():'rgba(120,130,150,.18)')+';border:1px solid rgba(120,130,150,.18)"></span>';
     }
-    dots+='</div><p class="muted">'+state.streak+' day streak • '+uniqueDays()+' study days recorded</p>';
-    out+=panel("Streak Calendar",dots);
-    out+=panel("Weekly Challenge",'<div class="row between"><strong>Complete 40 reviews this week</strong><span class="muted">'+Math.min(weekReviews(),40)+' / 40</span></div><div style="margin-top:10px">'+progressBar(Math.min(1,weekReviews()/40))+'</div>');
-    out+=panel("Smart Difficulty",'<div class="grid">'+metric(hard,"Hard")+metric(medium,"Medium")+metric(fresh,"New")+metric(easy,"Easy")+'</div>');
-    var levelRows=[[1,"Getting Started"],[3,"Consistent Learner"],[5,"Focus Master"],[10,"Parin Pro"]],rewards='';
+    dots+='</div><p class="muted">'+state.streak+' '+esc(translate("pc_day_streak"))+' • '+uniqueDays()+' '+esc(translate("pc_study_days"))+'</p>';
+    out+=panel(translate("pc_streak_calendar"),dots);
+    out+=panel(translate("pc_weekly_challenge"),'<div class="row between"><strong>'+esc(translate("pc_complete_40"))+'</strong><span class="muted">'+Math.min(weekReviews(),40)+' / 40</span></div><div style="margin-top:10px">'+progressBar(Math.min(1,weekReviews()/40))+'</div>');
+    out+=panel(translate("pc_smart_difficulty"),'<div class="grid">'+metric(hard,translate("hard"))+metric(medium,translate("pc_medium"))+metric(fresh,translate("pc_new"))+metric(easy,translate("easy"))+'</div>');
+    var levelRows=[[1,"pc_started"],[3,"pc_consistent"],[5,"pc_focus_master"],[10,"pc_pro"]],rewards='';
     for(var ri=0;ri<levelRows.length;ri++){
       var unlocked=level>=levelRows[ri][0];
-      rewards+='<div class="setting-row"><span class="setting-copy"><span class="setting-name">'+(unlocked?"✓ ":"🔒 ")+levelRows[ri][1]+'</span></span><span class="badge">Lv '+levelRows[ri][0]+'</span></div>';
+      rewards+='<div class="setting-row"><span class="setting-copy"><span class="setting-name">'+(unlocked?"✓ ":"🔒 ")+esc(translate(levelRows[ri][1]))+'</span></span><span class="badge">'+esc(translate("pc_level"))+' '+levelRows[ri][0]+'</span></div>';
     }
-    out+=panel("Level Rewards",rewards);
+    out+=panel(translate("pc_level_rewards"),rewards);
     out+=panel(translate("achievement_center"),'<div class="row wrap">'+btn(esc(translate("achievement_center")),"goto",' data-page="achievements"',"button primary")+'</div>');
     return out;
   }
-  function renderAbout() {
+    function renderAbout() {
     var out=pageHead(translate("about"),"Parin Litner");
     out+=panel("Parin Litner",'<p>'+esc(translate("about_creator_desc"))+'</p><p class="muted">'+esc(translate("about_ai"))+'</p><p class="muted">'+esc(translate("about_love"))+'</p>'+btn(esc(translate("about_github")),"open-repository","","button primary"));
     out+=panel(translate("about"),'<div class="muted">Version 7.1.0 • Android 4 compatibility target</div>');
