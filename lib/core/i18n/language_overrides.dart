@@ -53,6 +53,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"۳ کارت را برای مرور دوباره محبوب کنید",
     'challenge_good_10':"۱۰ بار گزینهٔ «بلد بودم» را انتخاب کنید",
     'challenge_create_2':"۲ کارت جدید بسازید",
+    'zoom_image':"بزرگ‌نمایی تصویر",
+    'ach_unlocked':"بازشده",
+    'ach_in_progress':"در حال پیشرفت",
   };
 
   static const _en = <String, String>{
@@ -109,6 +112,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Favorite 3 cards you want to revisit",
     'challenge_good_10':"Complete 10 Good ratings",
     'challenge_create_2':"Create 2 new cards",
+    'zoom_image':"Zoom image",
+    'ach_unlocked':"Unlocked",
+    'ach_in_progress':"In progress",
   };
 
   static const _de = <String, String>{
@@ -165,6 +171,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Markiere 3 Karten für später als Favoriten",
     'challenge_good_10':"Bewerte 10 Karten mit „Gewusst“",
     'challenge_create_2':"Erstelle 2 neue Karten",
+    'zoom_image':"Bild vergrößern",
+    'ach_unlocked':"Freigeschaltet",
+    'ach_in_progress':"In Bearbeitung",
   };
 
   static const _da = <String, String>{
@@ -221,6 +230,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Markér 3 kort som favoritter til senere",
     'challenge_good_10':"Giv 10 vurderinger med “Kendte den”",
     'challenge_create_2':"Opret 2 nye kort",
+    'zoom_image':"Zoom billede",
+    'ach_unlocked':"Låst op",
+    'ach_in_progress':"I gang",
   };
 
   static const _es = <String, String>{
@@ -277,6 +289,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Marca 3 tarjetas favoritas para volver a verlas",
     'challenge_good_10':"Completa 10 valoraciones de «Sabía»",
     'challenge_create_2':"Crea 2 tarjetas nuevas",
+    'zoom_image':"Ampliar imagen",
+    'ach_unlocked':"Desbloqueado",
+    'ach_in_progress':"En progreso",
   };
 
   static const _pt = <String, String>{
@@ -333,6 +348,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Marque 3 cartões favoritos para rever depois",
     'challenge_good_10':"Faça 10 avaliações «Sabia»",
     'challenge_create_2':"Crie 2 cartões novos",
+    'zoom_image':"Ampliar imagem",
+    'ach_unlocked':"Desbloqueado",
+    'ach_in_progress':"Em progresso",
   };
 
   static const _fr = <String, String>{
@@ -389,6 +407,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Ajoutez 3 cartes aux favoris pour les revoir",
     'challenge_good_10':"Effectuez 10 évaluations « Je savais »",
     'challenge_create_2':"Créez 2 nouvelles cartes",
+    'zoom_image':"Agrandir l’image",
+    'ach_unlocked':"Débloqué",
+    'ach_in_progress':"En cours",
   };
 
   static const _it = <String, String>{
@@ -445,6 +466,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Aggiungi 3 carte ai preferiti per rivederle",
     'challenge_good_10':"Completa 10 valutazioni «La sapevo»",
     'challenge_create_2':"Crea 2 nuove carte",
+    'zoom_image':"Ingrandisci immagine",
+    'ach_unlocked':"Sbloccato",
+    'ach_in_progress':"In corso",
   };
 
   static const _tr = <String, String>{
@@ -501,6 +525,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Sonra bakmak için 3 kartı favorilere ekleyin",
     'challenge_good_10':"10 kez “Biliyordum” değerlendirmesi yapın",
     'challenge_create_2':"2 yeni kart oluşturun",
+    'zoom_image':"Görseli yakınlaştır",
+    'ach_unlocked':"Açıldı",
+    'ach_in_progress':"Devam ediyor",
   };
 
   static const _nl = <String, String>{
@@ -557,6 +584,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Markeer 3 kaarten als favoriet voor later",
     'challenge_good_10':"Geef 10 keer de beoordeling “Ik wist het”",
     'challenge_create_2':"Maak 2 nieuwe kaarten",
+    'zoom_image':"Afbeelding vergroten",
+    'ach_unlocked':"Ontgrendeld",
+    'ach_in_progress':"Bezig",
   };
 
   static const _sv = <String, String>{
@@ -613,6 +643,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Favoritmarkera 3 kort att återkomma till",
     'challenge_good_10':"Gör 10 bedömningar ”Jag kunde det”",
     'challenge_create_2':"Skapa 2 nya kort",
+    'zoom_image':"Zooma bild",
+    'ach_unlocked':"Upplåst",
+    'ach_in_progress':"Pågår",
   };
 
   static const _no = <String, String>{
@@ -669,6 +702,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Merk 3 kort som favoritter for senere",
     'challenge_good_10':"Vurder 10 kort som «Kunne det»",
     'challenge_create_2':"Opprett 2 nye kort",
+    'zoom_image':"Zoom bilde",
+    'ach_unlocked':"Låst opp",
+    'ach_in_progress':"Pågår",
   };
 
   static const _fi = <String, String>{
@@ -725,6 +761,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Merkitse 3 korttia suosikeiksi myöhempää varten",
     'challenge_good_10':"Arvioi 10 korttia ”Osasin”",
     'challenge_create_2':"Luo 2 uutta korttia",
+    'zoom_image':"Suurenna kuvaa",
+    'ach_unlocked':"Avattu",
+    'ach_in_progress':"Kesken",
   };
 
   static const _is = <String, String>{
@@ -781,6 +820,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Merktu 3 spjöld sem uppáhald til að skoða síðar",
     'challenge_good_10':"Gefðu 10 einkunnir „Kunki þetta“",
     'challenge_create_2':"Búðu til 2 ný spjöld",
+    'zoom_image':"Stækka mynd",
+    'ach_unlocked':"Opnað",
+    'ach_in_progress':"Í vinnslu",
   };
 
   static const _ja = <String, String>{
@@ -837,6 +879,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"あとで見るカードを3枚お気に入りにする",
     'challenge_good_10':"「分かった」を10回選択する",
     'challenge_create_2':"新しいカードを2枚作成する",
+    'zoom_image':"画像を拡大",
+    'ach_unlocked':"解除済み",
+    'ach_in_progress':"進行中",
   };
 
   static const _ko = <String, String>{
@@ -893,6 +938,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"나중에 볼 카드 3장을 즐겨찾기에 추가",
     'challenge_good_10':"“알고 있었어요” 평가 10회",
     'challenge_create_2':"새 카드 2장 만들기",
+    'zoom_image':"이미지 확대",
+    'ach_unlocked':"잠금 해제",
+    'ach_in_progress':"진행 중",
   };
 
   static const _he = <String, String>{
@@ -949,6 +997,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"הוסף 3 כרטיסים למועדפים לחזרה מאוחרת",
     'challenge_good_10':"דרג 10 כרטיסים כ״ידעתי״",
     'challenge_create_2':"צור 2 כרטיסים חדשים",
+    'zoom_image':"הגדל תמונה",
+    'ach_unlocked':"נפתח",
+    'ach_in_progress':"בתהליך",
   };
 
   static const _ar = <String, String>{
@@ -1005,6 +1056,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"أضف 3 بطاقات إلى المفضلة للعودة إليها",
     'challenge_good_10':"قيّم 10 بطاقات بأنك كنت تعرفها",
     'challenge_create_2':"أنشئ بطاقتين جديدتين",
+    'zoom_image':"تكبير الصورة",
+    'ach_unlocked':"تم الفتح",
+    'ach_in_progress':"قيد التقدم",
   };
 
   static const _el = <String, String>{
@@ -1061,6 +1115,9 @@ class LanguageOverrides {
     'challenge_favorite_3':"Αγαπημένα 3 κάρτες για να τις ξαναδείτε",
     'challenge_good_10':"Κάντε 10 αξιολογήσεις «Το ήξερα»",
     'challenge_create_2':"Δημιουργήστε 2 νέες κάρτες",
+    'zoom_image':"Μεγέθυνση εικόνας",
+    'ach_unlocked':"Ξεκλειδώθηκε",
+    'ach_in_progress':"Σε εξέλιξη",
   };
 
   static const _svFallback = <String, String>{};
