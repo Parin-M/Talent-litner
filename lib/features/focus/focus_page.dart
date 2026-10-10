@@ -72,6 +72,9 @@ class _FocusPageState extends State<FocusPage> {
   }
 
   Future<void> _toggle() async {
+    if (!_running && _remaining == 0) {
+      setState(() => _remaining = _selectedMinutes * 60);
+    }
     if (_running) {
       _timer?.cancel();
       setState(() => _running = false);
