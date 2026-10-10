@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../../core/i18n/app_strings.dart';
 import '../../core/models/app_settings.dart';
 import '../../core/services/music_service.dart';
@@ -19,6 +20,7 @@ class _FocusPageState extends State<FocusPage> {
   int _remaining = 30 * 60;
   bool _running = false;
   bool _musicPlaying = false;
+  final AudioPlayer _alarmPlayer = AudioPlayer();
 
   String s(String key) => AppStrings.t(context, key);
 
@@ -71,16 +73,19 @@ class _FocusPageState extends State<FocusPage> {
   }
 
   Future<void> _playAlarm() async {
-    // Android's platform alert sound is audible without requiring a bundled asset.
-    // Repeat it so the completion signal isn't missed, and also trigger vibration.
     if (widget.settings.haptics) {
       try { HapticFeedback.vibrate(); } catch (_) {}
     }
-    for (var i = 0; i < 3; i++) {
-      try {
-        await SystemSound.play(SystemSoundType.alert);
-      } catch (_) {}
-      if (i < 2) await Future<void>.delayed(const Duration(milliseconds: 450));
+    try {
+      await _alarmPlayer.setReleaseMode(ReleaseMode.stop);
+      await _alarmPlayer.setVolume(1.0);
+      await _alarmPlayer.play(AssetSource('audio/focus_alarm.wav'));
+    } catch (_) {
+      // Fallback in case a device cannot initialize the bundled alert player.
+      for (var i = 0; i < 3; i++) {
+        try { await SystemSound.play(SystemSoundType.alert); } catch (_) {}
+        if (i < 2) await Future<void>.delayed(const Duration(milliseconds: 450));
+      }
     }
   }
 
@@ -152,6 +157,7 @@ class _FocusPageState extends State<FocusPage> {
   void dispose() {
     _timer?.cancel();
     if (_musicPlaying) MusicService.instance.stop();
+    unawaited(_alarmPlayer.dispose());
     super.dispose();
   }
 
