@@ -488,7 +488,10 @@
     var hard=0,medium=0,fresh=0,easy=0;
     for(var i=0;i<st.cards.length;i++){
       var c=st.cards[i].card;
-      if((c.lapses||0)>=3||((c.reviews||0)>=4&&(c.box||0)<=1))hard++;
+      if(c.difficulty==="hard")hard++;
+      else if(c.difficulty==="medium")medium++;
+      else if(c.difficulty==="easy")easy++;
+      else if((c.lapses||0)>=3||((c.reviews||0)>=4&&(c.box||0)<=1))hard++;
       else if((c.reviews||0)<=1)fresh++;
       else if((c.box||0)>=3&&!(c.lapses||0))easy++;
       else medium++;
@@ -593,7 +596,7 @@
     else if(rating===1){c.box=Math.max(0,Math.min(last,c.box));c.due=new Date(now.getTime()+86400000).toISOString();}
     else if(rating===2){c.box=Math.min(last,Math.max(0,c.box+1));var good=[1,2,4,7,14,30];c.due=new Date(now.getTime()+good[Math.min(c.box,5)]*86400000).toISOString();}
     else {c.box=Math.min(last,Math.max(0,c.box+2));var easy=[2,4,7,14,30,60];c.due=new Date(now.getTime()+easy[Math.min(c.box,5)]*86400000).toISOString();}
-    recordReview();persist();
+    recordReview(rating);persist();
     if(state.settings.haptics){try{Native.vibrate(rating===0?35:18);}catch(e){}}
     if(state.settings.showXp)notify("+12 XP");
     if(session.index>=session.cards.length-1){finishStudy();return;}
