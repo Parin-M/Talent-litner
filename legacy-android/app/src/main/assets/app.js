@@ -156,10 +156,13 @@
   function applyAppearance() {
     var mode = state.settings.appearanceMode;
     var rtl = ["fa","ar","he"].indexOf(state.settings.languageCode.split("-")[0]) >= 0;
-    document.body.className = "mode-" + mode + (rtl ? " rtl" : "") + (state.settings.animations ? "" : " no-animations");
+    document.body.className = "mode-" + mode + (rtl ? " rtl" : "") +
+      (state.settings.animations ? "" : " no-animations") +
+      (state.settings.compactSettings ? " compact-settings" : "");
     var t=theme(), dark=mode==="dark"||mode==="amoled", aero=mode==="aero";
+    document.body.style.backgroundColor = dark ? (mode==="amoled" ? "#000000" : "#101114") : (aero ? "#eaf0fa" : t.background);
     HEADER.style.backgroundColor = dark ? (mode==="amoled" ? "#000000" : "#181a1f") : (aero ? t.secondary : t.primary);
-    HEADER.style.color = dark || aero ? "#f5f7fa" : "#ffffff";
+    HEADER.style.color = dark ? "#f5f7fa" : (aero ? "#202124" : "#ffffff");
     var isrtl = rtl;
     document.getElementById("bottom-nav").style.direction = isrtl ? "rtl" : "ltr";
     HEADER_BACK.style.display = view.page==="home" ? "none" : "block";
@@ -171,7 +174,20 @@
       var p=navButtons[i].getAttribute("data-page");
       var act=navButtons[i].getAttribute("data-action");
       navButtons[i].className = ((p && p===view.page) || (act==="study-all"&&view.page==="study")) ? "active" : "";
+      if(navButtons[i].className==="active")navButtons[i].style.color=primaryColor();else navButtons[i].style.color="";
       var small=navButtons[i].querySelector("small");if(small)small.textContent=navLabels[i]||"";
+    }
+  }
+  function applySurfaceAppearance() {
+    var mode = state.settings.appearanceMode;
+    var surfaces = CONTENT.querySelectorAll(".panel, .study-card");
+    for (var i = 0; i < surfaces.length; i++) {
+      if (mode === "aero") {
+        var opacity = state.settings.glass ? state.settings.glassOpacity : 0.97;
+        surfaces[i].style.backgroundColor = "rgba(255,255,255," + opacity + ")";
+      } else {
+        surfaces[i].style.backgroundColor = "";
+      }
     }
   }
   function notify(message) {
@@ -246,6 +262,7 @@
       default: html=renderHome();view={page:"home"};
     }
     CONTENT.innerHTML=html;
+    applySurfaceAppearance();
     bindSearch();
     setCanGoBack();
   }
