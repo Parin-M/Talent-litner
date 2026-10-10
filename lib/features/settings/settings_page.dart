@@ -138,6 +138,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.palette_outlined,
                 compact: compact,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(s('visual_style'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 9),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ChoiceChip(avatar: const Icon(Icons.light_mode_outlined, size: 17), label: Text(s('mode_light')), selected: widget.settings.appearanceMode == 'light', onSelected: (v) { if (v) widget.settings.setAppearanceMode('light'); }),
+                      ChoiceChip(avatar: const Icon(Icons.dark_mode_outlined, size: 17), label: Text(s('mode_dark')), selected: widget.settings.appearanceMode == 'dark', onSelected: (v) { if (v) widget.settings.setAppearanceMode('dark'); }),
+                      ChoiceChip(avatar: const Icon(Icons.blur_on_outlined, size: 17), label: Text(s('mode_aero')), selected: widget.settings.appearanceMode == 'aero', onSelected: (v) { if (v) widget.settings.setAppearanceMode('aero'); }),
+                      ChoiceChip(avatar: const Icon(Icons.brightness_2_outlined, size: 17), label: Text(s('mode_amoled')), selected: widget.settings.appearanceMode == 'amoled', onSelected: (v) { if (v) widget.settings.setAppearanceMode('amoled'); }),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
                   Text(s('theme'), style: const TextStyle(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 10),
                   SizedBox(
@@ -246,10 +259,10 @@ class _Section extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .72),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: .9)),
-        boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: .08), blurRadius: 20, offset: const Offset(0, 7))],
+        color: scheme.surface.withValues(alpha: scheme.brightness == Brightness.dark ? .96 : .88),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: scheme.outline.withValues(alpha: .20)),
+        boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: scheme.brightness == Brightness.dark ? .05 : .08), blurRadius: 16, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

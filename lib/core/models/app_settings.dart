@@ -21,8 +21,10 @@ class AppSettings extends ChangeNotifier {
 
   static const musicTrackIds = <String>{'lofi_night', 'rainy_focus', 'deep_focus'};
   static const themeCount = 50;
+  static const appearanceModes = <String>{'light', 'dark', 'aero', 'amoled'};
 
   int themeIndex = 0;
+  String appearanceMode = 'aero';
   String languageCode = 'fa';
   bool animations = true, haptics = true, autoReveal = false, showProgress = true, showTimer = true, glass = true;
   bool showXp = true, confirmExit = true, compactSettings = false;
@@ -63,6 +65,8 @@ class AppSettings extends ChangeNotifier {
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
     themeIndex = (p.getInt('theme_index') ?? 0).clamp(0, themeCount - 1).toInt();
+    appearanceMode = p.getString('appearance_mode') ?? 'aero';
+    if (!appearanceModes.contains(appearanceMode)) appearanceMode = 'aero';
     languageCode = p.getString('language_code') ?? 'fa';
     if (!languages.any((x) => x.code == languageCode)) languageCode = 'fa';
     animations = p.getBool('animations') ?? true;
@@ -98,6 +102,13 @@ class AppSettings extends ChangeNotifier {
   Future<void> setTheme(int value) async {
     themeIndex = value.clamp(0, themeCount - 1).toInt();
     await (await SharedPreferences.getInstance()).setInt('theme_index', themeIndex);
+    notifyListeners();
+  }
+
+  Future<void> setAppearanceMode(String value) async {
+    if (!appearanceModes.contains(value)) return;
+    appearanceMode = value;
+    await (await SharedPreferences.getInstance()).setString('appearance_mode', value);
     notifyListeners();
   }
 

@@ -62,45 +62,44 @@ class AppTheme {
     ThemeOption('Slate', Color(0xFF455A64), Color(0xFF90A4AE), Color(0xFFF0F4F6)),
   ];
 
-  static ThemeData light(int index, {bool glass = true, double glassOpacity = .62}) {
+  static ThemeData build(int index, {String mode = 'aero', bool glass = true, double glassOpacity = .62}) {
     final t = themes[index.clamp(0, themes.length - 1).toInt()];
-    final scheme = ColorScheme.fromSeed(seedColor: t.primary, brightness: Brightness.light);
-    final surface = Colors.white.withValues(alpha: glass ? glassOpacity.clamp(.42, .90) : 1.0);
+    final dark = mode == 'dark' || mode == 'amoled';
+    final amoled = mode == 'amoled';
+    final aero = mode == 'aero';
+    final brightness = dark ? Brightness.dark : Brightness.light;
+    final baseScheme = ColorScheme.fromSeed(seedColor: t.primary, brightness: brightness);
+    final background = amoled ? Colors.black : dark ? const Color(0xFF101114) : aero ? const Color(0xFFEAF0FA) : t.background;
+    final surface = amoled ? const Color(0xFF000000) : dark ? const Color(0xFF181A1F) : aero ? Colors.white.withValues(alpha: glass ? glassOpacity.clamp(.30, .90) : .96) : Colors.white;
+    final scheme = baseScheme.copyWith(primary: dark ? t.secondary : t.primary, surface: surface, onSurface: dark ? Colors.white : const Color(0xFF202124));
     return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      colorScheme: scheme,
-      scaffoldBackgroundColor: t.background,
-      fontFamily: 'sans-serif',
+      useMaterial3: false, brightness: brightness, colorScheme: scheme, primaryColor: t.primary,
+      scaffoldBackgroundColor: background, fontFamily: 'sans-serif', visualDensity: VisualDensity.standard,
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.white.withValues(alpha: glass ? .70 : .96),
-        foregroundColor: scheme.onSurface,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        centerTitle: false,
+        backgroundColor: dark ? surface : aero ? Colors.white.withValues(alpha: .64) : t.primary,
+        foregroundColor: dark || aero ? scheme.onSurface : Colors.white,
+        elevation: dark ? 0 : (aero ? 1 : 4), scrolledUnderElevation: 2, centerTitle: false,
       ),
       cardTheme: CardThemeData(
-        color: surface,
-        elevation: glass ? 1 : 2,
+        color: surface, elevation: dark ? 0 : (aero ? 1 : 3),
         margin: const EdgeInsets.symmetric(vertical: 5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: Colors.white.withValues(alpha: .72)),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(aero ? 12 : 4), side: BorderSide(color: scheme.outline.withValues(alpha: dark ? .30 : (aero ? .20 : .10)))),
       ),
+      dialogTheme: DialogThemeData(backgroundColor: surface, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: glass ? .72 : 1),
+        filled: true, fillColor: dark ? surface : Colors.white.withValues(alpha: aero ? .80 : 1),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: scheme.outline.withValues(alpha: .22))),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: scheme.outline.withValues(alpha: .18))),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: scheme.primary, width: 2)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: scheme.outline.withValues(alpha: .30))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: scheme.outline.withValues(alpha: .24))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: scheme.primary, width: 2)),
       ),
-      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13))),
-      outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12))),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(backgroundColor: scheme.primary, foregroundColor: scheme.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
-      dividerTheme: DividerThemeData(color: scheme.outline.withValues(alpha: .16)),
+      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13))),
+      elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)))),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12))),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(backgroundColor: scheme.primary, foregroundColor: scheme.onPrimary, shape: const CircleBorder(), elevation: 6),
+      dividerTheme: DividerThemeData(color: scheme.outline.withValues(alpha: .20)),
       listTileTheme: const ListTileThemeData(contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 1)),
+      snackBarTheme: SnackBarThemeData(backgroundColor: dark ? const Color(0xFF292A2D) : const Color(0xFF323232), contentTextStyle: const TextStyle(color: Colors.white), behavior: SnackBarBehavior.floating),
     );
   }
 }
