@@ -222,3 +222,70 @@ input:focus, textarea:focus, select:focus { border-color: #0078d7; box-shadow: 0
   .rate-grid { gap: 7px; }
   .rate-grid .button { padding: 8px 6px; min-height: 52px; font-size: 12px; }
 }
+
+
+/* Windows Phone / Metro motion: quick page entrances, tactile presses, and restrained card lift. */
+@-webkit-keyframes metro-enter {
+  from { opacity: 0; -webkit-transform: translateY(12px); transform: translateY(12px); }
+  to { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); }
+}
+@keyframes metro-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@-webkit-keyframes metro-card-enter {
+  from { opacity: 0; -webkit-transform: translateY(16px) scale(.985); transform: translateY(16px) scale(.985); }
+  to { opacity: 1; -webkit-transform: translateY(0) scale(1); transform: translateY(0) scale(1); }
+}
+@keyframes metro-card-enter {
+  from { opacity: 0; transform: translateY(16px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+#content > .page-title,
+#content > .page-subtitle,
+#content > .grid,
+#content > .panel,
+#content > .section-title {
+  -webkit-animation: metro-enter .24s cubic-bezier(.2,.7,.25,1) both;
+  animation: metro-enter .24s cubic-bezier(.2,.7,.25,1) both;
+}
+#content > .panel:nth-of-type(2) { -webkit-animation-delay: .025s; animation-delay: .025s; }
+#content > .panel:nth-of-type(3) { -webkit-animation-delay: .05s; animation-delay: .05s; }
+#content > .panel:nth-of-type(4) { -webkit-animation-delay: .075s; animation-delay: .075s; }
+#content > .panel:nth-of-type(5) { -webkit-animation-delay: .1s; animation-delay: .1s; }
+.panel, .metric, .card-row, .setting-row, .button, #bottom-nav button {
+  -webkit-transition: -webkit-transform .16s ease-out, box-shadow .16s ease-out, border-color .16s ease-out, opacity .16s ease-out;
+  transition: transform .16s ease-out, box-shadow .16s ease-out, border-color .16s ease-out, opacity .16s ease-out;
+}
+.panel:active, .metric:active, .card-row:active { -webkit-transform: scale(.992); transform: scale(.992); }
+.button:active, #bottom-nav button:active { -webkit-transform: scale(.97); transform: scale(.97); }
+.study-card { -webkit-animation: metro-card-enter .3s cubic-bezier(.2,.7,.25,1) both; animation: metro-card-enter .3s cubic-bezier(.2,.7,.25,1) both; }
+.study-image-zoom img { -webkit-transition: -webkit-transform .18s ease-out; transition: transform .18s ease-out; }
+body.no-animations #content > .page-title,
+body.no-animations #content > .page-subtitle,
+body.no-animations #content > .grid,
+body.no-animations #content > .panel,
+body.no-animations #content > .section-title,
+body.no-animations .study-card {
+  -webkit-animation: none !important;
+  animation: none !important;
+}
+body.no-animations .panel,
+body.no-animations .metric,
+body.no-animations .card-row,
+body.no-animations .setting-row,
+body.no-animations .button,
+body.no-animations #bottom-nav button,
+body.no-animations #zoom-study-image,
+body.no-animations .study-image-zoom img {
+  -webkit-transition: none !important;
+  transition: none !important;
+}
+body.no-animations .panel:active,
+body.no-animations .metric:active,
+body.no-animations .card-row:active,
+body.no-animations .button:active,
+body.no-animations #bottom-nav button:active {
+  -webkit-transform: none !important;
+  transform: none !important;
+}
