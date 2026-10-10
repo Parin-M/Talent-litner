@@ -43,9 +43,8 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
   }
 
   Future<void> _save() async {
-    // The deck/card objects are shared with child routes. Rebuild the root immediately
-    // so changes made there are visible as soon as the route closes, without restarting.
-    if (mounted) setState(() {});
+    // Child pages mutate the shared model and refresh their own route. Persist here
+    // without rebuilding MaterialApp for every card edit or review rating.
     try {
       await storage.save(decks);
     } catch (_) {
