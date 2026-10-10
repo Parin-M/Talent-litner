@@ -48,7 +48,7 @@ class AchievementsPage extends StatelessWidget {
     final challengeDone = min(challengeValue, challengeTarget);
 
     return Scaffold(
-      appBar: AppBar(title: Text(s(context, 'extra'))),
+      appBar: AppBar(title: Text(s(context, 'achievement_center'))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
@@ -71,8 +71,8 @@ class AchievementsPage extends StatelessWidget {
             childAspectRatio: 1.7,
             children: [
               _Metric(s(context, 'cards'), '$total', Icons.style_outlined),
-              _Metric(s(context, 'reviews'), '$reviews', Icons.school_outlined),
-              _Metric(s(context, 'favorites'), '$favorites', Icons.star_outline),
+              _Metric(s(context, 'ac_reviews'), '$reviews', Icons.school_outlined),
+              _Metric(s(context, 'ac_favorites'), '$favorites', Icons.star_outline),
               _Metric(s(context, 'cards_ready'), '$due', Icons.today_outlined),
             ],
           )),
