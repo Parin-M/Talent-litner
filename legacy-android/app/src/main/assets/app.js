@@ -634,6 +634,7 @@
     if(el)el.textContent=duration(focusRemaining);
     if(focusRemaining<=0){
       pauseFocusForNavigation();focusRemaining=0;persist();
+      try{Native.playAlarm();}catch(e){}
       if(state.settings.musicEnabled)Native.stopMusic();
       notify(translate("focus_done"));
       showModal(translate("focus_done"),'<p>'+esc(translate("great"))+'</p>',[{label:translate("close"),action:"close-modal"}]);
@@ -860,7 +861,21 @@
     if(action==="replace-import"){applyImport(true);return;}
     if(action==="pick-image"){imageTarget=target.getAttribute("data-side")||"front";try{Native.pickImage();}catch(e){notify(translate("image_error"));}return;}
     if(action==="clear-image"){var dx=getDeck(editCardDeckId);if(dx){if(target.getAttribute("data-side")==="front")dx._editingFrontImage=null;else dx._editingBackImage=null;render();}return;}
-    if(action==="focus-duration"){if(!focusRunning){focusDuration=parseInt(target.getAttribute("data-minutes"),10)||25;focusRemaining=focusDuration*60;render();}return;}
+    if(action==="focus-duration"){if(!focusRunning){focusDuration=parseInt(target.getAttribute("data-minutes"),10)||30;focusRemaining=focusDuration*60;render();}return;}
+    if(action==="focus-custom"){
+      if(!focusRunning){
+        showModal(translate("custom_minutes"),
+          '<label class="field" for="custom-focus-minutes">'+esc(translate("enter_minutes"))+'</label><input id="custom-focus-minutes" type="number" min="1" max="600" value="30"><p class="muted">'+esc(translate("minutes_range"))+'</p>',
+          [{label:translate("cancel"),action:"close-modal"},{label:translate("save"),action:"focus-custom-apply",primary:true}]);
+      }
+      return;
+    }
+    if(action==="focus-custom-apply"){
+      var customInput=document.getElementById("custom-focus-minutes"),customMinutes=parseInt(customInput?customInput.value:"",10);
+      if(customMinutes>=1&&customMinutes<=600){focusDuration=customMinutes;focusRemaining=customMinutes*60;closeModal();render();}
+      else{notify(translate("minutes_range"));}
+      return;
+    }
     if(action==="focus-toggle"){toggleFocus();return;}
     if(action==="focus-reset"){pauseFocusForNavigation();focusRemaining=focusDuration*60;render();return;}
     if(action==="toggle-music"){toggleMusic();return;}
