@@ -8,8 +8,8 @@
   var HEADER_SUBTITLE = document.getElementById("header-subtitle");
   var state, view = { page: "home" }, navStack = [], modalState = null;
   var editDeckId = null, editCardDeckId = null, editCardId = null, imageTarget = "front";
-  var session = null, studyInterval = null, focusInterval = null, focusRunning = false;
-  var focusDuration = 25, focusRemaining = 25 * 60, focusStartedAt = 0, musicPlaying = false;
+  var session = null, studyInterval = null, focusInterval = null, focusRunning = false, autoRevealHandle = null;
+  var focusDuration = 30, focusRemaining = 30 * 60, focusStartedAt = 0, musicPlaying = false, zoomScale = 1;
   var pendingImport = null, downloadedBackupName = null, searchTerm = "", smartMixSize = 20;
   var languages = [
     ["fa","فارسی"],["en","English"],["de","Deutsch"],["de-CH","Deutsch (Schweiz)"],["de-AT","Deutsch (Österreich)"],
@@ -23,7 +23,7 @@
       decks: [],
       settings: {
         themeIndex: 0, appearanceMode: "aero", languageCode: "fa", animations: true, haptics: true,
-        autoReveal: false, showProgress: true, showTimer: true, glass: true, showXp: true,
+        autoReveal: false, autoRevealDelaySeconds: 3, showProgress: true, showTimer: true, glass: true, showXp: true,
         confirmExit: true, compactSettings: false, glassOpacity: 0.62, dailyGoal: 20,
         musicEnabled: false, musicTrack: "lofi_night", musicVolume: 0.35
       },
@@ -117,6 +117,7 @@
     card.tags = text(card.tags || ""); card.box = parseInt(card.box,10); if(isNaN(card.box)||card.box<0)card.box=0;
     card.due = text(card.due || new Date().toISOString()); card.favorite = !!card.favorite;
     card.reviews = Math.max(0,parseInt(card.reviews,10)||0); card.lapses = Math.max(0,parseInt(card.lapses,10)||0);
+    card.difficulty = ["auto","hard","medium","easy"].indexOf(card.difficulty)>=0 ? card.difficulty : "auto";
     card.frontImage = card.frontImage || null; card.backImage = card.backImage || null;
     return card;
   }
@@ -147,6 +148,7 @@
     if (["lofi_night","rainy_focus","deep_focus"].indexOf(state.settings.musicTrack)<0)state.settings.musicTrack="lofi_night";
     state.settings.glassOpacity = Math.max(.30,Math.min(.90,parseFloat(state.settings.glassOpacity)||.62));
     state.settings.dailyGoal = Math.max(5,Math.min(100,parseInt(state.settings.dailyGoal,10)||20));
+    state.settings.autoRevealDelaySeconds = Math.max(1,Math.min(30,parseInt(state.settings.autoRevealDelaySeconds,10)||3));
     state.settings.musicVolume = Math.max(0,Math.min(1,parseFloat(state.settings.musicVolume)||0));
     if (!state.decks.length) {
       state.decks.push(normalizeDeck({id:"demo",name:"شروع سریع",description:"کارت‌های نمونه",color:"3F51B5",cards:[
@@ -338,7 +340,12 @@
     out+='<label class="field" for="card-tags">'+esc(translate("tags"))+'</label><input type="text" id="card-tags" maxlength="500" value="'+attr(c?c.tags:"")+'" placeholder="'+attr(translate("tags_hint"))+'">';
     out+='<label class="field" for="card-box">'+esc(translate("box"))+'</label><select id="card-box">';
     for(var i=0;i<d.boxes.length;i++)out+='<option value="'+i+'"'+(c&&c.box===i?" selected":"")+'>'+esc(d.boxes[i].name)+'</option>';
-    out+='</select><label class="setting-row"><input id="card-favorite" type="checkbox"'+(c&&c.favorite?" checked":"")+'><span class="setting-copy"><span class="setting-name">'+esc(translate("favorite_only"))+'</span></span></label>';
+    out+='</select><label class="field" for="card-difficulty">'+esc(translate("card_difficulty"))+'</label><select id="card-difficulty">'+
+      '<option value="auto"'+(!c||!c.difficulty||c.difficulty==="auto"?" selected":"")+'>'+esc(translate("difficulty_auto"))+'</option>'+
+      '<option value="easy"'+(c&&c.difficulty==="easy"?" selected":"")+'>'+esc(translate("easy"))+'</option>'+
+      '<option value="medium"'+(c&&c.difficulty==="medium"?" selected":"")+'>'+esc(translate("difficulty_medium"))+'</option>'+
+      '<option value="hard"'+(c&&c.difficulty==="hard"?" selected":"")+'>'+esc(translate("hard"))+'</option></select>'+
+      '<label class="setting-row"><input id="card-favorite" type="checkbox"'+(c&&c.favorite?" checked":"")+'><span class="setting-copy"><span class="setting-name">'+esc(translate("favorite_only"))+'</span></span></label>';
     out+='<div class="form-actions"><button class="button primary" type="submit"'+primaryStyle()+'>'+esc(translate("save_card"))+'</button>'+btn(esc(translate("cancel")),"back")+'</div></form>';
     return out;
   }
@@ -906,7 +913,7 @@
       state.dailyCardsCreated++;
     }
     card.front=front;card.back=backText;card.tags=document.getElementById("card-tags").value.trim();
-    card.box=parseInt(document.getElementById("card-box").value,10)||0;card.favorite=document.getElementById("card-favorite").checked;
+    card.box=parseInt(document.getElementById("card-box").value,10)||0;card.difficulty=document.getElementById("card-difficulty").value;card.favorite=document.getElementById("card-favorite").checked;
     card.frontImage=frontImg;card.backImage=backImg;
     delete d._editingFrontImage;delete d._editingBackImage;
     persist();replaceView("deck",{deckId:d.id});
