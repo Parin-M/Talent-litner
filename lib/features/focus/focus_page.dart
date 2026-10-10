@@ -32,13 +32,13 @@ class _FocusPageState extends State<FocusPage> {
   @override
   void initState() {
     super.initState();
-    _alarmPlayer.setReleaseMode(ReleaseMode.stop);
+    unawaited(_alarmPlayer.setReleaseMode(ReleaseMode.stop));
   }
 
   void _selectMinutes(int minutes) {
     if (_running) return;
     setState(() {
-      _selectedMinutes = minutes.clamp(1, 180);
+      _selectedMinutes = minutes.clamp(1, 180).toInt();
       _remaining = _selectedMinutes * 60;
     });
   }
@@ -54,7 +54,8 @@ class _FocusPageState extends State<FocusPage> {
     }
     setState(() {
       _customMinutes = value;
-      _selectMinutes(value);
+      _selectedMinutes = value;
+      _remaining = value * 60;
     });
   }
 
