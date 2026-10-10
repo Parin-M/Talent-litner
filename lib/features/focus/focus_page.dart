@@ -73,9 +73,9 @@ class _FocusPageState extends State<FocusPage> {
   Future<void> _playAlarm() async {
     // Android's platform alert sound is audible without requiring a bundled asset.
     // Repeat it so the completion signal isn't missed, and also trigger vibration.
-    try {
-      HapticFeedback.vibrate();
-    } catch (_) {}
+    if (widget.settings.haptics) {
+      try { HapticFeedback.vibrate(); } catch (_) {}
+    }
     for (var i = 0; i < 3; i++) {
       try {
         await SystemSound.play(SystemSoundType.alert);
