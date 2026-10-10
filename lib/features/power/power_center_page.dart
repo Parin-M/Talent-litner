@@ -53,10 +53,10 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
       return 'difficulty_${card.difficulty}';
     }
     if (card.lapses >= 3 || (card.reviews >= 4 && card.boxIndex <= 1)) {
-      return 'difficulty_hard';
+      return 'hard';
     }
-    if (card.reviews <= 1) return 'difficulty_new';
-    if (card.boxIndex >= 3 && card.lapses == 0) return 'difficulty_easy';
+    if (card.reviews <= 1) return 'new_card';
+    if (card.boxIndex >= 3 && card.lapses == 0) return 'easy';
     return 'difficulty_medium';
   }
 
@@ -113,11 +113,11 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
       builder: (context, _) {
         final scheme = Theme.of(context).colorScheme;
         final cards = widget.decks.expand((deck) => deck.cards).toList();
-        final hard = cards.where((card) => _difficulty(card) == 'difficulty_hard').length;
+        final hard = cards.where((card) => _difficulty(card) == 'hard').length;
         final medium =
             cards.where((card) => _difficulty(card) == 'difficulty_medium').length;
-        final fresh = cards.where((card) => _difficulty(card) == 'difficulty_new').length;
-        final easy = cards.where((card) => _difficulty(card) == 'difficulty_easy').length;
+        final fresh = cards.where((card) => _difficulty(card) == 'new_card').length;
+        final easy = cards.where((card) => _difficulty(card) == 'easy').length;
 
         final today = DateTime.now();
         final last28 = List.generate(28, (index) {
@@ -148,9 +148,9 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
               const SizedBox(height: 12),
               _ActionCard(
                 icon: Icons.auto_awesome,
-                title: s(context, 'pc_smart_mix_title'),
+                title: s(context, 'smart_mix'),
                 subtitle:
-                    s(context, 'pc_smart_mix_subtitle'),
+                    s(context, 'smart_mix_sub'),
                 trailing: DropdownButton<int>(
                   value: _mixSize,
                   underline: const SizedBox.shrink(),
@@ -229,7 +229,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      '${min(widget.settings.weekReviews, 40)} / 40 ${s(context, 'pc_reviews')}',
+                      '${min(widget.settings.weekReviews, 40)} / 40 ${s(context, 'reviews')}',
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                   ],
@@ -253,10 +253,10 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                 icon: Icons.psychology_outlined,
                 child: Column(
                   children: [
-                    _DifficultyRow(s(context, 'difficulty_hard'), hard, scheme.error),
+                    _DifficultyRow(s(context, 'hard'), hard, scheme.error),
                     _DifficultyRow(s(context, 'difficulty_medium'), medium, scheme.tertiary),
-                    _DifficultyRow(s(context, 'difficulty_new'), fresh, scheme.primary),
-                    _DifficultyRow(s(context, 'difficulty_easy'), easy, scheme.secondary),
+                    _DifficultyRow(s(context, 'new_card'), fresh, scheme.primary),
+                    _DifficultyRow(s(context, 'easy'), easy, scheme.secondary),
                   ],
                 ),
               ),
