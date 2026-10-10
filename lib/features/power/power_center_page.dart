@@ -314,7 +314,7 @@ class _HeroCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: [scheme.primary, scheme.secondary],
         ),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.zero,
         boxShadow: [
           BoxShadow(
             color: scheme.primary.withValues(alpha: .16),
@@ -394,7 +394,7 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.zero,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -496,7 +496,7 @@ class _DayDot extends StatelessWidget {
         color: done
             ? scheme.primary
             : scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
       ),
       child: done ? const Icon(Icons.check, size: 16) : null,
     );
