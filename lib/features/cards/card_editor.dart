@@ -17,6 +17,7 @@ class _CardEditorState extends State<CardEditor> {
   late final TextEditingController back = TextEditingController(text: widget.card?.back ?? '');
   late final TextEditingController tags = TextEditingController(text: widget.card?.tags ?? '');
   late int box = widget.card?.boxIndex ?? 0;
+  late String difficulty = widget.card?.difficulty ?? 'auto';
   String? frontImage;
   String? backImage;
   bool saving = false;
@@ -79,6 +80,7 @@ class _CardEditorState extends State<CardEditor> {
     card.back = back.text.trim();
     card.tags = tags.text.trim();
     card.boxIndex = widget.deck.boxes.isEmpty ? 0 : box.clamp(0, widget.deck.boxes.length - 1).toInt();
+    card.difficulty = difficulty;
     card.frontImage = frontImage;
     card.backImage = backImage;
     if (widget.card == null) widget.deck.cards.insert(0, card);
@@ -154,6 +156,19 @@ class _CardEditorState extends State<CardEditor> {
                 items: [for (var i = 0; i < widget.deck.boxes.length; i++) DropdownMenuItem(value: i, child: Text(widget.deck.boxes[i].name))],
                 onChanged: (value) => setState(() => box = value ?? 0),
               ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: difficulty,
+              isExpanded: true,
+              decoration: InputDecoration(labelText: s('card_difficulty')),
+              items: [
+                DropdownMenuItem(value: 'auto', child: Text(s('difficulty_auto'))),
+                DropdownMenuItem(value: 'easy', child: Text(s('difficulty_easy'))),
+                DropdownMenuItem(value: 'medium', child: Text(s('difficulty_medium'))),
+                DropdownMenuItem(value: 'hard', child: Text(s('difficulty_hard'))),
+              ],
+              onChanged: (value) => setState(() => difficulty = value ?? 'auto'),
+            ),
             const SizedBox(height: 22),
             SizedBox(height: 52, child: FilledButton.icon(onPressed: saving ? null : _save, icon: const Icon(Icons.save_outlined), label: Text(s('save_card')))),
           ],
