@@ -1272,8 +1272,6 @@ class LanguageOverrides {
     "zoom_image": "Μεγέθυνση εικόνας"
   };
 
-  static const _svFallback = <String, String>{};
-
   static const maps = <String, Map<String, String>>{
     'fa': _fa, 'en': _en, 'de': _de, 'de-CH': _de, 'de-AT': _de,
     'da': _da, 'es': _es, 'pt': _pt, 'fr': _fr, 'it': _it, 'tr': _tr,
