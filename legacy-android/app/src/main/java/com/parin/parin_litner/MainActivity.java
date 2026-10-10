@@ -23,6 +23,7 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 import android.graphics.Color;
 import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,11 +31,14 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Locale;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Random;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import android.util.Base64;
+import android.util.Base64InputStream;
 
 @SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
 public class MainActivity extends Activity {
@@ -140,11 +144,55 @@ public class MainActivity extends Activity {
         return last == null ? null : last;
     }
 
+    private File[] backupDirectories() {
+        File publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        if (publicDownloads == null) publicDownloads = new File(Environment.getExternalStorageDirectory(), "Download");
+        File appExternal = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        File appInternal = new File(getFilesDir(), "Downloads");
+        return new File[] { publicDownloads, appExternal, appInternal };
+    }
+
+    private boolean prepareWritableDirectory(File dir) {
+        if (dir == null) return false;
+        if (!dir.isDirectory() && !dir.mkdirs() && !dir.isDirectory()) return false;
+        if (!dir.canWrite()) return false;
+        File probe = new File(dir, ".parin_write_test");
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(probe);
+            out.write(1);
+            out.flush();
+            out.getFD().sync();
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        } finally {
+            if (out != null) try { out.close(); } catch (Exception ignored) { }
+            if (probe.exists()) probe.delete();
+        }
+    }
+
     private File downloadsDirectory() {
-        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        if (dir == null) dir = new File(Environment.getExternalStorageDirectory(), "Download");
-        if (!dir.exists()) dir.mkdirs();
-        return dir;
+        File[] candidates = backupDirectories();
+        boolean externalMounted = Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
+        if (externalMounted && candidates.length > 0 && prepareWritableDirectory(candidates[0])) {
+            return candidates[0];
+        }
+        for (int i = 1; i < candidates.length; i++) {
+            if (prepareWritableDirectory(candidates[i])) return candidates[i];
+        }
+        if (candidates.length > 0 && prepareWritableDirectory(candidates[0])) return candidates[0];
+        return null;
+    }
+
+    private File findBackupFile(String name) {
+        if (name == null || name.length() > 255 || name.contains("/") || name.contains("\\\\")) return null;
+        for (File dir : backupDirectories()) {
+            if (dir == null) continue;
+            File candidate = new File(dir, name);
+            if (candidate.isFile()) return candidate;
+        }
+        return null;
     }
 
     private void toast(final String message) {
@@ -345,11 +393,14 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface public String listBackupFiles() {
             JSONArray result = new JSONArray();
-            File[] files = downloadsDirectory().listFiles();
-            if (files != null) {
+            Set<String> names = new HashSet<String>();
+            for (File dir : backupDirectories()) {
+                File[] files = dir == null ? null : dir.listFiles();
+                if (files == null) continue;
                 for (File file : files) {
-                    if (file.isFile() && (file.getName().toLowerCase(Locale.US).endsWith(".plbackup")
-                        || file.getName().toLowerCase(Locale.US).endsWith(".json"))) {
+                    String lower = file.getName().toLowerCase(Locale.US);
+                    if (file.isFile() && (lower.endsWith(".plbackup") || lower.endsWith(".json"))
+                            && names.add(file.getName())) {
                         result.put(file.getName());
                     }
                 }
@@ -358,26 +409,68 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface public String readBackupFile(String name) {
-            if (name == null || name.length() > 255 || name.contains("/") || name.contains("\\")) return "";
-            File file = new File(downloadsDirectory(), name);
-            if (!file.isFile()) return "";
+            File file = findBackupFile(name);
+            if (file == null) return "";
             try { return Base64.encodeToString(readAll(new FileInputStream(file)), Base64.NO_WRAP); }
             catch (Exception ignored) { return ""; }
         }
 
         @JavascriptInterface public String exportBackup(String base64, String name) {
-            if (base64 == null || base64.length() > 100000000) return "ERROR";
-            if (name == null || (!name.endsWith(".plbackup") && !name.endsWith(".json"))) name = "parin_litner_backup.plbackup";
-            name = name.replace("/", "_").replace("\\", "_");
-            File outFile = new File(downloadsDirectory(), name);
+            if (base64 == null || base64.length() == 0 || base64.length() > 100000000) {
+                toast("Backup is empty or too large to export.");
+                return "ERROR";
+            }
+            if (name == null || (!name.endsWith(".plbackup") && !name.endsWith(".json"))) {
+                name = "parin_litner_backup.plbackup";
+            }
+            name = name.replace("/", "_").replace("\\\\", "_");
+            File temp = null;
+            File outFile = null;
+            File previous = null;
+            InputStream decoded = null;
+            FileOutputStream out = null;
             try {
-                byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
-                FileOutputStream out = new FileOutputStream(outFile);
-                try { out.write(bytes); out.flush(); out.getFD().sync(); } finally { out.close(); }
-                toast("Backup saved to Downloads/" + name);
+                File dir = downloadsDirectory();
+                if (dir == null) throw new IOException("No writable storage location is available.");
+                outFile = new File(dir, name);
+                temp = new File(dir, name + ".tmp");
+                previous = new File(dir, name + ".previous");
+
+                // Stream Base64 decoding to avoid a second full-size byte array on
+                // low-memory Android 4 devices when backup contains many images.
+                byte[] encoded = base64.getBytes(Charset.forName("US-ASCII"));
+                decoded = new Base64InputStream(new ByteArrayInputStream(encoded), Base64.DEFAULT);
+                out = new FileOutputStream(temp);
+                byte[] buffer = new byte[8192];
+                long written = 0;
+                int count;
+                while ((count = decoded.read(buffer)) != -1) {
+                    written += count;
+                    if (written > 80L * 1024L * 1024L) throw new IOException("Backup exceeds the 80 MB export limit.");
+                    out.write(buffer, 0, count);
+                }
+                out.flush();
+                out.getFD().sync();
+                out.close();
+                out = null;
+                decoded.close();
+                decoded = null;
+
+                if (previous.exists() && !previous.delete()) throw new IOException("Could not clear the previous backup temp file.");
+                if (outFile.exists() && !outFile.renameTo(previous)) throw new IOException("Could not preserve the existing backup.");
+                if (!temp.renameTo(outFile)) {
+                    if (previous.exists()) previous.renameTo(outFile);
+                    throw new IOException("Could not finalize the backup file.");
+                }
+                if (previous.exists()) previous.delete();
+                toast("Backup saved: " + outFile.getAbsolutePath());
                 return outFile.getAbsolutePath();
             } catch (Exception ex) {
-                toast("Could not save the backup file.");
+                if (out != null) try { out.close(); } catch (Exception ignored) { }
+                if (decoded != null) try { decoded.close(); } catch (Exception ignored) { }
+                if (temp != null && temp.exists()) temp.delete();
+                if (outFile != null && !outFile.exists() && previous != null && previous.exists()) previous.renameTo(outFile);
+                toast("Backup export failed: " + (ex.getMessage() == null ? "storage is unavailable" : ex.getMessage()));
                 return "ERROR";
             }
         }
