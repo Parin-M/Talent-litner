@@ -113,3 +113,8 @@ body.rtl .page-title, body.rtl .page-subtitle, body.rtl .panel-title { text-alig
   .metric { -webkit-flex-basis: 20%; flex-basis: 20%; }
   #bottom-nav { max-width: 840px; left: 50%; right: auto; width: 100%; -webkit-transform: translateX(-50%); transform: translateX(-50%); }
 }
+
+.no-animations *, .no-animations *:before, .no-animations *:after { -webkit-animation: none !important; animation: none !important; -webkit-transition: none !important; transition: none !important; }
+.compact-settings .panel { padding: 8px; margin: 6px 0; }
+.compact-settings .setting-row { padding: 5px 0; }
+.compact-settings .page-title { margin-bottom: 2px; }
