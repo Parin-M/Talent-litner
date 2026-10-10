@@ -8,8 +8,8 @@
   var HEADER_SUBTITLE = document.getElementById("header-subtitle");
   var state, view = { page: "home" }, navStack = [], modalState = null;
   var editDeckId = null, editCardDeckId = null, editCardId = null, imageTarget = "front";
-  var session = null, studyInterval = null, focusInterval = null, focusRunning = false;
-  var focusDuration = 25, focusRemaining = 25 * 60, focusStartedAt = 0, musicPlaying = false;
+  var session = null, studyInterval = null, focusInterval = null, autoRevealTimeout = null, focusRunning = false;
+  var focusDuration = 30, focusRemaining = 30 * 60, focusStartedAt = 0, musicPlaying = false;
   var pendingImport = null, downloadedBackupName = null, searchTerm = "", smartMixSize = 20;
   var languages = [
     ["fa","فارسی"],["en","English"],["de","Deutsch"],["de-CH","Deutsch (Schweiz)"],["de-AT","Deutsch (Österreich)"],
@@ -23,7 +23,7 @@
       decks: [],
       settings: {
         themeIndex: 0, appearanceMode: "aero", languageCode: "fa", animations: true, haptics: true,
-        autoReveal: false, showProgress: true, showTimer: true, glass: true, showXp: true,
+        autoReveal: false, autoRevealDelaySeconds: 5, focusCustomMinutes: 60, showProgress: true, showTimer: true, glass: true, showXp: true,
         confirmExit: true, compactSettings: false, glassOpacity: 0.62, dailyGoal: 20,
         musicEnabled: false, musicTrack: "lofi_night", musicVolume: 0.35
       },
@@ -118,6 +118,7 @@
     card.due = text(card.due || new Date().toISOString()); card.favorite = !!card.favorite;
     card.reviews = Math.max(0,parseInt(card.reviews,10)||0); card.lapses = Math.max(0,parseInt(card.lapses,10)||0);
     card.frontImage = card.frontImage || null; card.backImage = card.backImage || null;
+    card.difficulty = ["hard","medium","easy"].indexOf(card.difficulty)>=0 ? card.difficulty : "auto";
     return card;
   }
   function loadState() {
@@ -336,6 +337,8 @@
     out+='<label class="field" for="back">'+esc(translate("card_back"))+'</label><textarea id="back" maxlength="20000">'+esc(c?c.back:"")+'</textarea>';
     out+=imageInput("back",d._editingBackImage!==undefined?d._editingBackImage:(c?c.backImage:null));
     out+='<label class="field" for="card-tags">'+esc(translate("tags"))+'</label><input type="text" id="card-tags" maxlength="500" value="'+attr(c?c.tags:"")+'" placeholder="'+attr(translate("tags_hint"))+'">';
+    var cardDifficulty=c&&["hard","medium","easy"].indexOf(c.difficulty)>=0?c.difficulty:"medium";
+    out+='<label class="field" for="card-difficulty">'+esc(translate("card_difficulty"))+'</label><select id="card-difficulty"><option value="hard"'+(cardDifficulty==="hard"?" selected":"")+'>'+esc(translate("hard"))+'</option><option value="medium"'+(cardDifficulty==="medium"?" selected":"")+'>'+esc(translate("pc_medium"))+'</option><option value="easy"'+(cardDifficulty==="easy"?" selected":"")+'>'+esc(translate("easy"))+'</option></select>';
     out+='<label class="field" for="card-box">'+esc(translate("box"))+'</label><select id="card-box">';
     for(var i=0;i<d.boxes.length;i++)out+='<option value="'+i+'"'+(c&&c.box===i?" selected":"")+'>'+esc(d.boxes[i].name)+'</option>';
     out+='</select><label class="setting-row"><input id="card-favorite" type="checkbox"'+(c&&c.favorite?" checked":"")+'><span class="setting-copy"><span class="setting-name">'+esc(translate("favorite_only"))+'</span></span></label>';
@@ -389,9 +392,17 @@
   }
   function renderFocus() {
     var out=pageHead(translate("focus_title"),translate("focus_sub"));
-    out+=panel(translate("select_duration"),'<div class="row wrap">'+btn("15 "+translate("focus_minutes"),"focus-duration",' data-minutes="15"',focusDuration===15?"button primary":"button")+' '+btn("25 "+translate("focus_minutes"),"focus-duration",' data-minutes="25"',focusDuration===25?"button primary":"button")+' '+btn("45 "+translate("focus_minutes"),"focus-duration",' data-minutes="45"',focusDuration===45?"button primary":"button")+'</div>');
+    out+=panel(translate("select_duration"),'<div class="row wrap">'+
+      btn("15 "+translate("focus_minutes"),"focus-duration",' data-minutes="15"',focusDuration===15?"button primary":"button")+' '+
+      btn("30 "+translate("focus_minutes"),"focus-duration",' data-minutes="30"',focusDuration===30?"button primary":"button")+' '+
+      btn("45 "+translate("focus_minutes"),"focus-duration",' data-minutes="45"',focusDuration===45?"button primary":"button")+
+      '</div><div class="row wrap" style="margin-top:10px"><label class="field" for="focus-custom-duration">'+esc(translate("focus_custom_minutes"))+'</label><input id="focus-custom-duration" type="number" min="1" max="180" step="1" value="'+Math.max(1,Math.min(180,parseInt(state.settings.focusCustomMinutes,10)||60))+'" style="max-width:140px">'+
+      btn(esc(translate("apply")),"focus-duration-custom","","button primary")+'</div>');
     out+=panel("",'<div id="focus-clock" style="font-size:48px;font-weight:800;text-align:center;padding:16px 0">'+duration(focusRemaining)+'</div><div class="row">'+btn(esc(focusRunning?translate("pause"):translate("start_focus")),"focus-toggle","","button primary")+' '+btn(esc(translate("reset")),"focus-reset")+'</div><label class="setting-row"><input type="checkbox" data-setting="musicEnabled"'+(state.settings.musicEnabled?" checked":"")+'><span class="setting-copy"><span class="setting-name">'+esc(translate("focus_music"))+'</span></span></label>'+
-      '<label class="field">'+esc(translate("music"))+'</label><select data-setting="musicTrack"><option value="lofi_night"'+(state.settings.musicTrack==="lofi_night"?" selected":"")+'>Lo-fi Night</option><option value="rainy_focus"'+(state.settings.musicTrack==="rainy_focus"?" selected":"")+'>Rainy Focus</option><option value="deep_focus"'+(state.settings.musicTrack==="deep_focus"?" selected":"")+'>Deep Focus</option></select>');
+      '<label class="field">'+esc(translate("music"))+'</label><select data-setting="musicTrack"><option value="lofi_night"'+(state.settings.musicTrack==="lofi_night"?" selected":"")+'>'+
+      'Lo-fi Night</option><option value="rainy_focus"'+(state.settings.musicTrack==="rainy_focus"?" selected":"")+'>'+
+      'Rainy Focus</option><option value="deep_focus"'+(state.settings.musicTrack==="deep_focus"?" selected":"")+'>'+
+      'Deep Focus</option></select>');
     return out;
   }
   function settingRow(key, subkey, checked) {
@@ -407,7 +418,7 @@
     for(var j=0;j<window.PARIN_THEMES.length;j++)mo+='<option value="'+j+'"'+(s.themeIndex===j?" selected":"")+'>'+esc(window.PARIN_THEMES[j].name)+'</option>';
     mo+='</select>'+settingRow("glass","glass_sub",s.glass)+'<label class="field">'+esc(translate("glass"))+' • '+Math.round(s.glassOpacity*100)+'%</label><input type="range" min="30" max="90" value="'+Math.round(s.glassOpacity*100)+'" data-setting="glassOpacity">';
     out+=panel(translate("appearance"),mo);
-    out+=panel(translate("study_preferences"),settingRow("animations",null,s.animations)+settingRow("haptics",null,s.haptics)+settingRow("auto_reveal",null,s.autoReveal)+settingRow("progress",null,s.showProgress)+settingRow("timer",null,s.showTimer)+settingRow("show_xp","show_xp_sub",s.showXp)+settingRow("confirm_exit","confirm_exit_sub",s.confirmExit)+settingRow("compact_settings","compact_settings_sub",s.compactSettings));
+    out+=panel(translate("study_preferences"),settingRow("animations",null,s.animations)+settingRow("haptics",null,s.haptics)+settingRow("auto_reveal",null,s.autoReveal)+(s.autoReveal?'<label class="field">'+esc(translate("auto_reveal_delay"))+' • '+s.autoRevealDelaySeconds+' '+esc(translate("seconds"))+'</label><input type="range" min="1" max="30" value="'+s.autoRevealDelaySeconds+'" data-setting="autoRevealDelaySeconds">':"")+settingRow("progress",null,s.showProgress)+settingRow("timer",null,s.showTimer)+settingRow("show_xp","show_xp_sub",s.showXp)+settingRow("confirm_exit","confirm_exit_sub",s.confirmExit)+settingRow("compact_settings","compact_settings_sub",s.compactSettings));
     out+=panel(translate("music"),settingRow("music_study",null,s.musicEnabled)+'<label class="field">'+esc(translate("music"))+'</label><select data-setting="musicTrack"><option value="lofi_night"'+(s.musicTrack==="lofi_night"?" selected":"")+'>Lo-fi Night</option><option value="rainy_focus"'+(s.musicTrack==="rainy_focus"?" selected":"")+'>Rainy Focus</option><option value="deep_focus"'+(s.musicTrack==="deep_focus"?" selected":"")+'>Deep Focus</option></select><label class="field">'+esc(translate("volume")||"Volume")+' • '+Math.round(s.musicVolume*100)+'%</label><input type="range" min="0" max="100" value="'+Math.round(s.musicVolume*100)+'" data-setting="musicVolume"><div class="row wrap" style="margin-top:9px">'+btn(esc(translate("music_btn")),"toggle-music")+'</div>');
     out+=panel(translate("daily_goal"),'<label class="field">'+esc(translate("daily_goal"))+' (5–100)</label><input type="number" min="5" max="100" value="'+s.dailyGoal+'" data-setting="dailyGoal">');
     out+=panel(translate("backup"),'<div class="row wrap">'+btn(esc(translate("export")),"export-backup","","button primary")+' '+btn(esc(translate("import")),"import-backup")+'</div>');
@@ -807,7 +818,7 @@
       return;
     }
     if(action==="study-all"){startStudy(null,translate("study"));return;}
-    if(action==="reveal"){if(session&&!session.finished){session.revealed=true;render();}return;}
+    if(action==="reveal"){if(session&&!session.finished){if(autoRevealTimeout){window.clearTimeout(autoRevealTimeout);autoRevealTimeout=null;}session.revealed=true;render();}return;}
     if(action==="rate"){rateCard(parseInt(target.getAttribute("data-rating"),10)||0);return;}
     if(action==="finish-study"){closeModal();session=null;stopStudyTimer();backAfterStudy();return;}
     if(action==="confirm-study-exit"){closeModal();stopStudyTimer();session=null;back();return;}
@@ -822,7 +833,8 @@
     if(action==="replace-import"){applyImport(true);return;}
     if(action==="pick-image"){imageTarget=target.getAttribute("data-side")||"front";try{Native.pickImage();}catch(e){notify(translate("image_error"));}return;}
     if(action==="clear-image"){var dx=getDeck(editCardDeckId);if(dx){if(target.getAttribute("data-side")==="front")dx._editingFrontImage=null;else dx._editingBackImage=null;render();}return;}
-    if(action==="focus-duration"){if(!focusRunning){focusDuration=parseInt(target.getAttribute("data-minutes"),10)||25;focusRemaining=focusDuration*60;render();}return;}
+    if(action==="focus-duration"){if(!focusRunning){focusDuration=parseInt(target.getAttribute("data-minutes"),10)||30;focusRemaining=focusDuration*60;render();}return;}
+    if(action==="focus-duration-custom"){if(!focusRunning){var custom=document.getElementById("focus-custom-duration"),chosen=custom?parseInt(custom.value,10):NaN;if(isNaN(chosen)||chosen<1||chosen>180){notify(translate("focus_custom_invalid"));return;}focusDuration=chosen;state.settings.focusCustomMinutes=chosen;focusRemaining=focusDuration*60;persist();render();}return;}
     if(action==="focus-toggle"){toggleFocus();return;}
     if(action==="focus-reset"){pauseFocusForNavigation();focusRemaining=focusDuration*60;render();return;}
     if(action==="toggle-music"){toggleMusic();return;}
@@ -906,7 +918,7 @@
       state.dailyCardsCreated++;
     }
     card.front=front;card.back=backText;card.tags=document.getElementById("card-tags").value.trim();
-    card.box=parseInt(document.getElementById("card-box").value,10)||0;card.favorite=document.getElementById("card-favorite").checked;
+    card.box=parseInt(document.getElementById("card-box").value,10)||0;card.favorite=document.getElementById("card-favorite").checked;card.difficulty=document.getElementById("card-difficulty").value;
     card.frontImage=frontImg;card.backImage=backImg;
     delete d._editingFrontImage;delete d._editingBackImage;
     persist();replaceView("deck",{deckId:d.id});
@@ -929,7 +941,7 @@
     var key=el.getAttribute("data-setting");if(!key)return;
     var val;
     if(el.type==="checkbox")val=el.checked;
-    else if(key==="themeIndex"||key==="dailyGoal")val=parseInt(el.value,10);
+    else if(key==="themeIndex"||key==="dailyGoal"||key==="autoRevealDelaySeconds"||key==="focusCustomMinutes")val=parseInt(el.value,10);
     else if(key==="glassOpacity")val=parseInt(el.value,10)/100;
     else if(key==="musicVolume")val=parseInt(el.value,10)/100;
     else val=el.value;
@@ -940,6 +952,8 @@
     else if(key==="confirm_exit")key="confirmExit";
     else if(key==="compact_settings")key="compactSettings";
     else if(key==="auto_reveal")key="autoReveal";
+    if(key==="autoRevealDelaySeconds")val=Math.max(1,Math.min(30,isNaN(val)?5:val));
+    if(key==="focusCustomMinutes")val=Math.max(1,Math.min(180,isNaN(val)?60:val));
     if(key==="languageCode"&&!window.PARIN_TRANSLATIONS[val])return;
     if(key==="appearanceMode"&&["light","dark","aero","amoled"].indexOf(val)<0)return;
     if(key==="musicTrack"&&["lofi_night","rainy_focus","deep_focus"].indexOf(val)<0)return;
@@ -963,6 +977,7 @@
     CONTENT.addEventListener("submit",function(e){e.preventDefault();handleSubmit(e.target);});
     CONTENT.addEventListener("change",function(e){
       var el=e.target;
+      if(el&&el.id==="focus-custom-duration"){ state.settings.focusCustomMinutes=Math.max(1,Math.min(180,parseInt(el.value,10)||60));persist();return; }
       if(el&&el.id==="smart-mix-size"){
         smartMixSize=parseInt(el.value,10)||20;
         if([10,20,30].indexOf(smartMixSize)<0)smartMixSize=20;
