@@ -63,7 +63,7 @@ class AppTheme {
     ThemeOption('Slate', Color(0xFF455A64), Color(0xFF90A4AE), Color(0xFFF0F4F6)),
   ];
 
-  static ThemeData build(int index, {String mode = 'aero', bool glass = true, double glassOpacity = .62}) {
+  static ThemeData build(int index, {String mode = 'aero', bool glass = true, double glassOpacity = .62, bool animations = true}) {
     final t = themes[index.clamp(0, themes.length - 1).toInt()];
     final dark = mode == 'dark' || mode == 'amoled';
     final amoled = mode == 'amoled';
@@ -105,6 +105,14 @@ class AppTheme {
     );
 
     return ThemeData(
+      pageTransitionsTheme: PageTransitionsTheme(
+        builders: <TargetPlatform, PageTransitionsBuilder>{
+          for (final platform in TargetPlatform.values)
+            platform: animations
+                ? const ZoomPageTransitionsBuilder()
+                : const FadeUpwardsPageTransitionsBuilder(),
+        },
+      ),
       useMaterial3: false,
       brightness: brightness,
       colorScheme: scheme,
