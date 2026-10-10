@@ -196,3 +196,29 @@ input:focus, textarea:focus, select:focus { border-color: #0078d7; box-shadow: 0
 .panel .button { max-width: 100%; flex: 0 1 auto; }
 .panel .setting-copy { overflow-wrap: anywhere; word-wrap: break-word; }
 .panel-header > * { min-width: 0; }
+
+/* Study interaction controls: square Metro blocks, large tap targets, zoom-safe image viewport. */
+.study-image-zoom {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  cursor: zoom-in;
+  border-radius: 0;
+}
+.study-image-zoom:focus { outline: 2px solid #0078d7; outline-offset: 2px; }
+.study-image { display: block; max-width: 100%; height: auto; max-height: 42vh; margin: 0 auto; object-fit: contain; cursor: zoom-in; border-radius: 0 !important; }
+.legacy-image-zoom { width: 100%; max-height: 65vh; overflow: auto; text-align: center; background: #fff; }
+#zoom-study-image { display: inline-block; max-width: 100%; transition: transform .12s linear; }
+.rate-grid { display: flex; flex-wrap: nowrap; gap: 10px; width: 100%; margin-top: 12px; }
+.rate-grid .button { flex: 1 1 0; min-width: 0; min-height: 54px; white-space: normal; overflow-wrap: anywhere; font-size: 14px; text-align: center; border: 0; }
+.rate-grid .metro-known { background: #16823b !important; border-color: #16823b !important; color: #fff !important; }
+.rate-grid .metro-unknown { background: #c62828 !important; border-color: #c62828 !important; color: #fff !important; }
+.mode-dark .legacy-image-zoom, .mode-amoled .legacy-image-zoom { background: #111; }
+@media (max-width: 390px) {
+  .rate-grid { gap: 7px; }
+  .rate-grid .button { padding: 8px 6px; min-height: 52px; font-size: 12px; }
+}
