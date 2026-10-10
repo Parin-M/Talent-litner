@@ -254,7 +254,7 @@
     var out=pageHead("Parin Litner",translate("ready"));
     out+='<div class="grid">'+metric(s.total,translate("cards"))+metric(s.due,translate("cards_ready"))+metric(s.favorites,translate("favorite_only"))+metric(state.xp,"XP • Level "+(1+Math.floor(state.xp/250)))+'</div>';
     out+=panel(translate("today"),'<div class="row between"><strong>'+esc(s.due)+' / '+esc(goal)+'</strong><span class="muted">'+esc(translate("daily_goal"))+'</span></div><div style="margin-top:8px">'+progressBar(ratio)+'</div><p class="muted">'+esc(translate("streak")||"Streak")+': '+state.streak+' • '+esc(translate("week_reviews")||"This week")+': '+weekReviews()+'</p>'+
-      '<div class="row wrap">'+btn(esc(translate("study")),"study-all","", "button primary")+' '+btn(esc(translate("focus_mode")),"goto",' data-page="focus"')+' '+btn(esc(translate("achievement_center")),"goto",' data-page="achievements"')+'</div>'));
+      '<div class="row wrap">'+btn(esc(translate("study")),"study-all","", "button primary")+' '+btn(esc(translate("focus_mode")),"goto",' data-page="focus"')+' '+btn(esc(translate("achievement_center")),"goto",' data-page="achievements"')+'</div>');
     out+='<div class="row between"><h2 class="section-title">'+esc(translate("decks"))+'</h2>'+btn("+ "+esc(translate("new_deck")),"new-deck","","button primary")+'</div>';
     if(!state.decks.length) out+=panel("",'<div class="empty-state">'+esc(translate("no_cards"))+'</div>');
     for(var i=0;i<state.decks.length;i++){
