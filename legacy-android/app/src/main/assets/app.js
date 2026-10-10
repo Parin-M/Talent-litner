@@ -10,7 +10,7 @@
   var editDeckId = null, editCardDeckId = null, editCardId = null, imageTarget = "front";
   var session = null, studyInterval = null, focusInterval = null, autoRevealTimeout = null, focusRunning = false;
   var focusDuration = 30, focusRemaining = 30 * 60, focusStartedAt = 0, musicPlaying = false;
-  var pendingImport = null, downloadedBackupName = null, searchTerm = "", smartMixSize = 20;
+  var pendingImport = null, downloadedBackupName = null, searchTerm = "", smartMixSize = 20, zoomImageData = null, zoomScale = 1;
   var languages = [
     ["fa","فارسی"],["en","English"],["de","Deutsch"],["de-CH","Deutsch (Schweiz)"],["de-AT","Deutsch (Österreich)"],
     ["nl","Nederlands"],["es","Español"],["pt","Português"],["fr","Français"],["da","Dansk"],["no","Norsk"],
@@ -833,7 +833,9 @@
     }
     if(action==="study-all"){startStudy(null,translate("study"));return;}
     if(action==="reveal"){if(session&&!session.finished){if(autoRevealTimeout){window.clearTimeout(autoRevealTimeout);autoRevealTimeout=null;}session.revealed=true;if(state.settings.haptics){try{Native.vibrate(25);}catch(e){}}render();}return;}
-    if(action==="zoom-image"){var zoomRef=session&&session.cards[session.index],zoomCard=zoomRef?getCard(zoomRef.deckId,zoomRef.cardId):null;if(zoomCard){var zoomData=session.revealed?zoomCard.backImage:zoomCard.frontImage;if(zoomData)showModal(translate("zoom_image"),'<img class="zoomed-study-image" src="'+attr(imageUrl(zoomData))+'" alt="">',[{label:translate("close"),action:"close-modal",primary:true}]);}return;}
+    if(action==="zoom-image"){var zoomRef=session&&session.cards[session.index],zoomCard=zoomRef?getCard(zoomRef.deckId,zoomRef.cardId):null;if(zoomCard){zoomImageData=session.revealed?zoomCard.backImage:zoomCard.frontImage;zoomScale=1;if(zoomImageData)showZoomImage();}return;}
+    if(action==="zoom-image-more"){zoomScale=Math.min(5,zoomScale+0.5);showZoomImage();return;}
+    if(action==="zoom-image-less"){zoomScale=Math.max(1,zoomScale-0.5);showZoomImage();return;}
     if(action==="rate"){rateCard(parseInt(target.getAttribute("data-rating"),10)||0);return;}
     if(action==="finish-study"){closeModal();session=null;stopStudyTimer();backAfterStudy();return;}
     if(action==="confirm-study-exit"){closeModal();stopStudyTimer();session=null;back();return;}
@@ -857,6 +859,13 @@
     if(action==="smart-mix"){smartMix();return;}
     if(action==="open-repository"){try{Native.openUrl("https://github.com/Parin-M/parin-litner");}catch(e){}return;}
     if(action==="confirm-close"){closeModal();return;}
+  }
+  function showZoomImage() {
+    if(!zoomImageData)return;
+    showModal(translate("zoom_image"),
+      '<div class="zoom-image-viewport"><img class="zoomed-study-image" style="transform:scale('+zoomScale+')" src="'+attr(imageUrl(zoomImageData))+'" alt=""></div><div class="row wrap zoom-image-controls">'+
+      btn("−","zoom-image-less")+'<span class="badge">'+Math.round(zoomScale*100)+'%</span>'+btn("+","zoom-image-more")+'</div>',
+      [{label:translate("close"),action:"close-modal",primary:true}]);
   }
   function backAfterStudy() {
     if(navStack.length)view=navStack.pop();else view={page:"home"};
@@ -890,8 +899,8 @@
   }
   function claimReward() {
     var today=dateKey(new Date());
-    if(state.lastRewardDay===today){notify(translate("claimed_today")||"Already claimed today");return;}
-    state.lastRewardDay=today;state.xp+=50+Math.min(state.streak*5,100);persist();render();notify("+ XP");
+    if(state.lastRewardDay===today){notify(translate("pc_already"));return;}
+    state.lastRewardDay=today;state.xp+=50+Math.min(state.streak*5,100);persist();render();notify(translate("pc_claimed"));
   }
   function smartMix() {
     if(!state.decks.length){notify(translate("no_cards"));return;}
