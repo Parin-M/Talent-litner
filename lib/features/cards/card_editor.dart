@@ -51,10 +51,13 @@ class _CardEditorState extends State<CardEditor> {
 
   Future<void> _pickImage(bool isFront) async {
     try {
-      final file = await FilePicker.pickFile(type: FileType.image);
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      if (bytes.isEmpty || !mounted) return;
+      final result = await FilePicker.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final bytes = result.files.first.bytes;
+      if (bytes == null || bytes.isEmpty || !mounted) return;
       final encoded = base64Encode(bytes);
       setState(() => isFront ? frontImage = encoded : backImage = encoded);
     } catch (_) {

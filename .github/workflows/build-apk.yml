@@ -17,13 +17,34 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.35.7'
           cache: true
 
       - name: Create fresh Android project
         run: |
           rm -rf android
           flutter create --platforms=android --org com.parin .
+          # Flutter 3.35 keeps the engine compatible with Android 5.0 (API 21).
+          # Newer Flutter templates raise the default minimum to API 24.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('android/app/build.gradle.kts')
+          source = p.read_text()
+          source, replacements = re.subn(
+              r'(?m)^(\s*)minSdk\s*=\s*flutter\.minSdkVersion\s*$',
+              r'\g<1>minSdk = 21',
+              source,
+              count=1,
+          )
+          if replacements != 1:
+              raise SystemExit('Could not set Android minSdk to 21 in generated Gradle file.')
+          p.write_text(source)
+          if not re.search(r'(?m)^\s*minSdk\s*=\s*21\s*$', source):
+              raise SystemExit('Android minSdk verification failed.')
+          print('Android minimum SDK: 21 (Android 5.0 Lollipop)')
+          PY
           rm -rf test
 
       - name: Setup Java 17
@@ -133,6 +154,9 @@ jobs:
           print('Logo OK:',len(b))
           PY
           for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do cp assets/parin_litner_icon.png android/app/src/main/res/mipmap-$d/ic_launcher.png; done
+
+      - name: Verify Android 5 minimum
+        run: grep -Eq '^\s*minSdk = 21\s*$' android/app/build.gradle.kts
 
       - name: Install dependencies
         run: flutter pub get

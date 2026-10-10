@@ -59,15 +59,19 @@ class BackupService {
       type: FileType.custom,
       allowedExtensions: ['plbackup'],
       bytes: Uint8List.fromList(output),
-      mimeType: 'application/octet-stream',
     );
     return saved != null;
   }
 
   Future<List<Deck>?> importDecks() async {
-    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['plbackup', 'json']);
-    if (files.isEmpty) return null;
-    final bytes = await files.first.readAsBytes();
+    final picked = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['plbackup', 'json'],
+      withData: true,
+    );
+    if (picked == null || picked.files.isEmpty) return null;
+    final bytes = picked.files.first.bytes;
+    if (bytes == null) throw const FormatException('Unable to read the selected backup file.');
     if (_hasMagic(bytes)) return _decodeBinaryBackup(bytes);
 
     // Backward compatibility for pre-.plbackup JSON files.
