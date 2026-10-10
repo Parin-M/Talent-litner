@@ -192,6 +192,24 @@ class _SettingsPageState extends State<SettingsPage> {
                 _switchRow('animations', Icons.auto_awesome_outlined, widget.settings.animations),
                 _switchRow('haptics', Icons.vibration_outlined, widget.settings.haptics),
                 _switchRow('auto_reveal', Icons.flip_outlined, widget.settings.autoReveal),
+                if (widget.settings.autoReveal)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.timer_outlined),
+                    title: Text(s('auto_reveal_delay')),
+                    subtitle: Text('${widget.settings.autoRevealDelaySeconds} ${s('seconds')}'),
+                    trailing: SizedBox(
+                      width: 150,
+                      child: Slider(
+                        value: widget.settings.autoRevealDelaySeconds.toDouble(),
+                        min: 1,
+                        max: 30,
+                        divisions: 29,
+                        label: '${widget.settings.autoRevealDelaySeconds} ${s('seconds')}',
+                        onChanged: (value) => widget.settings.setAutoRevealDelaySeconds(value.round()),
+                      ),
+                    ),
+                  ),
                 _switchRow('progress', Icons.linear_scale_outlined, widget.settings.showProgress),
                 _switchRow('timer', Icons.timer_outlined, widget.settings.showTimer),
                 ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.flag_outlined), title: Text(s('daily_goal')), trailing: Text('${widget.settings.dailyGoal}'), subtitle: Slider(value: widget.settings.dailyGoal.toDouble(), min: 5, max: 100, divisions: 19, onChanged: (v) => widget.settings.setDailyGoal(v.round()))),
