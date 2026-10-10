@@ -231,7 +231,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      '${min(widget.settings.weekReviews, 40)} / 40 ${s(context, 'reviews')}',
+                      '${min(widget.settings.weekReviews, 40)} / 40 ${s(context, 'ac_reviews')}',
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                   ],
