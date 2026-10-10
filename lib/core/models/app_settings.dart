@@ -27,6 +27,7 @@ class AppSettings extends ChangeNotifier {
   String appearanceMode = 'aero';
   String languageCode = 'fa';
   bool animations = true, haptics = true, autoReveal = false, showProgress = true, showTimer = true, glass = true;
+  int autoRevealDelaySeconds = 3;
   bool showXp = true, confirmExit = true, compactSettings = false;
   double glassOpacity = .62;
   int dailyGoal = 20;
@@ -72,6 +73,7 @@ class AppSettings extends ChangeNotifier {
     animations = p.getBool('animations') ?? true;
     haptics = p.getBool('haptics') ?? true;
     autoReveal = p.getBool('auto_reveal') ?? false;
+    autoRevealDelaySeconds = (p.getInt('auto_reveal_delay_seconds') ?? 3).clamp(1, 30).toInt();
     showProgress = p.getBool('show_progress') ?? true;
     showTimer = p.getBool('show_timer') ?? true;
     glass = p.getBool('glass') ?? true;
@@ -126,6 +128,12 @@ class AppSettings extends ChangeNotifier {
       case 'compact_settings': compactSettings = value; break;
     }
     await (await SharedPreferences.getInstance()).setBool(key, value);
+    notifyListeners();
+  }
+
+  Future<void> setAutoRevealDelaySeconds(int value) async {
+    autoRevealDelaySeconds = value.clamp(1, 30).toInt();
+    await (await SharedPreferences.getInstance()).setInt('auto_reveal_delay_seconds', autoRevealDelaySeconds);
     notifyListeners();
   }
 
