@@ -348,7 +348,7 @@ class _HeroCard extends StatelessWidget {
                 size: 34,
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   title,
                   style: TextStyle(
