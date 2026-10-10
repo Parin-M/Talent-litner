@@ -934,7 +934,8 @@ class LanguageOverrides {
     "card_difficulty": "Erfiðleikastig spjalds",
     "knew": "Ég kunni þetta",
     "didnt_know": "Ég kunni þetta ekki",
-    "zoom_image": "Stækka mynd"
+    "zoom_image": "Stækka mynd",
+
   };
 
   static const _ja = <String, String>{
@@ -1135,7 +1136,8 @@ class LanguageOverrides {
     "card_difficulty": "רמת קושי של כרטיס",
     "knew": "ידעתי את הכרטיס",
     "didnt_know": "לא ידעתי את הכרטיס",
-    "zoom_image": "הגדל תמונה"
+    "zoom_image": "הגדל תמונה",
+
   };
 
   static const _ar = <String, String>{
@@ -1269,7 +1271,8 @@ class LanguageOverrides {
     "card_difficulty": "Δυσκολία κάρτας",
     "knew": "Το γνώριζα",
     "didnt_know": "Δεν το γνώριζα",
-    "zoom_image": "Μεγέθυνση εικόνας"
+    "zoom_image": "Μεγέθυνση εικόνας",
+
   };
 
   static const maps = <String, Map<String, String>>{
