@@ -318,6 +318,12 @@ public class MainActivity extends Activity {
     }
 
     public final class Bridge {
+        private File backupExportTemp;
+        private File backupExportTarget;
+        private File backupExportPrevious;
+        private FileOutputStream backupExportStream;
+        private int backupExpectedImages = 0;
+        private int backupWrittenImages = 0;
         @JavascriptInterface public String loadData() {
             File file = new File(getFilesDir(), "parin_litner_legacy.json");
             File backup = new File(getFilesDir(), "parin_litner_legacy.bak");
@@ -473,6 +479,168 @@ public class MainActivity extends Activity {
                 toast("Backup export failed: " + (ex.getMessage() == null ? "storage is unavailable" : ex.getMessage()));
                 return "ERROR";
             }
+        }
+
+        private void writeBackupU16(FileOutputStream out, int value) throws IOException {
+            out.write((value >>> 8) & 255);
+            out.write(value & 255);
+        }
+
+        private void writeBackupU32(FileOutputStream out, long value) throws IOException {
+            out.write((int) ((value >>> 24) & 255));
+            out.write((int) ((value >>> 16) & 255));
+            out.write((int) ((value >>> 8) & 255));
+            out.write((int) (value & 255));
+        }
+
+        private void clearBackupExportState() {
+            if (backupExportStream != null) {
+                try { backupExportStream.close(); } catch (Exception ignored) { }
+            }
+            backupExportStream = null;
+            if (backupExportTemp != null && backupExportTemp.exists()) backupExportTemp.delete();
+            if (backupExportTarget != null && !backupExportTarget.exists()
+                    && backupExportPrevious != null && backupExportPrevious.exists()) {
+                backupExportPrevious.renameTo(backupExportTarget);
+            }
+            backupExportTemp = null;
+            backupExportTarget = null;
+            backupExportPrevious = null;
+            backupExpectedImages = 0;
+            backupWrittenImages = 0;
+        }
+
+        @JavascriptInterface public String beginBackupExport(String manifestJson, String name) {
+            clearBackupExportState();
+            if (manifestJson == null || manifestJson.length() == 0 || manifestJson.length() > 16000000) {
+                toast("Backup metadata is empty or too large.");
+                return "ERROR";
+            }
+            if (name == null || (!name.endsWith(".plbackup") && !name.endsWith(".json"))) {
+                name = "parin_litner_backup.plbackup";
+            }
+            name = name.replace("/", "_").replace("\\\\", "_");
+            FileOutputStream stream = null;
+            try {
+                JSONObject manifest = new JSONObject(manifestJson);
+                if (!"Parin Litner".equals(manifest.optString("app"))
+                        || manifest.optInt("format", -1) != 1) {
+                    throw new IOException("Unsupported backup manifest.");
+                }
+                backupExpectedImages = manifest.optInt("imageCount", -1);
+                if (backupExpectedImages < 0 || backupExpectedImages > 50000) {
+                    throw new IOException("Invalid image count in backup.");
+                }
+                File dir = downloadsDirectory();
+                if (dir == null) throw new IOException("No writable storage location is available.");
+                backupExportTarget = new File(dir, name);
+                backupExportTemp = new File(dir, name + ".writing");
+                backupExportPrevious = new File(dir, name + ".previous");
+                if (backupExportTemp.exists() && !backupExportTemp.delete()) {
+                    throw new IOException("Could not clear a previous temporary backup.");
+                }
+
+                byte[] manifestBytes = manifestJson.getBytes(UTF8);
+                stream = new FileOutputStream(backupExportTemp);
+                stream.write("PLITBK01".getBytes(Charset.forName("US-ASCII")));
+                writeBackupU32(stream, manifestBytes.length);
+                stream.write(manifestBytes);
+                stream.flush();
+                backupExportStream = stream;
+                stream = null;
+                backupWrittenImages = 0;
+                return "OK";
+            } catch (Exception ex) {
+                if (stream != null) try { stream.close(); } catch (Exception ignored) { }
+                clearBackupExportState();
+                toast("Could not start backup export: " + (ex.getMessage() == null ? "storage unavailable" : ex.getMessage()));
+                return "ERROR";
+            }
+        }
+
+        @JavascriptInterface public String appendBackupImage(String name, String base64) {
+            if (backupExportStream == null || name == null || base64 == null
+                    || name.length() == 0 || name.length() > 255
+                    || name.contains("/") || name.contains("\\\\")
+                    || base64.length() == 0 || base64.length() > 100000000
+                    || backupWrittenImages >= backupExpectedImages) {
+                return "ERROR";
+            }
+            InputStream decoded = null;
+            try {
+                String compact = base64.replaceAll("\\s", "");
+                int padding = compact.endsWith("==") ? 2 : (compact.endsWith("=") ? 1 : 0);
+                long expectedBytes = ((long) compact.length() * 3L / 4L) - padding;
+                if (expectedBytes <= 0 || expectedBytes > 80L * 1024L * 1024L) {
+                    throw new IOException("An image is too large for this Android device.");
+                }
+                byte[] nameBytes = name.getBytes(UTF8);
+                if (nameBytes.length > 65535) throw new IOException("Invalid image name.");
+                writeBackupU16(backupExportStream, nameBytes.length);
+                backupExportStream.write(nameBytes);
+                writeBackupU32(backupExportStream, expectedBytes);
+
+                byte[] encoded = compact.getBytes(Charset.forName("US-ASCII"));
+                decoded = new Base64InputStream(new ByteArrayInputStream(encoded), Base64.DEFAULT);
+                byte[] buffer = new byte[8192];
+                long written = 0;
+                int count;
+                while ((count = decoded.read(buffer)) != -1) {
+                    written += count;
+                    if (written > expectedBytes) throw new IOException("Invalid encoded image length.");
+                    backupExportStream.write(buffer, 0, count);
+                }
+                if (written != expectedBytes) throw new IOException("Incomplete encoded image data.");
+                backupWrittenImages++;
+                return "OK";
+            } catch (Exception ex) {
+                toast("Could not write an image into the backup: " + (ex.getMessage() == null ? "invalid image" : ex.getMessage()));
+                return "ERROR";
+            } finally {
+                if (decoded != null) try { decoded.close(); } catch (Exception ignored) { }
+            }
+        }
+
+        @JavascriptInterface public String finishBackupExport() {
+            if (backupExportStream == null || backupWrittenImages != backupExpectedImages) {
+                clearBackupExportState();
+                toast("Backup export is incomplete.");
+                return "ERROR";
+            }
+            try {
+                backupExportStream.flush();
+                backupExportStream.getFD().sync();
+                backupExportStream.close();
+                backupExportStream = null;
+
+                if (backupExportPrevious.exists() && !backupExportPrevious.delete()) {
+                    throw new IOException("Could not clear the previous temporary backup.");
+                }
+                if (backupExportTarget.exists() && !backupExportTarget.renameTo(backupExportPrevious)) {
+                    throw new IOException("Could not preserve the existing backup.");
+                }
+                if (!backupExportTemp.renameTo(backupExportTarget)) {
+                    if (backupExportPrevious.exists()) backupExportPrevious.renameTo(backupExportTarget);
+                    throw new IOException("Could not finalize the backup file.");
+                }
+                if (backupExportPrevious.exists()) backupExportPrevious.delete();
+                String path = backupExportTarget.getAbsolutePath();
+                backupExportTemp = null;
+                backupExportTarget = null;
+                backupExportPrevious = null;
+                backupExpectedImages = 0;
+                backupWrittenImages = 0;
+                toast("Backup saved: " + path);
+                return path;
+            } catch (Exception ex) {
+                clearBackupExportState();
+                toast("Backup export failed: " + (ex.getMessage() == null ? "storage unavailable" : ex.getMessage()));
+                return "ERROR";
+            }
+        }
+
+        @JavascriptInterface public void cancelBackupExport() {
+            clearBackupExportState();
         }
 
         @JavascriptInterface public void openUrl(String url) {
