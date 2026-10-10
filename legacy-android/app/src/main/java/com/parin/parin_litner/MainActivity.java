@@ -44,6 +44,10 @@ public class MainActivity extends Activity {
     private JSONObject pickedFile;
     private boolean canGoBack = false;
     private AudioTrack audioTrack;
+    private Thread musicWorker;
+    private int musicGeneration = 0;
+    private boolean musicPaused = true;
+    private float desiredMusicVolume = 0.35f;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -168,56 +172,99 @@ public class MainActivity extends Activity {
     }
 
     private synchronized void stopMusic() {
+        musicGeneration++;
+        musicPaused = true;
+        if (musicWorker != null) {
+            musicWorker.interrupt();
+            musicWorker = null;
+        }
         if (audioTrack != null) {
             try { audioTrack.pause(); audioTrack.flush(); audioTrack.release(); } catch (Exception ignored) { }
             audioTrack = null;
         }
     }
 
-    private synchronized void playMusic(String track, double volume) {
-        stopMusic();
-        final int sampleRate = 22050;
-        final int length = sampleRate * 12;
-        short[] pcm = new short[length];
-        Random random = new Random(20261010L);
-        double rainState = 0;
-        for (int i = 0; i < length; i++) {
-            double t = (double) i / (double) sampleRate;
-            double value;
-            if ("rainy_focus".equals(track)) {
-                double white = random.nextDouble() * 2.0 - 1.0;
-                rainState = 0.985 * rainState + 0.015 * white;
-                value = 0.26 * (white - rainState)
-                    + 0.16 * Math.sin(2 * Math.PI * 98.0 * t)
-                    + 0.08 * Math.sin(2 * Math.PI * 147.0 * t);
-            } else if ("deep_focus".equals(track)) {
-                double pulse = 0.5 + 0.5 * Math.sin(2 * Math.PI * t / 8.0);
-                value = 0.62 * (0.75 + 0.25 * pulse)
-                    * (0.30 * Math.sin(2 * Math.PI * 110.0 * t)
-                    + 0.16 * Math.sin(2 * Math.PI * 220.0 * t)
-                    + 0.08 * Math.sin(2 * Math.PI * 164.81 * t) * pulse);
-            } else {
-                double env = Math.min(1.0, Math.min((t % 12.0) / 1.8, (12.0 - (t % 12.0)) / 1.8));
-                double chord = 0.28 * Math.sin(2 * Math.PI * 174.61 * t)
-                    + 0.20 * Math.sin(2 * Math.PI * 261.63 * t)
-                    + 0.13 * Math.sin(2 * Math.PI * 329.63 * t);
-                double bell = 0.05 * Math.sin(2 * Math.PI * 523.25 * t)
-                    * (0.5 + 0.5 * Math.sin(2 * Math.PI * t / 4.0));
-                value = 0.42 * env * (0.72 + 0.28 * (0.5 + 0.5 * Math.sin(2 * Math.PI * t / 7.0))) * (chord + bell);
+    private void playMusic(final String track, final double volume) {
+        final int generation;
+        synchronized (this) {
+            stopMusic();
+            generation = musicGeneration;
+            desiredMusicVolume = (float) Math.max(0.0, Math.min(1.0, volume));
+            musicPaused = false;
+        }
+        Thread worker = new Thread(new Runnable() {
+            @Override public void run() {
+                final int sampleRate = 22050;
+                final int length = sampleRate * 12;
+                final short[] pcm = new short[length];
+                Random random = new Random(20261010L);
+                double rainState = 0;
+                for (int i = 0; i < length; i++) {
+                    if ((i & 4095) == 0 && Thread.currentThread().isInterrupted()) return;
+                    double t = (double) i / (double) sampleRate;
+                    double value;
+                    if ("rainy_focus".equals(track)) {
+                        double white = random.nextDouble() * 2.0 - 1.0;
+                        rainState = 0.985 * rainState + 0.015 * white;
+                        value = 0.26 * (white - rainState)
+                            + 0.16 * Math.sin(2 * Math.PI * 98.0 * t)
+                            + 0.08 * Math.sin(2 * Math.PI * 147.0 * t);
+                    } else if ("deep_focus".equals(track)) {
+                        double pulse = 0.5 + 0.5 * Math.sin(2 * Math.PI * t / 8.0);
+                        value = 0.62 * (0.75 + 0.25 * pulse)
+                            * (0.30 * Math.sin(2 * Math.PI * 110.0 * t)
+                            + 0.16 * Math.sin(2 * Math.PI * 220.0 * t)
+                            + 0.08 * Math.sin(2 * Math.PI * 164.81 * t) * pulse);
+                    } else {
+                        double phase = t % 12.0;
+                        double env = Math.min(1.0, Math.min(phase / 1.8, (12.0 - phase) / 1.8));
+                        double chord = 0.28 * Math.sin(2 * Math.PI * 174.61 * t)
+                            + 0.20 * Math.sin(2 * Math.PI * 261.63 * t)
+                            + 0.13 * Math.sin(2 * Math.PI * 329.63 * t);
+                        double bell = 0.05 * Math.sin(2 * Math.PI * 523.25 * t)
+                            * (0.5 + 0.5 * Math.sin(2 * Math.PI * t / 4.0));
+                        value = 0.42 * env * (0.72 + 0.28 * (0.5 + 0.5 * Math.sin(2 * Math.PI * t / 7.0))) * (chord + bell);
+                    }
+                    if (value > 1) value = 1;
+                    if (value < -1) value = -1;
+                    pcm[i] = (short) (value * 23000);
+                }
+                if (Thread.currentThread().isInterrupted()) return;
+                runOnUiThread(new Runnable() {
+                    @Override public void run() {
+                        synchronized (MainActivity.this) {
+                            if (generation != musicGeneration || isFinishing()) return;
+                            AudioTrack player = null;
+                            try {
+                                int bytes = pcm.length * 2;
+                                player = new AudioTrack(AudioManager.STREAM_MUSIC, sampleRate,
+                                    AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+                                    bytes, AudioTrack.MODE_STATIC);
+                                int written = player.write(pcm, 0, pcm.length);
+                                if (written <= 0) {
+                                    player.release();
+                                    return;
+                                }
+                                try { player.setLoopPoints(0, written, -1); } catch (Exception ignored) { }
+                                player.setStereoVolume(desiredMusicVolume, desiredMusicVolume);
+                                audioTrack = player;
+                                if (musicPaused) player.pause(); else player.play();
+                            } catch (Exception ex) {
+                                if (player != null) try { player.release(); } catch (Exception ignored) { }
+                                audioTrack = null;
+                            } finally {
+                                musicWorker = null;
+                            }
+                        }
+                    }
+                });
             }
-            if (value > 1) value = 1;
-            if (value < -1) value = -1;
-            pcm[i] = (short) (value * 23000);
+        }, "ParinLitner-Music");
+        synchronized (this) {
+            if (generation != musicGeneration) return;
+            musicWorker = worker;
         }
-        int bytes = pcm.length * 2;
-        audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, sampleRate,
-            AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, bytes, AudioTrack.MODE_STATIC);
-        int written = audioTrack.write(pcm, 0, pcm.length);
-        if (written > 0) {
-            try { audioTrack.setLoopPoints(0, written, -1); } catch (Exception ignored) { }
-            audioTrack.setStereoVolume((float) volume, (float) volume);
-            audioTrack.play();
-        }
+        worker.start();
     }
 
     public final class Bridge {
@@ -353,7 +400,9 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface public void pauseMusic() {
-            runOnUiThread(new Runnable() { @Override public void run() { synchronized (MainActivity.this) { if (audioTrack != null) audioTrack.pause(); } } });
+            runOnUiThread(new Runnable() { @Override public void run() {
+                synchronized (MainActivity.this) { musicPaused = true; if (audioTrack != null) audioTrack.pause(); }
+            }});
         }
 
         @JavascriptInterface public void stopMusic() {
@@ -363,7 +412,10 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void setMusicVolume(double volume) {
             final float level = (float) Math.max(0.0, Math.min(1.0, volume));
             runOnUiThread(new Runnable() { @Override public void run() {
-                synchronized (MainActivity.this) { if (audioTrack != null) audioTrack.setStereoVolume(level, level); }
+                synchronized (MainActivity.this) {
+                    desiredMusicVolume = level;
+                    if (audioTrack != null) audioTrack.setStereoVolume(level, level);
+                }
             }});
         }
 
