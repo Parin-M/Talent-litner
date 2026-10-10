@@ -703,19 +703,34 @@
     render();
   }
   function createBackupPayload() {
-    var assets = [], decks = clone(state.decks), n = 0;
-    for (var i = 0; i < decks.length; i++) {
-      var cards = decks[i].cards || [];
-      for (var j = 0; j < cards.length; j++) {
-        var card = cards[j];
+    var assets = [], decks = [], n = 0;
+    // Copy only card metadata. Do not JSON-clone the original Base64 image
+    // strings: duplicating every image can exhaust the small heap on Android 4.
+    for (var di = 0; di < state.decks.length; di++) {
+      var sourceDeck = state.decks[di], deck = {};
+      for (var deckKey in sourceDeck) {
+        if (!Object.prototype.hasOwnProperty.call(sourceDeck, deckKey)) continue;
+        if (deckKey === "cards") continue;
+        deck[deckKey] = deckKey === "boxes" ? clone(sourceDeck.boxes || []) : sourceDeck[deckKey];
+      }
+      deck.cards = [];
+      var sourceCards = sourceDeck.cards || [];
+      for (var ci = 0; ci < sourceCards.length; ci++) {
+        var sourceCard = sourceCards[ci], card = {};
+        for (var cardKey in sourceCard) {
+          if (!Object.prototype.hasOwnProperty.call(sourceCard, cardKey)) continue;
+          if (cardKey === "frontImage" || cardKey === "backImage") continue;
+          card[cardKey] = sourceCard[cardKey];
+        }
         ["front", "back"].forEach(function (side) {
-          var key = side + "Image", data = card[key];
+          var key = side + "Image", data = sourceCard[key];
           if (data && typeof data === "string" && data.length) {
-            var encoded = data
-              .replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "")
-              .replace(/\s/g, "");
+            var encoded = data;
+            var dataPrefix = encoded.indexOf("base64,");
+            if (dataPrefix >= 0) encoded = encoded.substring(dataPrefix + 7);
+            if (/\s/.test(encoded)) encoded = encoded.replace(/\s/g, "");
             if (!encoded || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded) || encoded.length % 4 !== 0) {
-              throw new Error("Invalid image data in card " + card.id);
+              throw new Error("Invalid image data in card " + sourceCard.id);
             }
             n++;
             var name = "image_" + ("000000" + n).slice(-6) + ".bin";
@@ -724,9 +739,10 @@
           } else {
             card[side + "ImageAsset"] = null;
           }
-          delete card[key];
         });
+        deck.cards.push(card);
       }
+      decks.push(deck);
     }
     var manifest = {
       app: "Parin Litner",
