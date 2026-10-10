@@ -4,7 +4,7 @@ android {
     compileSdkVersion 28
 
     defaultConfig {
-        applicationId "com.parin.parin_litner"
+        applicationId "com.parin.parin_litner.legacy"
         minSdkVersion 14
         targetSdkVersion 28
         versionCode 22
@@ -19,6 +19,7 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.debug
         }
     }
 }
