@@ -98,15 +98,16 @@
       {id:"b5",name:"خانه ۵",color:4293881264}
     ];
   }
+  function normalizeDeck(deck) {
+    if (!deck || typeof deck !== "object") return null;
+    deck.id = text(deck.id || uid());
+    deck.name = text(deck.name || "Untitled deck");
+    deck.description = text(deck.description || "");
+    deck.color = text(deck.color || "6C63FF");
     if (Object.prototype.toString.call(deck.cards) !== "[object Array]") deck.cards = [];
-    if (!deck.boxes || !deck.boxes.length) deck.boxes = defaultBoxes();
-    deck.id = text(deck.id || uid()); deck.name = text(deck.name || "Untitled deck");
-    deck.description = text(deck.description || ""); deck.color = text(deck.color || "6C63FF");
-    if (!Object.prototype.toString.call(deck.cards) === "[object Array]") deck.cards = [];
-    if (!deck.cards || !deck.cards.length && !Object.prototype.toString.call(deck.cards)==="[object Array]") deck.cards = [];
-    if (!deck.boxes || !deck.boxes.length) deck.boxes = defaultBoxes();
-    deck.cards = (deck.cards || []).filter(function (c) { return c && typeof c === "object"; }).map(normalizeCard);
-    deck.boxes = deck.boxes.filter(function (b) { return b && typeof b === "object"; });
+    if (!Object.prototype.toString.call(deck.boxes) === "[object Array]") deck.boxes = defaultBoxes();
+    deck.cards = deck.cards.filter(function (c) { return c && typeof c === "object"; }).map(normalizeCard);
+    deck.boxes = (deck.boxes || []).filter(function (b) { return b && typeof b === "object"; });
     if (!deck.boxes.length) deck.boxes = defaultBoxes();
     return deck;
   }
@@ -309,9 +310,9 @@
     if(!d)return pageHead(translate("edit_card"),"");
     var out=pageHead(c?translate("edit_card"):translate("new_card"),d.name);
     out+='<form data-form="card" class="panel"><label class="field" for="front">'+esc(translate("card_front"))+'</label><textarea id="front" maxlength="20000">'+esc(c?c.front:"")+'</textarea>';
-    out+=imageInput("front",c?c.frontImage:null);
+    out+=imageInput("front",d._editingFrontImage!==undefined?d._editingFrontImage:(c?c.frontImage:null));
     out+='<label class="field" for="back">'+esc(translate("card_back"))+'</label><textarea id="back" maxlength="20000">'+esc(c?c.back:"")+'</textarea>';
-    out+=imageInput("back",c?c.backImage:null);
+    out+=imageInput("back",d._editingBackImage!==undefined?d._editingBackImage:(c?c.backImage:null));
     out+='<label class="field" for="card-tags">'+esc(translate("tags"))+'</label><input type="text" id="card-tags" maxlength="500" value="'+attr(c?c.tags:"")+'" placeholder="'+attr(translate("tags_hint"))+'">';
     out+='<label class="field" for="card-box">'+esc(translate("box"))+'</label><select id="card-box">';
     for(var i=0;i<d.boxes.length;i++)out+='<option value="'+i+'"'+(c&&c.box===i?" selected":"")+'>'+esc(d.boxes[i].name)+'</option>';
