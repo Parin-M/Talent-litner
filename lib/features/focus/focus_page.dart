@@ -45,7 +45,7 @@ class _FocusPageState extends State<FocusPage> {
   Future<void> _applyCustomMinutes() async {
     if (_running) return;
     final value = int.tryParse(_customController.text.trim());
-    if (value == null || value < 1 || value > 180) {
+    if (value == null || value < 1 || value > 600) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(s('focus_custom_invalid'))),
       );
