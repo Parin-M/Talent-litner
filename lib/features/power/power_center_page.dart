@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../../core/i18n/app_strings.dart';
 
 import '../../core/models/app_models.dart';
 import '../../core/models/app_settings.dart';
@@ -24,6 +25,7 @@ class PowerCenterPage extends StatefulWidget {
 
 class _PowerCenterPageState extends State<PowerCenterPage> {
   int _mixSize = 20;
+  String s(BuildContext context, String key) => AppStrings.t(context, key);
 
   List<FlashCard> _smartMix(Deck deck) {
     final now = DateTime.now();
@@ -47,11 +49,11 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
 
   String _difficulty(FlashCard card) {
     if (card.lapses >= 3 || (card.reviews >= 4 && card.boxIndex <= 1)) {
-      return 'Hard';
+      return 'difficulty_hard';
     }
-    if (card.reviews <= 1) return 'New';
-    if (card.boxIndex >= 3 && card.lapses == 0) return 'Easy';
-    return 'Medium';
+    if (card.reviews <= 1) return 'difficulty_new';
+    if (card.boxIndex >= 3 && card.lapses == 0) return 'difficulty_easy';
+    return 'difficulty_medium';
   }
 
   Future<void> _startSmartMix() async {
@@ -65,7 +67,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
     if (selected.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Create some cards first.')),
+        SnackBar(content: Text(s(context, 'pc_create_cards_first'))),
       );
       return;
     }
@@ -93,8 +95,8 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
       SnackBar(
         content: Text(
           ok
-              ? 'Daily reward claimed! +XP'
-              : 'Daily reward already claimed today.',
+              ? s(context, 'pc_reward_claimed')
+              : s(context, 'pc_reward_already_claimed'),
         ),
       ),
     );
@@ -107,11 +109,11 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
       builder: (context, _) {
         final scheme = Theme.of(context).colorScheme;
         final cards = widget.decks.expand((deck) => deck.cards).toList();
-        final hard = cards.where((card) => _difficulty(card) == 'Hard').length;
+        final hard = cards.where((card) => _difficulty(card) == 'difficulty_hard').length;
         final medium =
-            cards.where((card) => _difficulty(card) == 'Medium').length;
-        final fresh = cards.where((card) => _difficulty(card) == 'New').length;
-        final easy = cards.where((card) => _difficulty(card) == 'Easy').length;
+            cards.where((card) => _difficulty(card) == 'difficulty_medium').length;
+        final fresh = cards.where((card) => _difficulty(card) == 'difficulty_new').length;
+        final easy = cards.where((card) => _difficulty(card) == 'difficulty_easy').length;
 
         final today = DateTime.now();
         final last28 = List.generate(28, (index) {
@@ -129,7 +131,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
             (widget.settings.streak * 5).clamp(0, 100).toInt();
 
         return Scaffold(
-          appBar: AppBar(title: const Text('Power Center')),
+          appBar: AppBar(title: Text(s(context, 'power_center'))),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
             children: [
@@ -142,9 +144,9 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
               const SizedBox(height: 12),
               _ActionCard(
                 icon: Icons.auto_awesome,
-                title: 'Smart Study Mix',
+                title: s(context, 'pc_smart_mix_title'),
                 subtitle:
-                    'Prioritizes due, difficult, and weak cards automatically.',
+                    s(context, 'pc_smart_mix_subtitle'),
                 trailing: DropdownButton<int>(
                   value: _mixSize,
                   underline: const SizedBox.shrink(),
@@ -164,7 +166,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
               ),
               const SizedBox(height: 12),
               _Section(
-                title: 'Daily Reward',
+                title: s(context, 'pc_daily_reward'),
                 icon: Icons.card_giftcard_outlined,
                 child: Row(
                   children: [
@@ -174,15 +176,15 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                         children: [
                           Text(
                             widget.settings.dailyRewardAvailable
-                                ? 'Your reward is ready!'
-                                : 'Come back tomorrow for another reward.',
+                                ? s(context, 'pc_reward_ready')
+                                : s(context, 'pc_reward_tomorrow'),
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Up to +$reward XP',
+                            '${s(context, 'pc_up_to_xp')} +$reward XP',
                             style: TextStyle(
                               color: scheme.onSurfaceVariant,
                             ),
@@ -195,20 +197,20 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                           ? _claimReward
                           : null,
                       icon: const Icon(Icons.redeem_outlined),
-                      label: const Text('Claim'),
+                      label: Text(s(context, 'pc_claim_reward')),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
               _Section(
-                title: 'Weekly Challenge',
+                title: s(context, 'pc_weekly_challenge'),
                 icon: Icons.bolt_outlined,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Complete 40 reviews this week',
+                    Text(
+                      s(context, 'pc_complete_40_reviews'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -223,7 +225,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      '${min(widget.settings.weekReviews, 40)} / 40 reviews',
+                      '${min(widget.settings.weekReviews, 40)} / 40 ${s(context, 'pc_reviews')}',
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                   ],
@@ -231,7 +233,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
               ),
               const SizedBox(height: 12),
               _Section(
-                title: 'Streak Calendar',
+                title: s(context, 'pc_streak_calendar'),
                 icon: Icons.calendar_month_outlined,
                 child: Wrap(
                   spacing: 7,
@@ -243,41 +245,41 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
               ),
               const SizedBox(height: 12),
               _Section(
-                title: 'Smart Difficulty',
+                title: s(context, 'pc_smart_difficulty'),
                 icon: Icons.psychology_outlined,
                 child: Column(
                   children: [
-                    _DifficultyRow('Hard', hard, scheme.error),
-                    _DifficultyRow('Medium', medium, scheme.tertiary),
-                    _DifficultyRow('New', fresh, scheme.primary),
-                    _DifficultyRow('Easy', easy, scheme.secondary),
+                    _DifficultyRow(s(context, 'difficulty_hard'), hard, scheme.error),
+                    _DifficultyRow(s(context, 'difficulty_medium'), medium, scheme.tertiary),
+                    _DifficultyRow(s(context, 'difficulty_new'), fresh, scheme.primary),
+                    _DifficultyRow(s(context, 'difficulty_easy'), easy, scheme.secondary),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
               _Section(
-                title: 'Level Rewards',
+                title: s(context, 'pc_level_rewards'),
                 icon: Icons.workspace_premium_outlined,
                 child: Column(
                   children: [
                     _RewardRow(
                       1,
-                      'Getting Started',
+                      s(context, 'pc_level_getting_started'),
                       widget.settings.level >= 1,
                     ),
                     _RewardRow(
                       3,
-                      'Consistent Learner',
+                      s(context, 'pc_level_consistent'),
                       widget.settings.level >= 3,
                     ),
                     _RewardRow(
                       5,
-                      'Focus Master',
+                      s(context, 'pc_level_focus'),
                       widget.settings.level >= 5,
                     ),
                     _RewardRow(
                       10,
-                      'Parin Pro',
+                      s(context, 'pc_level_pro'),
                       widget.settings.level >= 10,
                     ),
                   ],
@@ -336,7 +338,7 @@ class _HeroCard extends StatelessWidget {
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(
-                  'Your Learning Power',
+                  AppStrings.t(context, 'pc_learning_power'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -345,7 +347,7 @@ class _HeroCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'Lv $level',
+                '${AppStrings.t(context, 'level')} $level',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
@@ -363,7 +365,7 @@ class _HeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '$xp XP  •  $streak day streak',
+            '$xp XP  •  $streak ${AppStrings.t(context, 'streak_days')}',
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
