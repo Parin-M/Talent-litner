@@ -149,7 +149,7 @@
     state.settings.glassOpacity = Math.max(.30,Math.min(.90,parseFloat(state.settings.glassOpacity)||.62));
     state.settings.dailyGoal = Math.max(5,Math.min(100,parseInt(state.settings.dailyGoal,10)||20));
     state.settings.autoRevealDelaySeconds=Math.max(1,Math.min(30,parseInt(state.settings.autoRevealDelaySeconds,10)||5));
-    state.settings.focusCustomMinutes=Math.max(1,Math.min(180,parseInt(state.settings.focusCustomMinutes,10)||60));
+    state.settings.focusCustomMinutes=Math.max(1,Math.min(600,parseInt(state.settings.focusCustomMinutes,10)||60));
     state.settings.musicVolume = Math.max(0,Math.min(1,parseFloat(state.settings.musicVolume)||0));
     if (!state.decks.length) {
       state.decks.push(normalizeDeck({id:"demo",name:"شروع سریع",description:"کارت‌های نمونه",color:"3F51B5",cards:[
@@ -383,8 +383,8 @@
     out+='<div class="muted" style="margin-top:16px">'+esc(translate("tap"))+'</div></div>';
     if(session.revealed){
       out+='<div class="rate-grid">'+
-        btn(esc(translate("didnt_know")),"rate",' data-rating="0"',"button rate-didnt-know")+
-        btn(esc(translate("knew")),"rate",' data-rating="2"',"button rate-knew")+'</div>';
+        btn(esc(translate("knew")),"rate",' data-rating="2"',"button rate-knew")+
+        btn(esc(translate("didnt_know")),"rate",' data-rating="0"',"button rate-didnt-know")+'</div>';
       out+='<p class="muted" style="text-align:center">'+esc(translate("swipe"))+'</p>';
     } else out+='<div style="margin-top:12px;text-align:center">'+btn(esc(translate("answer")),"reveal","","button primary")+'</div>';
     if(state.settings.musicEnabled)out+='<div class="row wrap" style="margin-top:10px">'+btn(esc(translate("music_btn")),"toggle-music")+'</div>';
@@ -396,7 +396,7 @@
       btn("15 "+translate("focus_minutes"),"focus-duration",' data-minutes="15"',focusDuration===15?"button primary":"button")+' '+
       btn("30 "+translate("focus_minutes"),"focus-duration",' data-minutes="30"',focusDuration===30?"button primary":"button")+' '+
       btn("45 "+translate("focus_minutes"),"focus-duration",' data-minutes="45"',focusDuration===45?"button primary":"button")+
-      '</div><div class="row wrap" style="margin-top:10px"><label class="field" for="focus-custom-duration">'+esc(translate("focus_custom_minutes"))+'</label><input id="focus-custom-duration" type="number" min="1" max="180" step="1" value="'+Math.max(1,Math.min(180,parseInt(state.settings.focusCustomMinutes,10)||60))+'" style="max-width:140px">'+
+      '</div><div class="row wrap" style="margin-top:10px"><label class="field" for="focus-custom-duration">'+esc(translate("focus_custom_minutes"))+'</label><input id="focus-custom-duration" type="number" min="1" max="600" step="1" value="'+Math.max(1,Math.min(180,parseInt(state.settings.focusCustomMinutes,10)||60))+'" style="max-width:140px">'+
       btn(esc(translate("apply")),"focus-duration-custom","","button primary")+'</div>');
     out+=panel("",'<div id="focus-clock" style="font-size:48px;font-weight:800;text-align:center;padding:16px 0">'+duration(focusRemaining)+'</div><div class="row">'+btn(esc(focusRunning?translate("pause"):translate("start_focus")),"focus-toggle","","button primary")+' '+btn(esc(translate("reset")),"focus-reset")+'</div><label class="setting-row"><input type="checkbox" data-setting="musicEnabled"'+(state.settings.musicEnabled?" checked":"")+'><span class="setting-copy"><span class="setting-name">'+esc(translate("focus_music"))+'</span></span></label>'+
       '<label class="field">'+esc(translate("music"))+'</label><select data-setting="musicTrack"><option value="lofi_night"'+(state.settings.musicTrack==="lofi_night"?" selected":"")+'>'+
@@ -597,7 +597,7 @@
     else if(rating===2){c.box=Math.min(last,Math.max(0,c.box+1));var good=[1,2,4,7,14,30];c.due=new Date(now.getTime()+good[Math.min(c.box,5)]*86400000).toISOString();}
     else {c.box=Math.min(last,Math.max(0,c.box+2));var easy=[2,4,7,14,30,60];c.due=new Date(now.getTime()+easy[Math.min(c.box,5)]*86400000).toISOString();}
     recordReview(rating);persist();
-    if(state.settings.haptics){try{Native.vibrate(rating===0?35:18);}catch(e){}}
+    if(state.settings.haptics){try{Native.vibrate(rating===0?150:85);}catch(e){}}
     if(state.settings.showXp)notify("+12 XP");
     if(session.index>=session.cards.length-1){finishStudy();return;}
     session.index++;session.revealed=false;render();
@@ -912,6 +912,9 @@
       value+=(c.lapses||0)*80;
       value+=Math.max(0,5-(c.box||0))*20;
       value+=Math.min(c.reviews||0,10);
+      if(c.difficulty==="hard")value+=250;
+      else if(c.difficulty==="medium")value+=100;
+      else if(c.difficulty==="easy")value-=50;
       return value;
     }
     cards.sort(function(a,b){return score(b)-score(a);});
@@ -977,11 +980,12 @@
     else if(key==="compact_settings")key="compactSettings";
     else if(key==="auto_reveal")key="autoReveal";
     if(key==="autoRevealDelaySeconds")val=Math.max(1,Math.min(30,isNaN(val)?5:val));
-    if(key==="focusCustomMinutes")val=Math.max(1,Math.min(180,isNaN(val)?60:val));
+    if(key==="focusCustomMinutes")val=Math.max(1,Math.min(600,isNaN(val)?60:val));
     if(key==="languageCode"&&!window.PARIN_TRANSLATIONS[val])return;
     if(key==="appearanceMode"&&["light","dark","aero","amoled"].indexOf(val)<0)return;
     if(key==="musicTrack"&&["lofi_night","rainy_focus","deep_focus"].indexOf(val)<0)return;
     state.settings[key]=val;
+    if(key==="haptics"&&val){try{Native.vibrate(110);}catch(e){}}
     if(key==="musicVolume"){try{Native.setMusicVolume(val);}catch(e){}}
     if(key==="musicEnabled"&&!val){try{Native.stopMusic();}catch(e){}musicPlaying=false;}
     if(key==="musicEnabled"&&val&&(view.page==="study"||view.page==="focus")){try{Native.playMusic(state.settings.musicTrack,state.settings.musicVolume);musicPlaying=true;}catch(e){}}
