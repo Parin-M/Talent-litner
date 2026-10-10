@@ -223,6 +223,11 @@ public class MainActivity extends Activity {
     public final class Bridge {
         @JavascriptInterface public String loadData() {
             File file = new File(getFilesDir(), "parin_litner_legacy.json");
+            File backup = new File(getFilesDir(), "parin_litner_legacy.bak");
+            if (!file.exists() && backup.exists()) {
+                // Recover the last known-good save if the device lost power mid-write.
+                backup.renameTo(file);
+            }
             if (!file.exists()) return "";
             try { return new String(readAll(new FileInputStream(file)), UTF8); }
             catch (Exception ignored) { return ""; }
@@ -232,7 +237,9 @@ public class MainActivity extends Activity {
             if (data == null || data.length() > 100000000) return;
             File file = new File(getFilesDir(), "parin_litner_legacy.json");
             File temp = new File(getFilesDir(), "parin_litner_legacy.tmp");
+            File backup = new File(getFilesDir(), "parin_litner_legacy.bak");
             FileOutputStream out = null;
+            boolean movedOriginal = false;
             try {
                 out = new FileOutputStream(temp);
                 out.write(data.getBytes(UTF8));
@@ -240,11 +247,25 @@ public class MainActivity extends Activity {
                 out.getFD().sync();
                 out.close();
                 out = null;
-                if (file.exists() && !file.delete()) throw new IOException("Could not replace saved data.");
-                if (!temp.renameTo(file)) throw new IOException("Could not save data.");
+
+                // Never delete the current save until the replacement has been
+                // completely written and synced. Keep a recoverable old copy.
+                if (backup.exists() && !backup.delete()) {
+                    throw new IOException("Could not clear an old recovery file.");
+                }
+                if (file.exists()) {
+                    if (!file.renameTo(backup)) throw new IOException("Could not preserve the previous save.");
+                    movedOriginal = true;
+                }
+                if (!temp.renameTo(file)) {
+                    if (movedOriginal) backup.renameTo(file);
+                    throw new IOException("Could not install the new save.");
+                }
+                if (backup.exists()) backup.delete();
             } catch (Exception ex) {
                 if (out != null) try { out.close(); } catch (Exception ignored) { }
-                toast("Could not save study data.");
+                if (!file.exists() && backup.exists()) backup.renameTo(file);
+                toast("Could not save study data; the previous save was preserved.");
             }
         }
 
