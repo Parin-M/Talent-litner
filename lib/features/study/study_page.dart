@@ -94,7 +94,7 @@ class _StudyPageState extends State<StudyPage> with SingleTickerProviderStateMix
     else if (rating == 2) { card.boxIndex = min(lastBox, max(0, card.boxIndex + 1)); card.dueAt = now.add(Duration(days: [1, 2, 4, 7, 14, 30][min(card.boxIndex, 5)])); }
     else { card.boxIndex = min(lastBox, max(0, card.boxIndex + 2)); card.dueAt = now.add(Duration(days: [2, 4, 7, 14, 30, 60][min(card.boxIndex, 5)])); }
     widget.onChanged();
-    widget.settings.recordReview();
+    widget.settings.recordReview(knew: rating == 2);
     unawaited(_buzz());
     if (widget.settings.showXp && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('+12 XP'), duration: Duration(milliseconds: 650)));
     if (index == cards.length - 1) { finished = true; unawaited(_buzz(heavy: true)); _finish(); return; }
