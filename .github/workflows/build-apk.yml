@@ -270,8 +270,8 @@ jobs:
               required = 'base/manifest/AndroidManifest.xml'
               if required not in names:
                   raise SystemExit(f'AAB missing {required}')
-              if not any(name.endswith('/assets/flutter_assets/assets/audio/lofi_night.wav') for name in names):
-                  raise SystemExit('AAB missing bundled audio asset')
+              if not any(name.endswith('/assets/flutter_assets/assets/audio/focus_alarm.wav') for name in names):
+                  raise SystemExit('AAB missing bundled focus alarm asset')
 
           print('ZIP structure and bundled audio verification: OK')
           PY
