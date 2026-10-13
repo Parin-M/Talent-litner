@@ -257,7 +257,7 @@ jobs:
               names = set(z.namelist())
               if not any(name == 'classes.dex' or (name.startswith('classes') and name.endswith('.dex')) for name in names):
                   raise SystemExit('APK does not contain a dex file')
-              for track in ('lofi_night.wav', 'rainy_focus.wav', 'deep_focus.wav'):
+              for track in ('lofi_night.wav', 'rainy_focus.wav', 'deep_focus.wav', 'focus_alarm.wav'):
                   expected = f'assets/flutter_assets/assets/audio/{track}'
                   if expected not in names:
                       raise SystemExit(f'APK missing bundled audio asset: {expected}')
