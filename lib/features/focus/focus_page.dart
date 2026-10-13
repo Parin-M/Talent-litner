@@ -81,7 +81,7 @@ class _FocusPageState extends State<FocusPage> {
     try {
       await MusicService.instance.playAlarm();
     } catch (_) {
-      // Fall back to the platform alert tone if the packaged alarm cannot play.
+      // Fall back to the platform alert tone if the bundled sound cannot be played.
       for (var i = 0; i < 3; i++) {
         try { await SystemSound.play(SystemSoundType.alert); } catch (_) {}
         if (i < 2) await Future<void>.delayed(const Duration(milliseconds: 450));
