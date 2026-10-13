@@ -696,8 +696,9 @@
     if(el)el.textContent=duration(focusRemaining);
     if(focusRemaining<=0){
       pauseFocusForNavigation();focusRemaining=0;persist();
+      if(state.settings.musicEnabled){try{Native.stopMusic();}catch(e){}}
       try{Native.playAlarm();}catch(e){}
-      if(state.settings.musicEnabled)Native.stopMusic();
+      if(state.settings.haptics){try{Native.vibrate(250);}catch(e){}}
       notify(translate("focus_done"));
       showModal(translate("focus_done"),'<p>'+esc(translate("great"))+'</p>',[{label:translate("close"),action:"close-modal"}]);
     }
