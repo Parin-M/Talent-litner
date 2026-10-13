@@ -26,6 +26,13 @@ class MusicService {
     await player.play(AssetSource(track.asset));
   }
 
+  Future<void> playAlarm() async {
+    await player.stop();
+    await player.setReleaseMode(ReleaseMode.stop);
+    await player.setVolume(1.0);
+    await player.play(AssetSource('audio/focus_alarm.wav'));
+  }
+
   Future<void> pause() => player.pause();
   Future<void> resume() => player.resume();
   Future<void> stop() => player.stop();
