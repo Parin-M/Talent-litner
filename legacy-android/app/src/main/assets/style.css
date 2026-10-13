@@ -289,3 +289,18 @@ body.no-animations #bottom-nav button:active {
   -webkit-transform: none !important;
   transform: none !important;
 }
+
+/* Study answer controls: accessible, high-contrast Metro status colors. */
+.rate-grid { display: -webkit-box; display: -webkit-flex; display: flex; gap: 8px; margin-top: 12px; }
+.rate-grid .button { -webkit-box-flex: 1; -webkit-flex: 1; flex: 1; min-height: 48px; white-space: normal; line-height: 1.25; font-size: 14px; font-weight: 700; }
+.button.metro-known { background: #16823b !important; border-color: #16823b !important; color: #fff !important; }
+.button.metro-unknown { background: #c62828 !important; border-color: #c62828 !important; color: #fff !important; }
+.study-image-zoom { display: block; width: 100%; max-width: 100%; padding: 0; margin: 0 auto 10px; border: 0; background: transparent; color: inherit; cursor: zoom-in; }
+.study-image-zoom .study-image { max-width: 100%; max-height: 220px; margin: 0 auto; }
+.legacy-image-zoom { max-width: 100%; max-height: 62vh; overflow: auto; text-align: center; background: #fff; padding: 6px; }
+.legacy-image-zoom img { display: block; margin: 0 auto; }
+.mode-dark .legacy-image-zoom, .mode-amoled .legacy-image-zoom { background: #111; }
+@media (max-width: 350px) {
+  .rate-grid { gap: 5px; }
+  .rate-grid .button { padding: 8px 5px; font-size: 12px; }
+}
