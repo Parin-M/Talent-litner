@@ -63,7 +63,7 @@ class LanguageOverrides {
     "card_difficulty": "سختی کارت",
     "knew": "این کارت را بلد بودم",
     "didnt_know": "این کارت را بلد نبودم",
-    "zoom_image": "بزرگ‌نمایی تصویر"
+    "zoom_image": "بزرگ‌نمایی تصویر",
     "custom_minutes": "مدت دلخواه",
     "enter_minutes": "تعداد دقیقه را وارد کنید",
     "minutes_range": "عددی بین ۱ تا ۶۰۰ دقیقه انتخاب کنید.",
@@ -184,7 +184,7 @@ class LanguageOverrides {
     "card_difficulty": "Card difficulty",
     "knew": "I knew this card",
     "didnt_know": "I didn't know this card",
-    "zoom_image": "Zoom image"
+    "zoom_image": "Zoom image",
     "custom_minutes": "Custom duration",
     "enter_minutes": "Enter minutes",
     "minutes_range": "Choose 1–600 minutes.",
@@ -305,7 +305,7 @@ class LanguageOverrides {
     "card_difficulty": "Kartenschwierigkeit",
     "knew": "Diese Karte wusste ich",
     "didnt_know": "Diese Karte wusste ich nicht",
-    "zoom_image": "Bild vergrößern"
+    "zoom_image": "Bild vergrößern",
     "custom_minutes": "Eigene Dauer",
     "enter_minutes": "Minuten eingeben",
     "minutes_range": "Wähle 1 bis 600 Minuten.",
@@ -426,7 +426,7 @@ class LanguageOverrides {
     "card_difficulty": "Kortets sværhedsgrad",
     "knew": "Det kunne jeg",
     "didnt_know": "Det kunne jeg ikke",
-    "zoom_image": "Zoom billede"
+    "zoom_image": "Zoom billede",
     "custom_minutes": "Brugerdefineret varighed",
     "enter_minutes": "Indtast minutter",
     "minutes_range": "Vælg mellem 1 og 600 minutter.",
@@ -547,7 +547,7 @@ class LanguageOverrides {
     "card_difficulty": "Dificultad de tarjeta",
     "knew": "Lo sabía",
     "didnt_know": "No lo sabía",
-    "zoom_image": "Ampliar imagen"
+    "zoom_image": "Ampliar imagen",
     "custom_minutes": "Duración personalizada",
     "enter_minutes": "Introduce los minutos",
     "minutes_range": "Elige entre 1 y 600 minutos.",
@@ -668,7 +668,7 @@ class LanguageOverrides {
     "card_difficulty": "Dificuldade do cartão",
     "knew": "Eu sabia",
     "didnt_know": "Eu não sabia",
-    "zoom_image": "Ampliar imagem"
+    "zoom_image": "Ampliar imagem",
     "custom_minutes": "Duração personalizada",
     "enter_minutes": "Introduza os minutos",
     "minutes_range": "Escolha entre 1 e 600 minutos.",
@@ -789,7 +789,7 @@ class LanguageOverrides {
     "card_difficulty": "Difficulté de la carte",
     "knew": "Je connaissais",
     "didnt_know": "Je ne connaissais pas",
-    "zoom_image": "Agrandir l’image"
+    "zoom_image": "Agrandir l’image",
     "custom_minutes": "Durée personnalisée",
     "enter_minutes": "Saisir les minutes",
     "minutes_range": "Choisissez entre 1 et 600 minutes.",
@@ -910,7 +910,7 @@ class LanguageOverrides {
     "card_difficulty": "Difficoltà della carta",
     "knew": "Lo sapevo",
     "didnt_know": "Non lo sapevo",
-    "zoom_image": "Ingrandisci immagine"
+    "zoom_image": "Ingrandisci immagine",
     "custom_minutes": "Durata personalizzata",
     "enter_minutes": "Inserisci i minuti",
     "minutes_range": "Scegli da 1 a 600 minuti.",
@@ -1031,7 +1031,7 @@ class LanguageOverrides {
     "card_difficulty": "Kart zorluğu",
     "knew": "Bu kartı biliyordum",
     "didnt_know": "Bu kartı bilmiyordum",
-    "zoom_image": "Görseli yakınlaştır"
+    "zoom_image": "Görseli yakınlaştır",
     "custom_minutes": "Özel süre",
     "enter_minutes": "Dakika girin",
     "minutes_range": "1 ile 600 dakika arasında seçin.",
@@ -1152,7 +1152,7 @@ class LanguageOverrides {
     "card_difficulty": "Kaartmoeilijkheid",
     "knew": "Ik wist dit",
     "didnt_know": "Ik wist dit niet",
-    "zoom_image": "Afbeelding zoomen"
+    "zoom_image": "Afbeelding zoomen",
     "custom_minutes": "Aangepaste duur",
     "enter_minutes": "Voer minuten in",
     "minutes_range": "Kies tussen 1 en 600 minuten.",
@@ -1273,7 +1273,7 @@ class LanguageOverrides {
     "card_difficulty": "Kortets svårighetsgrad",
     "knew": "Jag kunde detta",
     "didnt_know": "Jag kunde inte detta",
-    "zoom_image": "Zooma bild"
+    "zoom_image": "Zooma bild",
     "custom_minutes": "Anpassad längd",
     "enter_minutes": "Ange minuter",
     "minutes_range": "Välj mellan 1 och 600 minuter.",
@@ -1394,7 +1394,7 @@ class LanguageOverrides {
     "card_difficulty": "Kortets vanskelighetsgrad",
     "knew": "Jeg kunne dette",
     "didnt_know": "Jeg kunne ikke dette",
-    "zoom_image": "Zoom bilde"
+    "zoom_image": "Zoom bilde",
     "custom_minutes": "Egendefinert varighet",
     "enter_minutes": "Skriv inn minutter",
     "minutes_range": "Velg mellom 1 og 600 minutter.",
@@ -1515,7 +1515,7 @@ class LanguageOverrides {
     "card_difficulty": "Kortin vaikeus",
     "knew": "Tiesin tämän",
     "didnt_know": "En tiennyt tätä",
-    "zoom_image": "Zoomaa kuvaa"
+    "zoom_image": "Zoomaa kuvaa",
     "custom_minutes": "Mukautettu kesto",
     "enter_minutes": "Anna minuutit",
     "minutes_range": "Valitse 1–600 minuuttia.",
@@ -1758,7 +1758,7 @@ class LanguageOverrides {
     "card_difficulty": "カードの難易度",
     "knew": "知っていた",
     "didnt_know": "知らなかった",
-    "zoom_image": "画像を拡大"
+    "zoom_image": "画像を拡大",
     "custom_minutes": "カスタム時間",
     "enter_minutes": "分数を入力",
     "minutes_range": "1～600分で指定してください。",
@@ -1879,7 +1879,7 @@ class LanguageOverrides {
     "card_difficulty": "카드 난이도",
     "knew": "알고 있었어요",
     "didnt_know": "몰랐어요",
-    "zoom_image": "이미지 확대"
+    "zoom_image": "이미지 확대",
     "custom_minutes": "사용자 지정 시간",
     "enter_minutes": "분 입력",
     "minutes_range": "1~600분 사이에서 선택하세요.",
@@ -2122,7 +2122,7 @@ class LanguageOverrides {
     "card_difficulty": "صعوبة البطاقة",
     "knew": "كنت أعرف البطاقة",
     "didnt_know": "لم أكن أعرف البطاقة",
-    "zoom_image": "تكبير الصورة"
+    "zoom_image": "تكبير الصورة",
     "custom_minutes": "مدة مخصصة",
     "enter_minutes": "أدخل الدقائق",
     "minutes_range": "اختر من دقيقة إلى 600 دقيقة.",
