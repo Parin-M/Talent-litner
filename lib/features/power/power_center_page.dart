@@ -25,11 +25,16 @@ class PowerCenterPage extends StatefulWidget {
 
 class _PowerCenterPageState extends State<PowerCenterPage> {
   int _mixSize = 20;
+  String _mixFilter = 'all';
   String s(BuildContext context, String key) => AppStrings.t(context, key);
 
   List<FlashCard> _smartMix(Deck deck) {
     final now = DateTime.now();
-    final cards = List<FlashCard>.from(deck.cards);
+    final cards = List<FlashCard>.from(deck.cards).where((card) {
+      if (_mixFilter == 'all') return true;
+      if (_mixFilter == 'due') return !card.dueAt.isAfter(now);
+      return _difficulty(card) == _mixFilter;
+    }).toList();
 
     cards.sort((a, b) {
       int score(FlashCard card) {
@@ -51,14 +56,13 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
   }
 
   String _difficulty(FlashCard card) {
-    if (card.difficulty == 'hard' || card.difficulty == 'easy') return card.difficulty;
-    if (card.difficulty == 'medium') return 'difficulty_medium';
-    if (card.lapses >= 3 || (card.reviews >= 4 && card.boxIndex <= 1)) {
-      return 'hard';
+    if (card.difficulty == 'hard' || card.difficulty == 'medium' || card.difficulty == 'easy') {
+      return card.difficulty;
     }
+    if (card.lapses >= 3 || (card.reviews >= 4 && card.boxIndex <= 1)) return 'hard';
     if (card.reviews <= 1) return 'new_card';
     if (card.boxIndex >= 3 && card.lapses == 0) return 'easy';
-    return 'difficulty_medium';
+    return 'medium';
   }
 
   Future<void> _startSmartMix() async {
@@ -72,7 +76,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
     if (selected.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(s(context, 'pc_create_cards_first'))),
+        SnackBar(content: Text(s(context, 'pc_no_cards_for_filter'))),
       );
       return;
     }
@@ -116,7 +120,7 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
         final cards = widget.decks.expand((deck) => deck.cards).toList();
         final hard = cards.where((card) => _difficulty(card) == 'hard').length;
         final medium =
-            cards.where((card) => _difficulty(card) == 'difficulty_medium').length;
+            cards.where((card) => _difficulty(card) == 'medium').length;
         final fresh = cards.where((card) => _difficulty(card) == 'new_card').length;
         final easy = cards.where((card) => _difficulty(card) == 'easy').length;
 
@@ -168,6 +172,23 @@ class _PowerCenterPageState extends State<PowerCenterPage> {
                   },
                 ),
                 onTap: _startSmartMix,
+              ),
+              const SizedBox(height: 12),
+              _Section(
+                title: s(context, 'smart_mix_filter'),
+                icon: Icons.filter_alt_outlined,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final option in const ['all', 'due', 'hard', 'medium', 'easy'])
+                      ChoiceChip(
+                        label: Text(s(context, 'filter_$option')),
+                        selected: _mixFilter == option,
+                        onSelected: (_) => setState(() => _mixFilter = option),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               _Section(
