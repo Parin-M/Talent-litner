@@ -44,6 +44,8 @@ class AppStrings {
     'focus_done':'Focus session complete!','focus_minutes':'minutes','focus_music':'Play focus music','select_duration':'Session length','minutes_15':'15 min','minutes_25':'25 min','minutes_45':'45 min',
     'about':'About','about_creator':'Created by Parin.M','about_creator_desc':'This software was created by Parin.M (Parin.M).','about_ai':'ChatGPT also helped with its creation, development, and refinement.',
     'about_github':'GitHub Repository','about_repo_desc':'Open the Parin Litner project on GitHub','about_open_error':'Could not open GitHub repository.','about_love':'Made with love on planet Earth. 🌍❤️',
+    'about_version_title':'App version','about_android_compat':'Compatible with Android 4.0 and newer',
+    'smart_mix_filter':'Smart Mix Filter','filter_all':'All cards','filter_due':'Due for review','filter_hard':'Hard cards','filter_medium':'Medium cards','filter_easy':'Easy cards','pc_no_cards_for_filter':'No cards match this filter. Choose another filter.',
     'study_preferences':'Study preferences','show_xp':'Show XP feedback','show_xp_sub':'Display XP earned after each review','confirm_exit':'Confirm before leaving study','confirm_exit_sub':'Ask before closing an active study session',
     'compact_settings':'Compact settings','compact_settings_sub':'Use tighter spacing in Settings','achievement_center':'Achievement Center','achievement_center_sub':'Badges, daily challenges and progress',
     'smart_mix':'Smart Study Mix','smart_mix_sub':'A future-ready home for smart review modes','smart_mix_available':'Smart Study Mix is available in Power Center',
@@ -62,6 +64,8 @@ class AppStrings {
     'create':'ساختن','close':'بستن','focus_mode':'حالت تمرکز','focus_title':'تمرکز عمیق','focus_sub':'با زمان‌سنج بدون حواس‌پرتی متمرکز بمانید','start_focus':'شروع تمرکز','pause':'توقف','reset':'بازنشانی','focus_done':'جلسه تمرکز تمام شد!','focus_minutes':'دقیقه','focus_music':'پخش موسیقی تمرکز','select_duration':'مدت جلسه','minutes_15':'۱۵ دقیقه','minutes_25':'۲۵ دقیقه','minutes_45':'۴۵ دقیقه',
     'about':'درباره برنامه','about_creator':'ساخته‌شده توسط پرین.م (Parin.M)','about_creator_desc':'این برنامه توسط پرین.م (Parin.M) ساخته شده است.','about_ai':'ChatGPT نیز در ساخت، توسعه و بهبود آن کمک کرده است.',
     'about_github':'مخزن GitHub','about_repo_desc':'پروژه Parin Litner را در GitHub باز کنید','about_open_error':'باز کردن مخزن GitHub ممکن نشد.','about_love':'این نرم‌افزار با عشق در کره زمین ساخته شده است. 🌍❤️',
+    'about_version_title':'نسخه برنامه','about_android_compat':'سازگار با اندروید ۴.۰ و بالاتر',
+    'smart_mix_filter':'فیلتر ترکیب مرور هوشمند','filter_all':'همه کارت‌ها','filter_due':'موعد مرور','filter_hard':'کارت‌های سخت','filter_medium':'کارت‌های متوسط','filter_easy':'کارت‌های آسان','pc_no_cards_for_filter':'با این فیلتر کارتی پیدا نشد. فیلتر دیگری را انتخاب کنید.',
     'study_preferences':'تنظیمات مطالعه','show_xp':'نمایش XP','show_xp_sub':'مقدار XP دریافت‌شده بعد از هر مرور نمایش داده شود','confirm_exit':'تأیید قبل از خروج از مطالعه','confirm_exit_sub':'قبل از بستن جلسه فعال مطالعه تأیید بگیرید',
     'compact_settings':'تنظیمات فشرده','compact_settings_sub':'فاصله‌های کمتر در صفحه تنظیمات','achievement_center':'مرکز دستاوردها','achievement_center_sub':'نشان‌ها، چالش‌های روزانه و پیشرفت','smart_mix':'مرور هوشمند','smart_mix_sub':'مرور هوشمند و اولویت‌بندی کارت‌ها','smart_mix_available':'مرور هوشمند در Power Center در دسترس است',
   };
