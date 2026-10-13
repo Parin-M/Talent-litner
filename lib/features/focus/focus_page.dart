@@ -79,61 +79,14 @@ class _FocusPageState extends State<FocusPage> {
       try { HapticFeedback.vibrate(); } catch (_) {}
     }
     try {
-      await _alarmPlayer.setReleaseMode(ReleaseMode.stop);
-      await _alarmPlayer.setVolume(1.0);
-      await _alarmPlayer.play(BytesSource(_buildAlarmWav()));
+      await MusicService.instance.playAlarm();
     } catch (_) {
-      // Fallback in case a device cannot initialize the bundled alert player.
+      // Fall back to the platform alert tone if the packaged alarm cannot play.
       for (var i = 0; i < 3; i++) {
         try { await SystemSound.play(SystemSoundType.alert); } catch (_) {}
         if (i < 2) await Future<void>.delayed(const Duration(milliseconds: 450));
       }
     }
-  }
-
-  Uint8List _buildAlarmWav() {
-    // Generate an audible three-pulse WAV in memory so the completion alarm
-    // does not depend on a device-specific alert sound or a packaged asset.
-    const sampleRate = 8000;
-    const seconds = 1.15;
-    final sampleCount = (sampleRate * seconds).round();
-    final bytes = Uint8List(44 + sampleCount * 2);
-    final header = ByteData.sublistView(bytes);
-    void writeTag(int offset, String value) {
-      for (var i = 0; i < value.length; i++) {
-        bytes[offset + i] = value.codeUnitAt(i);
-      }
-    }
-    writeTag(0, 'RIFF');
-    header.setUint32(4, bytes.length - 8, Endian.little);
-    writeTag(8, 'WAVE');
-    writeTag(12, 'fmt ');
-    header.setUint32(16, 16, Endian.little);
-    header.setUint16(20, 1, Endian.little);
-    header.setUint16(22, 1, Endian.little);
-    header.setUint32(24, sampleRate, Endian.little);
-    header.setUint32(28, sampleRate * 2, Endian.little);
-    header.setUint16(32, 2, Endian.little);
-    header.setUint16(34, 16, Endian.little);
-    writeTag(36, 'data');
-    header.setUint32(40, sampleCount * 2, Endian.little);
-
-    const pulsePeriod = .36;
-    const pulseLength = .23;
-    for (var i = 0; i < sampleCount; i++) {
-      final t = i / sampleRate;
-      final local = t % pulsePeriod;
-      var envelope = 0.0;
-      if (local < pulseLength) {
-        final fadeIn = math.min(1.0, local / .018);
-        final fadeOut = math.min(1.0, (pulseLength - local) / .045);
-        envelope = fadeIn * fadeOut;
-      }
-      final frequency = local < .115 ? 880.0 : 660.0;
-      final sample = (math.sin(2 * math.pi * frequency * t) * envelope * 0.72 * 32767).round();
-      header.setInt16(44 + i * 2, sample, Endian.little);
-    }
-    return bytes;
   }
 
   Future<void> _toggle() async {
