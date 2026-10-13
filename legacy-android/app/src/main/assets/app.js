@@ -10,7 +10,7 @@
   var editDeckId = null, editCardDeckId = null, editCardId = null, imageTarget = "front";
   var session = null, studyInterval = null, focusInterval = null, focusRunning = false, autoRevealHandle = null;
   var focusDuration = 30, focusRemaining = 30 * 60, focusStartedAt = 0, musicPlaying = false, zoomScale = 1;
-  var pendingImport = null, downloadedBackupName = null, searchTerm = "", smartMixSize = 20;
+  var pendingImport = null, downloadedBackupName = null, searchTerm = "", smartMixSize = 20, smartMixFilter = "all";
   var pendingStudyRefs = null, pendingStudyLabel = "";
   var languages = [
     ["fa","فارسی"],["en","English"],["de","Deutsch"],["de-CH","Deutsch (Schweiz)"],["de-AT","Deutsch (Österreich)"],
@@ -400,8 +400,8 @@
     out+='<div class="muted" style="margin-top:16px">'+esc(translate("tap"))+'</div></div>';
     if(session.revealed){
       out+='<div class="rate-grid">'+
-        btn(esc(translate("knew_it")),"rate",' data-rating="2',"button metro-known")+
-        btn(esc(translate("did_not_know")),"rate",' data-rating="0',"button metro-unknown")+'</div>';
+        btn(esc(translate("knew_it")),"rate",' data-rating="2"',"button metro-known")+
+        btn(esc(translate("did_not_know")),"rate",' data-rating="0"',"button metro-unknown")+'</div>';
       out+='<p class="muted" style="text-align:center">'+esc(translate("swipe"))+'</p>';
     } else out+='<div style="margin-top:12px;text-align:center">'+btn(esc(translate("answer")),"reveal","","button primary")+'</div>';
     if(state.settings.musicEnabled)out+='<div class="row wrap" style="margin-top:10px">'+btn(esc(translate("music_btn")),"toggle-music")+'</div>';
@@ -513,7 +513,12 @@
     var mix='<p class="muted">'+esc(translate("smart_mix_sub"))+'</p><label class="field" for="smart-mix-size">'+esc(translate("cards"))+'</label><select id="smart-mix-size"><option value="10"'+(smartMixSize===10?" selected":"")+'>'+
       '10</option><option value="20"'+(smartMixSize===20?" selected":"")+'>'+
       '20</option><option value="30"'+(smartMixSize===30?" selected":"")+'>'+
-      '30</option></select><div style="margin-top:10px">'+btn(esc(translate("smart_mix")),"smart-mix","","button primary")+'</div>';
+      '30</option></select><label class="field" for="smart-mix-filter">'+esc(translate("smart_mix_filter"))+'</label><select id="smart-mix-filter">'+
+      '<option value="all"'+(smartMixFilter==="all"?" selected":"")+'>'+esc(translate("filter_all"))+'</option>'+
+      '<option value="due"'+(smartMixFilter==="due"?" selected":"")+'>'+esc(translate("filter_due"))+'</option>'+
+      '<option value="hard"'+(smartMixFilter==="hard"?" selected":"")+'>'+esc(translate("filter_hard"))+'</option>'+
+      '<option value="medium"'+(smartMixFilter==="medium"?" selected":"")+'>'+esc(translate("filter_medium"))+'</option>'+
+      '<option value="easy"'+(smartMixFilter==="easy"?" selected":"")+'>'+esc(translate("filter_easy"))+'</option></select><div style="margin-top:10px">'+btn(esc(translate("smart_mix")),"smart-mix","","button primary")+'</div>';
     out+=panel(translate("smart_mix"),mix);
     var dots='<div class="row wrap">';
     for(var dayIndex=27;dayIndex>=0;dayIndex--){
@@ -537,7 +542,7 @@
   function renderAbout() {
     var out=pageHead(translate("about"),"Parin Litner");
     out+=panel("Parin Litner",'<p>'+esc(translate("about_creator_desc"))+'</p><p class="muted">'+esc(translate("about_ai"))+'</p><p class="muted">'+esc(translate("about_love"))+'</p>'+btn(esc(translate("about_github")),"open-repository","","button primary"));
-    out+=panel(translate("about"),'<div class="muted">Version 7.1.0 • Android 4 compatibility target</div>');
+    out+=panel(translate("about_version_title"),'<div class="muted">7.2.0 • '+esc(translate("about_android_compat"))+'</div>');
     return out;
   }
   function weekReviews() {
@@ -1007,12 +1012,23 @@
     state.lastRewardDay=today;state.xp+=points;persist();render();
     notify(translate("pc_reward_claimed")+" +"+points+" XP");
   }
+  function inferredCardDifficulty(c) {
+    var chosen=c.difficulty||"auto";
+    if(chosen==="hard"||chosen==="medium"||chosen==="easy")return chosen;
+    if((c.lapses||0)>=3||((c.reviews||0)>=4&&(c.box||0)<=1))return "hard";
+    if((c.reviews||0)<=1)return "new_card";
+    if((c.box||0)>=3&&!(c.lapses||0))return "easy";
+    return "medium";
+  }
   function smartMix() {
     if(!state.decks.length){notify(translate("no_cards"));return;}
     var sorted=state.decks.slice(0).sort(function(a,b){return b.cards.length-a.cards.length;});
-    var deck=sorted[0],cards=deck.cards.slice(0),now=new Date().getTime();
+    var deck=sorted[0],cards=deck.cards.slice(0);
+    if(smartMixFilter==="due")cards=cards.filter(function(c){return isDue(c);});
+    else if(["hard","medium","easy"].indexOf(smartMixFilter)>=0)cards=cards.filter(function(c){return inferredCardDifficulty(c)===smartMixFilter;});
+    if(!cards.length){notify(translate("pc_no_cards_for_filter"));return;}
     function score(c){
-      var value=0,difficulty=c.difficulty||"auto";
+      var value=0,difficulty=inferredCardDifficulty(c);
       if(isDue(c))value+=1000;
       value+=(c.lapses||0)*80;
       value+=Math.max(0,5-(c.box||0))*20;
@@ -1026,7 +1042,7 @@
     var items=cards.slice(0,smartMixSize).map(function(c){return {deckId:deck.id,cardId:c.id};});
     promptStudyDifficulty(items,translate("smart_mix"));
   }
-  function saveDeckForm(form) {
+    function saveDeckForm(form) {
     var name=document.getElementById("deck-name").value.trim();
     if(!name){notify(translate("new_deck_hint"));return;}
     var desc=document.getElementById("deck-description").value.trim();
@@ -1111,6 +1127,11 @@
       if(el&&el.id==="smart-mix-size"){
         smartMixSize=parseInt(el.value,10)||20;
         if([10,20,30].indexOf(smartMixSize)<0)smartMixSize=20;
+        render();
+        return;
+      }
+      if(el&&el.id==="smart-mix-filter"){
+        smartMixFilter=["all","due","hard","medium","easy"].indexOf(el.value)>=0?el.value:"all";
         render();
         return;
       }
