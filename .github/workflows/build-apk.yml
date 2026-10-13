@@ -200,10 +200,38 @@ jobs:
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
 
       - name: Build APK
-        run: flutter build apk --release
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if flutter build apk --release; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              delay=$((attempt * 20))
+              echo "Flutter APK build failed (attempt $attempt); retrying in ${delay}s for transient repository/Gradle failures."
+              sleep "$delay"
+            fi
+          done
+          echo "Flutter APK build failed after three attempts." >&2
+          exit 1
 
       - name: Build Android App Bundle
-        run: flutter build appbundle --release
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if flutter build appbundle --release; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              delay=$((attempt * 20))
+              echo "Flutter AAB build failed (attempt $attempt); retrying in ${delay}s for transient repository/Gradle failures."
+              sleep "$delay"
+            fi
+          done
+          echo "Flutter AAB build failed after three attempts." >&2
+          exit 1
 
       - name: Verify release artifacts
         shell: bash
