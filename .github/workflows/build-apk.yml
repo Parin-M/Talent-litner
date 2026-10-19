@@ -122,7 +122,7 @@ jobs:
                   private const val PREFS = "quick_review_widget"
                   private const val ACTION_TOGGLE = "com.parin.parin_litner.QUICK_TOGGLE"
                   private const val ACTION_NEXT = "com.parin.parin_litner.QUICK_NEXT"
-                  private const val FLAG_UPDATE_IMMUTABLE = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                  private val FLAG_UPDATE_IMMUTABLE = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
                   fun refreshAll(context: Context) {
                       val manager = AppWidgetManager.getInstance(context)
