@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import '../i18n/app_strings.dart';
 import '../models/app_models.dart';
 
 /// Sends a lightweight snapshot of card text to the Android home-screen widget.
@@ -11,6 +13,9 @@ class QuickReviewWidgetService {
     required List<Deck> decks,
     required String languageCode,
   }) async {
+    final parts = languageCode.split('-');
+    final locale = Locale.fromSubtags(languageCode: parts.first, countryCode: parts.length > 1 ? parts[1] : null);
+    final strings = AppStrings(locale);
     final now = DateTime.now();
     final cards = <Map<String, Object?>>[];
     for (final deck in decks) {
@@ -23,19 +28,19 @@ class QuickReviewWidgetService {
         });
       }
     }
-    final isFa = languageCode == 'fa';
+    final isRtl = const <String>{'fa', 'ar', 'he'}.contains(locale.languageCode);
     final payload = jsonEncode({
       'labels': {
-        'title': isFa ? 'پرین لیترن · مرور سریع' : 'PARIN LITNER · QUICK REVIEW',
-        'reveal': isFa ? 'نمایش پاسخ' : 'Reveal',
-        'hide': isFa ? 'پنهان' : 'Hide',
-        'next': isFa ? 'بعدی' : 'Next',
-        'open': isFa ? 'باز کردن' : 'Open app',
-        'empty': isFa ? 'ابتدا چند فلش‌کارت بسازید.' : 'Create a few flashcards first.',
-        'due': isFa ? 'کارت آماده مرور' : 'cards due',
-        'all': isFa ? 'کارت برای مرور سریع' : 'cards available',
+        'title': 'PARIN LITNER · ' + strings.text('quick_review').toUpperCase(),
+        'reveal': strings.text('quick_show_answer'),
+        'hide': strings.text('quick_hide_answer'),
+        'next': strings.text('test_next'),
+        'open': strings.text('home'),
+        'empty': strings.text('quick_review_empty'),
+        'due': strings.text('cards_ready'),
+        'all': strings.text('cards_count'),
       },
-      'isRtl': isFa || languageCode == 'ar' || languageCode == 'he',
+      'isRtl': isRtl,
       'cards': cards,
     });
     try {
