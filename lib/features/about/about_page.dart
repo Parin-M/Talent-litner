@@ -5,7 +5,7 @@ import '../../core/i18n/app_strings.dart';
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
   static const _repoUrl = 'https://github.com/Parin-M/parin-litner';
-  static const _authorCredit = 'این نرم‌افزار توسط پ مشعلچیان (P Mashalchian) ساخته شده است.';
+  static const _authorCredit = 'این نرم‌افزار توسط پرین مشعلچیان (Parin Mashalchian) ساخته شده است.';
 
   Future<void> _openRepository(BuildContext context) async {
     final uri = Uri.parse(_repoUrl);
