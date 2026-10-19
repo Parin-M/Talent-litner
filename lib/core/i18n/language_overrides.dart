@@ -63,7 +63,7 @@ class LanguageOverrides {
     "card_difficulty": "سختی کارت",
     "knew": "این کارت را بلد بودم",
     "didnt_know": "این کارت را بلد نبودم",
-    "zoom_image": "بزرگ‌نمایی تصویر"
+    "zoom_image": "بزرگ‌نمایی تصویر",
     "quick_review": "مرور سریع",
     "quick_review_sub": "مرور کوتاه کارت‌ها همراه با ویجت صفحه اصلی",
     "quick_review_empty": "هنوز کارتی برای مرور ندارید.",
@@ -175,7 +175,7 @@ class LanguageOverrides {
     "card_difficulty": "Card difficulty",
     "knew": "I knew this card",
     "didnt_know": "I didn't know this card",
-    "zoom_image": "Zoom image"
+    "zoom_image": "Zoom image",
     "quick_review": "Quick review",
     "quick_review_sub": "Review cards quickly, including from the home-screen widget",
     "quick_review_empty": "There are no cards to review yet.",
@@ -287,7 +287,7 @@ class LanguageOverrides {
     "card_difficulty": "Kartenschwierigkeit",
     "knew": "Diese Karte wusste ich",
     "didnt_know": "Diese Karte wusste ich nicht",
-    "zoom_image": "Bild vergrößern"
+    "zoom_image": "Bild vergrößern",
     "quick_review": "Schnellwiederholung",
     "quick_review_sub": "Karten schnell wiederholen – auch über das Startbildschirm-Widget",
     "quick_review_empty": "Es gibt noch keine Karten zum Wiederholen.",
@@ -399,7 +399,7 @@ class LanguageOverrides {
     "card_difficulty": "Kortets sværhedsgrad",
     "knew": "Det kunne jeg",
     "didnt_know": "Det kunne jeg ikke",
-    "zoom_image": "Zoom billede"
+    "zoom_image": "Zoom billede",
     "quick_review": "Hurtig repetition",
     "quick_review_sub": "Gentag kort hurtigt – også via widgetten på startskærmen",
     "quick_review_empty": "Der er endnu ingen kort at repetere.",
@@ -511,7 +511,7 @@ class LanguageOverrides {
     "card_difficulty": "Dificultad de tarjeta",
     "knew": "Lo sabía",
     "didnt_know": "No lo sabía",
-    "zoom_image": "Ampliar imagen"
+    "zoom_image": "Ampliar imagen",
     "quick_review": "Repaso rápido",
     "quick_review_sub": "Repasa tarjetas rápidamente, también desde el widget de inicio",
     "quick_review_empty": "Todavía no hay tarjetas para repasar.",
@@ -623,7 +623,7 @@ class LanguageOverrides {
     "card_difficulty": "Dificuldade do cartão",
     "knew": "Eu sabia",
     "didnt_know": "Eu não sabia",
-    "zoom_image": "Ampliar imagem"
+    "zoom_image": "Ampliar imagem",
     "quick_review": "Revisão rápida",
     "quick_review_sub": "Revise cartões rapidamente, inclusive pelo widget da tela inicial",
     "quick_review_empty": "Ainda não há cartões para revisar.",
@@ -735,7 +735,7 @@ class LanguageOverrides {
     "card_difficulty": "Difficulté de la carte",
     "knew": "Je connaissais",
     "didnt_know": "Je ne connaissais pas",
-    "zoom_image": "Agrandir l’image"
+    "zoom_image": "Agrandir l’image",
     "quick_review": "Révision rapide",
     "quick_review_sub": "Révisez rapidement vos cartes, également depuis le widget d’accueil",
     "quick_review_empty": "Aucune carte à réviser pour le moment.",
@@ -847,7 +847,7 @@ class LanguageOverrides {
     "card_difficulty": "Difficoltà della carta",
     "knew": "Lo sapevo",
     "didnt_know": "Non lo sapevo",
-    "zoom_image": "Ingrandisci immagine"
+    "zoom_image": "Ingrandisci immagine",
     "quick_review": "Ripasso rapido",
     "quick_review_sub": "Ripassa le carte rapidamente, anche dal widget della schermata iniziale",
     "quick_review_empty": "Non ci sono ancora carte da ripassare.",
@@ -959,7 +959,7 @@ class LanguageOverrides {
     "card_difficulty": "Kart zorluğu",
     "knew": "Bu kartı biliyordum",
     "didnt_know": "Bu kartı bilmiyordum",
-    "zoom_image": "Görseli yakınlaştır"
+    "zoom_image": "Görseli yakınlaştır",
     "quick_review": "Hızlı tekrar",
     "quick_review_sub": "Ana ekran bileşeniyle de kartları hızla gözden geçirin",
     "quick_review_empty": "Henüz tekrarlanacak kart yok.",
@@ -1071,7 +1071,7 @@ class LanguageOverrides {
     "card_difficulty": "Kaartmoeilijkheid",
     "knew": "Ik wist dit",
     "didnt_know": "Ik wist dit niet",
-    "zoom_image": "Afbeelding zoomen"
+    "zoom_image": "Afbeelding zoomen",
     "quick_review": "Snelle herhaling",
     "quick_review_sub": "Herhaal kaarten snel, ook via de widget op het startscherm",
     "quick_review_empty": "Er zijn nog geen kaarten om te herhalen.",
@@ -1183,7 +1183,7 @@ class LanguageOverrides {
     "card_difficulty": "Kortets svårighetsgrad",
     "knew": "Jag kunde detta",
     "didnt_know": "Jag kunde inte detta",
-    "zoom_image": "Zooma bild"
+    "zoom_image": "Zooma bild",
     "quick_review": "Snabb repetition",
     "quick_review_sub": "Repetera kort snabbt, även via widgeten på startskärmen",
     "quick_review_empty": "Det finns inga kort att repetera ännu.",
@@ -1295,7 +1295,7 @@ class LanguageOverrides {
     "card_difficulty": "Kortets vanskelighetsgrad",
     "knew": "Jeg kunne dette",
     "didnt_know": "Jeg kunne ikke dette",
-    "zoom_image": "Zoom bilde"
+    "zoom_image": "Zoom bilde",
     "quick_review": "Hurtig repetisjon",
     "quick_review_sub": "Repeter kort raskt, også via widgeten på startskjermen",
     "quick_review_empty": "Det finnes ingen kort å repetere ennå.",
@@ -1407,7 +1407,7 @@ class LanguageOverrides {
     "card_difficulty": "Kortin vaikeus",
     "knew": "Tiesin tämän",
     "didnt_know": "En tiennyt tätä",
-    "zoom_image": "Zoomaa kuvaa"
+    "zoom_image": "Zoomaa kuvaa",
     "quick_review": "Pikakertaus",
     "quick_review_sub": "Kertaa kortteja nopeasti myös aloitusnäytön widgetillä",
     "quick_review_empty": "Kerrattavia kortteja ei vielä ole.",
@@ -1632,7 +1632,7 @@ class LanguageOverrides {
     "card_difficulty": "カードの難易度",
     "knew": "知っていた",
     "didnt_know": "知らなかった",
-    "zoom_image": "画像を拡大"
+    "zoom_image": "画像を拡大",
     "quick_review": "クイック復習",
     "quick_review_sub": "ホーム画面のウィジェットからもカードをすばやく復習できます",
     "quick_review_empty": "復習するカードはまだありません。",
@@ -1744,7 +1744,7 @@ class LanguageOverrides {
     "card_difficulty": "카드 난이도",
     "knew": "알고 있었어요",
     "didnt_know": "몰랐어요",
-    "zoom_image": "이미지 확대"
+    "zoom_image": "이미지 확대",
     "quick_review": "빠른 복습",
     "quick_review_sub": "홈 화면 위젯에서도 카드를 빠르게 복습하세요",
     "quick_review_empty": "아직 복습할 카드가 없습니다.",
@@ -1969,7 +1969,7 @@ class LanguageOverrides {
     "card_difficulty": "صعوبة البطاقة",
     "knew": "كنت أعرف البطاقة",
     "didnt_know": "لم أكن أعرف البطاقة",
-    "zoom_image": "تكبير الصورة"
+    "zoom_image": "تكبير الصورة",
     "quick_review": "مراجعة سريعة",
     "quick_review_sub": "راجع البطاقات بسرعة، بما في ذلك من أداة الشاشة الرئيسية",
     "quick_review_empty": "لا توجد بطاقات للمراجعة بعد.",
