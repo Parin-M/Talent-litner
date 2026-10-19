@@ -23,7 +23,7 @@ class LanguageOverrides {
     "pc_started": "شروع یادگیری",
     "pc_consistent": "یادگیرنده پیوسته",
     "pc_focus_master": "استاد تمرکز",
-    "pc_pro": "حرفه‌ای پارین",
+    "pc_pro": "حرفه‌ای پرین",
     "pc_medium": "متوسط",
     "pc_new": "جدید",
     "ac_tagline": "هر جلسهٔ مطالعه را به پیشرفت تبدیل کنید.",
