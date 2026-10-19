@@ -6,11 +6,14 @@ import '../../core/utils/helpers.dart';
 import '../../shared/widgets/animated_glass_card.dart';
 import '../decks/deck_page.dart';
 import '../focus/focus_page.dart';
+import '../study/quick_review_page.dart';
+import '../quizzes/quizzes_page.dart';
 import '../power/power_center_page.dart';
 import '../settings/settings_page.dart';
 
 class HomePage extends StatefulWidget {
   final List<Deck> decks;
+  final List<QuizDefinition> quizzes;
   final VoidCallback onChanged;
   final Future<void> Function() onImport;
   final Future<void> Function() onExport;
@@ -19,6 +22,7 @@ class HomePage extends StatefulWidget {
   const HomePage({
     super.key,
     required this.decks,
+    required this.quizzes,
     required this.onChanged,
     required this.onImport,
     required this.onExport,
@@ -167,6 +171,31 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 10),
             _MetroAction(
+              title: s(context, 'quick_review'),
+              subtitle: s(context, 'quick_review_sub'),
+              icon: Icons.flash_on_outlined,
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => QuickReviewPage(
+                  decks: decks,
+                  settings: widget.settings,
+                  onChanged: widget.onChanged,
+                ),
+              )),
+            ),
+            const SizedBox(height: 10),
+            _MetroAction(
+              title: s(context, 'test_builder'),
+              subtitle: widget.quizzes.length.toString() + ' ' + s(context, 'tests') + ' · ' + s(context, 'test_builder_sub'),
+              icon: Icons.quiz_outlined,
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => QuizzesPage(
+                  quizzes: widget.quizzes,
+                  onChanged: widget.onChanged,
+                ),
+              )),
+            ),
+            const SizedBox(height: 10),
+            _MetroAction(
               title: 'Power Center',
               subtitle: 'Smart Mix • XP • Streaks • Rewards',
               icon: Icons.auto_awesome_outlined,
@@ -187,7 +216,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text(
                   s(context, 'decks'),
-                  style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w300),
+                  style: const TextStyle(fontSize: 29, fontWeight: FontWeight.w300, letterSpacing: -.4),
                 ),
                 FilledButton.icon(
                   onPressed: _newDeck,
@@ -344,7 +373,7 @@ class _MetroStat extends StatelessWidget {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w300),
+                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w300, letterSpacing: -.3),
                 ),
                 Text(
                   title,
