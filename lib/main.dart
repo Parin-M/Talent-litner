@@ -129,7 +129,7 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
     animation: settings,
     builder: (context, _) => MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Parin Litner',
+      title: 'Talent Litner',
       locale: settings.locale,
       supportedLocales: AppStrings.supportedLocales,
       localizationsDelegates: const [AppStrings.delegate, GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
