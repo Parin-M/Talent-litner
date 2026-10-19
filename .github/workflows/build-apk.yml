@@ -1,7 +1,7 @@
-name: Build Parin Litner
+name: Build Talent Litner
 
 concurrency:
-  group: parin-litner-${{ github.ref }}
+  group: talent-litner-${{ github.ref }}
   cancel-in-progress: true
 
 on:
@@ -153,7 +153,7 @@ jobs:
                       val index = if (hasCards) Math.floorMod(prefs.getInt("index", 0), cards.length()) else 0
                       val revealed = hasCards && prefs.getBoolean("revealed", false)
                       val card = if (hasCards) cards.optJSONObject(index) ?: JSONObject() else JSONObject()
-                      val title = labels.optString("title", "PARIN LITNER · QUICK REVIEW")
+                      val title = labels.optString("title", "TALENT LITNER · QUICK REVIEW")
                       val empty = labels.optString("empty", "Create a few flashcards first.")
                       views.setTextViewText(R.id.quick_title, title)
                       views.setTextViewText(R.id.quick_question, if (hasCards) card.optString(if (revealed) "back" else "front", empty) else empty)
@@ -207,7 +207,7 @@ jobs:
                   android:id="@+id/quick_title"
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
-                  android:text="PARIN LITNER · QUICK REVIEW"
+                  android:text="TALENT LITNER · QUICK REVIEW"
                   android:textColor="#FFFFFFFF"
                   android:textSize="12sp"
                   android:fontFamily="sans-serif-medium"
@@ -314,7 +314,7 @@ jobs:
           source = manifest.read_text()
           if 'QuickReviewWidgetProvider' not in source:
               receiver = '''
-                  <receiver android:name=".QuickReviewWidgetProvider" android:label="Parin Litner Quick Review" android:exported="true">
+                  <receiver android:name=".QuickReviewWidgetProvider" android:label="Talent Litner Quick Review" android:exported="true">
                       <intent-filter>
                           <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                           <action android:name="com.parin.parin_litner.QUICK_TOGGLE" />
@@ -342,13 +342,13 @@ jobs:
           from pathlib import Path
           p=Path('android/app/src/main/AndroidManifest.xml')
           s=p.read_text()
-          s=s.replace('android:label="parin_litner"','android:label="Parin Litner"')
+          s=s.replace('android:label="parin_litner"','android:label="Talent Litner"')
           p.write_text(s)
           print('Android package: com.parin.parin_litner')
           PY
           test -f android/app/src/main/kotlin/com/parin/parin_litner/MainActivity.kt
           grep -q '^package com.parin.parin_litner' android/app/src/main/kotlin/com/parin/parin_litner/MainActivity.kt
-          keytool -genkeypair -v -keystore android/parin-release.jks -storepass changeit -keypass changeit -alias parinlitner -keyalg RSA -keysize 2048 -validity 3650 -dname 'CN=Parin Litner, OU=Release, O=Parin, L=Internet, ST=NA, C=US'
+          keytool -genkeypair -v -keystore android/parin-release.jks -storepass changeit -keypass changeit -alias parinlitner -keyalg RSA -keysize 2048 -validity 3650 -dname 'CN=Talent Litner, OU=Release, O=Parin, L=Internet, ST=NA, C=US'
           python3 - <<'PY'
           from pathlib import Path
           p=Path('android/app/build.gradle.kts')
@@ -362,7 +362,7 @@ jobs:
           print('Ephemeral release signing configured for this CI run.')
           PY
 
-      - name: Install Parin Litner assets
+      - name: Install Talent Litner assets
         run: |
           mkdir -p assets/audio
           test -s assets/parin_litner_icon.png
@@ -538,7 +538,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: parin-litner-release-apk
+          name: talent-litner-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 30
@@ -546,7 +546,7 @@ jobs:
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: parin-litner-release-aab
+          name: talent-litner-release-aab
           path: build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30
