@@ -121,7 +121,7 @@ class QuizQuestion {
     required this.id,
     required this.prompt,
     required List<String> options,
-    required this.correctIndex,
+    required int correctIndex,
     this.explanation = '',
   })  : options = List<String>.from(options),
         correctIndex = options.isEmpty ? 0 : correctIndex.clamp(0, options.length - 1).toInt();
