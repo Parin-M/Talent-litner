@@ -276,7 +276,7 @@
   }
   function renderHome() {
     var s=stats(),goal=state.settings.dailyGoal,ratio=goal?Math.min(1,s.due/goal):0;
-    var out=pageHead("Parin Litner",translate("ready"));
+    var out=pageHead("Talent Litner",translate("ready"));
     out+='<div class="grid">'+metric(s.total,translate("cards"))+metric(s.due,translate("cards_ready"))+metric(s.favorites,translate("favorite_only"))+metric(state.xp,"XP • Level "+(1+Math.floor(state.xp/250)))+'</div>';
     out+=panel(translate("today"),'<div class="row between"><strong>'+esc(s.due)+' / '+esc(goal)+'</strong><span class="muted">'+esc(translate("daily_goal"))+'</span></div><div style="margin-top:8px">'+progressBar(ratio)+'</div><p class="muted">'+esc(translate("streak")||"Streak")+': '+state.streak+' • '+esc(translate("week_reviews")||"This week")+': '+weekReviews()+'</p>'+
       '<div class="row wrap">'+btn(esc(translate("study")),"study-all","", "button primary")+' '+btn(esc(translate("focus_mode")),"goto",' data-page="focus"')+' '+btn(esc(translate("achievement_center")),"goto",' data-page="achievements"')+'</div>');
@@ -409,7 +409,7 @@
     return '<label class="setting-row"><span class="setting-copy"><span class="setting-name">'+esc(translate(key))+'</span><span class="setting-sub">'+esc(subkey?translate(subkey):"")+'</span></span><input type="checkbox" data-setting="'+attr(key)+'"'+(checked?" checked":"")+'></label>';
   }
   function renderSettings() {
-    var s=state.settings,out=pageHead(translate("settings"),"Parin Litner • "+translate("appearance"));
+    var s=state.settings,out=pageHead(translate("settings"),"Talent Litner • "+translate("appearance"));
     out+=panel(translate("language"),'<label class="field" for="language-code">'+esc(translate("ui_language"))+'</label><select id="language-code" data-setting="languageCode">'+languageOptions(s.languageCode)+'</select>');
     var modeOptions=[["light","Light"],["dark","Dark"],["aero","Aero Glass"],["amoled","AMOLED Dark"]];
     var mo='<label class="field">'+esc(translate("appearance"))+'</label><select data-setting="appearanceMode">';
@@ -521,8 +521,8 @@
     return out;
   }
     function renderAbout() {
-    var out=pageHead(translate("about"),"Parin Litner");
-    out+=panel("Parin Litner",'<p>'+esc(translate("about_creator_desc"))+'</p><p class="muted">'+esc(translate("about_ai"))+'</p><p class="muted">'+esc(translate("about_love"))+'</p>'+btn(esc(translate("about_github")),"open-repository","","button primary"));
+    var out=pageHead(translate("about"),"Talent Litner");
+    out+=panel("Talent Litner",'<p>'+esc(translate("about_creator_desc"))+'</p><p class="muted">'+esc(translate("about_ai"))+'</p><p class="muted">'+esc(translate("about_love"))+'</p>'+btn(esc(translate("about_github")),"open-repository","","button primary"));
     out+=panel(translate("about"),'<div class="muted">Version 7.1.0 • Android 4 compatibility target</div>');
     return out;
   }
@@ -650,7 +650,7 @@
         });
       }
     }
-    var manifest={app:"Parin Litner",format:1,exportedAt:new Date().toISOString(),imageCount:assets.length,decks:decks};
+    var manifest={app:"Talent Litner",format:1,exportedAt:new Date().toISOString(),imageCount:assets.length,decks:decks};
     var mb=utf8Binary(JSON.stringify(manifest));
     if(mb.length>64*1024*1024)throw new Error("Backup metadata is too large.");
     var out="PLITBK01"+u32(mb.length)+mb;
@@ -688,7 +688,7 @@
       var manifestLen=read32(binary,8);
       if(manifestLen>64*1024*1024||manifestLen>binary.length-12)throw new Error("Backup metadata length is invalid.");
       var manifest=parseJson(decodeUtf8(binary.substring(12,12+manifestLen)),null);
-      if(!manifest||manifest.app!=="Parin Litner"||manifest.format!==1)throw new Error("Unsupported backup format.");
+      if(!manifest||manifest.app!=="Talent Litner"||manifest.format!==1)throw new Error("Unsupported backup format.");
       var count=parseInt(manifest.imageCount,10);
       if(isNaN(count)||count<0||count>50000)throw new Error("Invalid image count.");
       var off=12+manifestLen,assets={};
