@@ -28,8 +28,28 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
   List<Deck> decks = [];
   List<QuizDefinition> quizzes = [];
   bool loading = true;
+  String _widgetLanguageCode = 'fa';
 
-  @override void initState() { super.initState(); _load(); }
+  @override
+  void initState() {
+    super.initState();
+    _widgetLanguageCode = settings.languageCode;
+    settings.addListener(_handleSettingsChanged);
+    _load();
+  }
+
+  void _handleSettingsChanged() {
+    if (_widgetLanguageCode == settings.languageCode) return;
+    _widgetLanguageCode = settings.languageCode;
+    unawaited(QuickReviewWidgetService.sync(decks: decks, languageCode: settings.languageCode));
+  }
+
+  @override
+  void dispose() {
+    settings.removeListener(_handleSettingsChanged);
+    settings.dispose();
+    super.dispose();
+  }
 
   Future<void> _load() async {
     try { await settings.load(); } catch (_) {}
