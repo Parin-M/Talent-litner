@@ -1,4 +1,4 @@
-# Parin Litner 2.0.0
+# Talent Litner 2.0.0
 
 - Real Leitner box progression and due-date scheduling.
 - Deck/card CRUD.

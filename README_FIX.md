@@ -1,4 +1,4 @@
-# Parin Litner 3.0 – build fix
+# Talent Litner 3.0 – build fix
 
 This build fixes the previous Android/Flutter workflow and startup crash handling.
 

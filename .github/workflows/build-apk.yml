@@ -1,4 +1,4 @@
-name: Build Parin Litner
+name: Build Talent Litner
 
 on:
   workflow_dispatch:
@@ -59,13 +59,13 @@ jobs:
           from pathlib import Path
           p=Path('android/app/src/main/AndroidManifest.xml')
           s=p.read_text()
-          s=s.replace('android:label="parin_litner"','android:label="Parin Litner"')
+          s=s.replace('android:label="parin_litner"','android:label="Talent Litner"')
           p.write_text(s)
           print('Android package: com.parin.parin_litner')
           PY
           test -f android/app/src/main/kotlin/com/parin/parin_litner/MainActivity.kt
           grep -q '^package com.parin.parin_litner' android/app/src/main/kotlin/com/parin/parin_litner/MainActivity.kt
-          keytool -genkeypair -v -keystore android/parin-release.jks -storepass changeit -keypass changeit -alias parinlitner -keyalg RSA -keysize 2048 -validity 3650 -dname 'CN=Parin Litner, OU=Release, O=Parin, L=Internet, ST=NA, C=US'
+          keytool -genkeypair -v -keystore android/parin-release.jks -storepass changeit -keypass changeit -alias parinlitner -keyalg RSA -keysize 2048 -validity 3650 -dname 'CN=Talent Litner, OU=Release, O=Parin, L=Internet, ST=NA, C=US'
           python3 - <<'PY'
           from pathlib import Path
           p=Path('android/app/build.gradle.kts')
@@ -79,7 +79,7 @@ jobs:
           print('Ephemeral release signing configured for this CI run.')
           PY
 
-      - name: Install Parin Litner assets
+      - name: Install Talent Litner assets
         run: |
           mkdir -p assets/audio
           test -s assets/parin_litner_icon.png
@@ -250,7 +250,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: parin-litner-release-apk
+          name: talent-litner-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 30

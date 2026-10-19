@@ -40,7 +40,7 @@ class BackupService {
     }
 
     final manifest = <String, dynamic>{
-      'app': 'Parin Litner', 'format': 1,
+      'app': 'Talent Litner', 'format': 1,
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
       'imageCount': assets.length, 'decks': deckPayload,
     };
@@ -54,8 +54,8 @@ class BackupService {
     }
 
     final saved = await FilePicker.saveFile(
-      dialogTitle: 'ذخیره پشتیبان Parin Litner',
-      fileName: 'parin_litner_backup.plbackup',
+      dialogTitle: 'ذخیره پشتیبان Talent Litner',
+      fileName: 'talent_litner_backup.plbackup',
       type: FileType.custom,
       allowedExtensions: ['plbackup'],
       bytes: Uint8List.fromList(output),
@@ -77,7 +77,7 @@ class BackupService {
     // Backward compatibility for pre-.plbackup JSON files.
     final dynamic decoded;
     try { decoded = jsonDecode(utf8.decode(bytes)); }
-    on FormatException { throw const FormatException('This is not a valid Parin Litner backup.'); }
+    on FormatException { throw const FormatException('This is not a valid Talent Litner backup.'); }
     final dynamic rawDecks = decoded is Map ? decoded['decks'] : decoded;
     if (rawDecks is! List) throw const FormatException('The selected file does not contain a deck list.');
     return rawDecks.map((raw) {
@@ -97,7 +97,7 @@ class BackupService {
     on FormatException { throw const FormatException('Backup metadata is damaged.'); }
     if (rawManifest is! Map) throw const FormatException('Backup metadata is invalid.');
     final manifest = Map<String, dynamic>.from(rawManifest);
-    if (manifest['app'] != 'Parin Litner' || manifest['format'] != 1) throw const FormatException('This backup version is not supported.');
+    if (manifest['app'] != 'Talent Litner' || manifest['format'] != 1) throw const FormatException('This backup version is not supported.');
     final count = manifest['imageCount'];
     if (count is! int || count < 0 || count > _maxAssets) throw const FormatException('Backup image count is invalid.');
 
