@@ -108,3 +108,89 @@ class Deck {
         boxes: ((j['boxes'] as List?) ?? []).map((e) => LeitnerBox.fromJson(Map<String, dynamic>.from(e as Map))).toList(),
       );
 }
+
+
+class QuizQuestion {
+  String id;
+  String prompt;
+  List<String> options;
+  int correctIndex;
+  String explanation;
+
+  QuizQuestion({
+    required this.id,
+    required this.prompt,
+    required List<String> options,
+    required this.correctIndex,
+    this.explanation = '',
+  })  : options = List<String>.from(options),
+        correctIndex = options.isEmpty ? 0 : correctIndex.clamp(0, options.length - 1).toInt();
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'prompt': prompt,
+        'options': options,
+        'correctIndex': correctIndex,
+        'explanation': explanation,
+      };
+
+  factory QuizQuestion.fromJson(Map<String, dynamic> json) {
+    final raw = json['options'];
+    final options = raw is List ? raw.map((value) => value.toString()).toList() : <String>[];
+    final requestedIndex = (json['correctIndex'] as num?)?.toInt() ?? 0;
+    return QuizQuestion(
+      id: json['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      prompt: json['prompt'] as String? ?? '',
+      options: options,
+      correctIndex: options.isEmpty ? 0 : requestedIndex.clamp(0, options.length - 1).toInt(),
+      explanation: json['explanation'] as String? ?? '',
+    );
+  }
+}
+
+class QuizDefinition {
+  String id;
+  String title;
+  String description;
+  List<QuizQuestion> questions;
+  DateTime updatedAt;
+
+  QuizDefinition({
+    required this.id,
+    required this.title,
+    this.description = '',
+    List<QuizQuestion>? questions,
+    DateTime? updatedAt,
+  })  : questions = questions ?? <QuizQuestion>[],
+        updatedAt = updatedAt ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'updatedAt': updatedAt.toIso8601String(),
+        'questions': questions.map((question) => question.toJson()).toList(),
+      };
+
+  factory QuizDefinition.fromJson(Map<String, dynamic> json) {
+    final rawQuestions = json['questions'];
+    return QuizDefinition(
+      id: json['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
+      questions: rawQuestions is List
+          ? rawQuestions.whereType<Map>().map((question) => QuizQuestion.fromJson(Map<String, dynamic>.from(question))).toList()
+          : <QuizQuestion>[],
+    );
+  }
+
+  QuizDefinition copyWith({String? id, String? title, String? description, List<QuizQuestion>? questions, DateTime? updatedAt}) =>
+      QuizDefinition(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        description: description ?? this.description,
+        questions: questions ?? this.questions,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+}
