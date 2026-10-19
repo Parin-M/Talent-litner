@@ -575,7 +575,7 @@ class _QuizRunPageState extends State<QuizRunPage> {
                 const SizedBox(height: 10),
                 Text(s('test_your_answer') + ': ' + (_answers[i] == null
                   ? s('test_unanswered')
-                  : questions[i].options[_answers[i]!.clamp(0, questions[i].options.length - 1)])),
+                  : questions[i].options[_answers[i]!.clamp(0, questions[i].options.length - 1).toInt()])),
                 const SizedBox(height: 4),
                 Text(s('test_correct_answer') + ': ' + questions[i].options[questions[i].correctIndex],
                   style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w700)),
