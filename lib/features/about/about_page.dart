@@ -4,7 +4,7 @@ import '../../core/i18n/app_strings.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
-  static const _repoUrl = 'https://github.com/Parin-M/parin-litner';
+  static const _repoUrl = 'https://github.com/Parin-M/talent-litner';
   static const _authorCredit = 'این نرم‌افزار توسط پرین مشعلچیان (Parin Mashalchian) ساخته شده است.';
 
   Future<void> _openRepository(BuildContext context) async {
@@ -23,7 +23,7 @@ class AboutPage extends StatelessWidget {
         Card(child: Padding(padding: const EdgeInsets.all(22), child: Column(children: [
           Container(width: 92, height: 92, padding: const EdgeInsets.all(10), decoration: BoxDecoration(borderRadius: BorderRadius.zero, color: scheme.primaryContainer), child: Image.asset('assets/parin_litner_icon.png')),
           const SizedBox(height: 18),
-          const Text('Parin Litner', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
+          const Text('Talent Litner', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
           const SizedBox(height: 12),
           Text('$_authorCredit\n\n${s('about_ai')}', style: TextStyle(fontSize: 16, height: 1.65, color: scheme.onSurfaceVariant), textAlign: TextAlign.center),
         ]))),
