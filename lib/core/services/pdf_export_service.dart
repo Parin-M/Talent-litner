@@ -89,6 +89,15 @@ class CardPdfExportService {
     final searchableText = <String>[
       deck.name,
       deck.description,
+      options.questionLabel,
+      options.answerLabel,
+      options.tagsLabel,
+      options.boxLabel,
+      options.difficultyLabel,
+      options.favoriteLabel,
+      options.imageCardLabel,
+      options.pageLabel,
+      options.answerKeyLabel,
       for (final card in sortedCards) card.front,
       for (final card in sortedCards) card.back,
       for (final card in sortedCards) card.tags,
@@ -142,6 +151,9 @@ class CardPdfExportService {
             orientation: orientation,
             margin: const pw.EdgeInsets.all(margin),
             theme: theme,
+            textDirection: _isRtl(searchableText)
+                ? pw.TextDirection.rtl
+                : pw.TextDirection.ltr,
           ),
           build: (_) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -204,6 +216,9 @@ class CardPdfExportService {
               orientation: orientation,
               margin: const pw.EdgeInsets.all(margin),
               theme: theme,
+              textDirection: _isRtl(searchableText)
+                  ? pw.TextDirection.rtl
+                  : pw.TextDirection.ltr,
             ),
             build: (_) => pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -434,6 +449,9 @@ class CardPdfExportService {
     final trimmed = value.trim();
     return trimmed.isEmpty ? imagePlaceholder : trimmed;
   }
+
+  static bool _isRtl(String content) =>
+      RegExp(r'[\u0590-\u08FF]').hasMatch(content);
 
   static Future<pw.ThemeData> _loadTheme(String content) async {
     if (!RegExp(r'[^\x00-\x7F]').hasMatch(content)) {
