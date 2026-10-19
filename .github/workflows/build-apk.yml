@@ -158,7 +158,12 @@ jobs:
                       views.setTextViewText(R.id.quick_title, title)
                       views.setTextViewText(R.id.quick_question, if (hasCards) card.optString(if (revealed) "back" else "front", empty) else empty)
                       views.setTextViewText(R.id.quick_deck, if (hasCards) card.optString("deck", "") else "")
-                      val countLabel = if (cards.length() == 1) labels.optString("due", "card due") else labels.optString("due", "cards due")
+                      val allCards = payload.optJSONArray("cards") ?: JSONArray()
+                      var dueCount = 0
+                      for (i in 0 until allCards.length()) {
+                          if (allCards.optJSONObject(i)?.optBoolean("due", false) == true) dueCount++
+                      }
+                      val countLabel = labels.optString(if (dueCount > 0) "due" else "all", if (dueCount > 0) "Due today" else "cards")
                       views.setTextViewText(R.id.quick_status, if (hasCards) (index + 1).toString() + "/" + cards.length().toString() + " · " + countLabel else "")
                       views.setTextViewText(R.id.quick_toggle, labels.optString(if (revealed) "hide" else "reveal", if (revealed) "Hide" else "Reveal"))
                       views.setTextViewText(R.id.quick_next, labels.optString("next", "Next"))
