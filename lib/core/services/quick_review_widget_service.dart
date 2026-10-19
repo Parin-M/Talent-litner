@@ -22,8 +22,8 @@ class QuickReviewWidgetService {
       for (final card in deck.cards) {
         cards.add({
           'deck': deck.name,
-          'front': card.front.trim().isEmpty ? (languageCode == 'fa' ? 'کارت تصویری' : 'Image card') : card.front,
-          'back': card.back.trim().isEmpty ? (languageCode == 'fa' ? 'پاسخ تصویری' : 'Image answer') : card.back,
+          'front': card.front.trim().isEmpty ? (strings.text('card_front')) : card.front,
+          'back': card.back.trim().isEmpty ? (strings.text('answer')) : card.back,
           'due': !card.dueAt.isAfter(now),
         });
       }
