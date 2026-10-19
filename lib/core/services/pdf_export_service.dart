@@ -162,7 +162,7 @@ class CardPdfExportService {
                       ),
                     ),
                     pw.Text(
-                      '\${sortedCards.length} cards',
+                      '${sortedCards.length} cards',
                       style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
                     ),
                   ],
@@ -239,7 +239,7 @@ class CardPdfExportService {
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
                             pw.Text(
-                              '\${start + i + 1}.',
+                              '${start + i + 1}.',
                               style: pw.TextStyle(
                                 fontWeight: pw.FontWeight.bold,
                                 fontSize: 12,
@@ -286,7 +286,7 @@ class CardPdfExportService {
     final baseFontSize = options.cardsPerPage == 4 ? 9.0 : options.cardsPerPage == 2 ? 11.0 : 13.0;
 
     final front = _section(
-      label: '\${options.questionLabel} $number',
+      label: '${options.questionLabel} $number',
       body: _safeText(card.front, options.imageCardLabel),
       image: frontImage,
       fontSize: baseFontSize,
@@ -331,14 +331,14 @@ class CardPdfExportService {
 
     final metadata = <String>[];
     if (options.includeTags && card.tags.trim().isNotEmpty) {
-      metadata.add('\${options.tagsLabel}: \${card.tags.trim()}');
+      metadata.add('${options.tagsLabel}: ${card.tags.trim()}');
     }
     if (options.includeBox && deck.boxes.isNotEmpty) {
       final boxIndex = card.boxIndex.clamp(0, deck.boxes.length - 1).toInt();
-      metadata.add('\${options.boxLabel}: \${deck.boxes[boxIndex].name}');
+      metadata.add('${options.boxLabel}: ${deck.boxes[boxIndex].name}');
     }
     if (options.includeDifficulty) {
-      metadata.add('\${options.difficultyLabel}: \${card.difficulty}');
+      metadata.add('${options.difficultyLabel}: ${card.difficulty}');
       if (card.favorite) metadata.add(options.favoriteLabel);
     }
 
