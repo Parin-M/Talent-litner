@@ -225,7 +225,7 @@ class _DeckPageState extends State<DeckPage> {
     final matchingCount = q.isEmpty
         ? widget.deck.cards.length
         : widget.deck.cards.where((card) =>
-            '\${card.front} \${card.back} \${card.tags}'.toLowerCase().contains(q)).length;
+            '${card.front} ${card.back} ${card.tags}'.toLowerCase().contains(q)).length;
     final request = await showDialog<_PdfExportRequest>(
       context: context,
       builder: (_) => _PdfExportDialog(
@@ -238,7 +238,7 @@ class _DeckPageState extends State<DeckPage> {
 
     final selectedCards = request.options.matchingCardsOnly && q.isNotEmpty
         ? widget.deck.cards.where((card) =>
-            '\${card.front} \${card.back} \${card.tags}'.toLowerCase().contains(q)).toList()
+            '${card.front} ${card.back} ${card.tags}'.toLowerCase().contains(q)).toList()
         : List<FlashCard>.from(widget.deck.cards);
     if (selectedCards.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -275,7 +275,7 @@ class _DeckPageState extends State<DeckPage> {
       final cleanName = widget.deck.name
           .replaceAll(RegExp(r'[\u0000-\u001f\\/:*?"<>|]+'), '-')
           .trim();
-      final filename = '\${cleanName.isEmpty ? 'parin-litner-cards' : cleanName}.pdf';
+      final filename = '${cleanName.isEmpty ? 'parin-litner-cards' : cleanName}.pdf';
       if (request.printInstead) {
         await Printing.layoutPdf(
           name: filename,
@@ -603,7 +603,7 @@ class _PdfExportDialogState extends State<_PdfExportDialog> {
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _matchingCardsOnly,
-                  title: Text('\${s('pdf_only_matching')} (\${widget.matchingCount}/\${widget.totalCount})'),
+                  title: Text('${s('pdf_only_matching')} (${widget.matchingCount}/${widget.totalCount})'),
                   onChanged: (value) => setState(() => _matchingCardsOnly = value ?? false),
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
