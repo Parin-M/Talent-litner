@@ -275,7 +275,7 @@ class _DeckPageState extends State<DeckPage> {
       final cleanName = widget.deck.name
           .replaceAll(RegExp(r'[/:*?"<>|]+'), '-')
           .trim();
-      final filename = '${cleanName.isEmpty ? 'parin-litner-cards' : cleanName}.pdf';
+      final filename = '${cleanName.isEmpty ? 'talent-litner-cards' : cleanName}.pdf';
       if (request.printInstead) {
         await Printing.layoutPdf(
           name: filename,
