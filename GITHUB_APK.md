@@ -12,6 +12,8 @@
 
 Workflow در سرور GitHub، Flutter و Java را آماده می‌کند و Android platform/Gradle files را نیز در CI تولید می‌کند؛ بنابراین لازم نیست Android Studio روی کامپیوترت نصب باشد.
 
+نسخهٔ فعلی فقط برای **Android 7.0 به بالا (API 24+)** ساخته می‌شود؛ ساخت APK قدیمی Android 4 دیگر بخشی از CI نیست.
+
 ## ساخت خودکار
 
 Workflow روی push به شاخه `main` یا `master` نیز اجرا می‌شود.
