@@ -1,4 +1,4 @@
-# Parin Litner 7.3.0
+# Talent Litner 7.3.0
 
 - Added an Android home-screen Quick Review widget. It can reveal/hide a card's answer, advance to another card, and open the app; widget text follows Persian/English settings.
 - Added a dedicated Quick Review screen across decks, with progress, optional auto-reveal, answer rating and image support.
