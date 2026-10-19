@@ -51,6 +51,281 @@ jobs:
           PY
           rm -rf test
 
+      - name: Generate quick-review Android home widget
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          package_dir = Path('android/app/src/main/kotlin/com/parin/parin_litner')
+          package_dir.mkdir(parents=True, exist_ok=True)
+          main = package_dir / 'MainActivity.kt'
+          main.write_text(r'''package com.parin.parin_litner
+
+          import android.content.Context
+          import io.flutter.embedding.android.FlutterActivity
+          import io.flutter.embedding.engine.FlutterEngine
+          import io.flutter.plugin.common.MethodChannel
+
+          class MainActivity : FlutterActivity() {
+              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+                  super.configureFlutterEngine(flutterEngine)
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "parin_litner/quick_widget")
+                      .setMethodCallHandler { call, result ->
+                          when (call.method) {
+                              "syncCards" -> {
+                                  val payload = call.argument<String>("payload") ?: "{}"
+                                  getSharedPreferences("quick_review_widget", Context.MODE_PRIVATE)
+                                      .edit().putString("payload", payload).apply()
+                                  QuickReviewWidgetProvider.refreshAll(this)
+                                  result.success(null)
+                              }
+                              else -> result.notImplemented()
+                          }
+                      }
+              }
+          }
+          ''')
+
+          provider = package_dir / 'QuickReviewWidgetProvider.kt'
+          provider.write_text(r'''package com.parin.parin_litner
+
+          import android.app.PendingIntent
+          import android.appwidget.AppWidgetManager
+          import android.appwidget.AppWidgetProvider
+          import android.content.ComponentName
+          import android.content.Context
+          import android.content.Intent
+          import android.view.Gravity
+          import android.widget.RemoteViews
+          import org.json.JSONArray
+          import org.json.JSONObject
+
+          class QuickReviewWidgetProvider : AppWidgetProvider() {
+              override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
+                  for (id in appWidgetIds) updateOne(context, manager, id)
+              }
+
+              override fun onReceive(context: Context, intent: Intent) {
+                  super.onReceive(context, intent)
+                  val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                  when (intent.action) {
+                      ACTION_TOGGLE -> prefs.edit().putBoolean("revealed", !prefs.getBoolean("revealed", false)).apply()
+                      ACTION_NEXT -> {
+                          val count = selectedCards(context).length()
+                          if (count > 0) prefs.edit().putInt("index", (prefs.getInt("index", 0) + 1) % count).putBoolean("revealed", false).apply()
+                      }
+                  }
+                  if (intent.action == ACTION_TOGGLE || intent.action == ACTION_NEXT) refreshAll(context)
+              }
+
+              companion object {
+                  private const val PREFS = "quick_review_widget"
+                  private const val ACTION_TOGGLE = "com.parin.parin_litner.QUICK_TOGGLE"
+                  private const val ACTION_NEXT = "com.parin.parin_litner.QUICK_NEXT"
+                  private const val FLAG_UPDATE_IMMUTABLE = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+
+                  fun refreshAll(context: Context) {
+                      val manager = AppWidgetManager.getInstance(context)
+                      val ids = manager.getAppWidgetIds(ComponentName(context, QuickReviewWidgetProvider::class.java))
+                      if (ids.isNotEmpty()) manager.notifyAppWidgetViewDataChanged(ids, R.id.quick_question)
+                      if (ids.isNotEmpty()) for (id in ids) updateOne(context, manager, id)
+                  }
+
+                  private fun selectedCards(context: Context): JSONArray {
+                      val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("payload", "{}") ?: "{}"
+                      val payload = try { JSONObject(raw) } catch (_: Exception) { JSONObject() }
+                      val all = payload.optJSONArray("cards") ?: JSONArray()
+                      val due = JSONArray()
+                      for (i in 0 until all.length()) {
+                          val card = all.optJSONObject(i)
+                          if (card != null && card.optBoolean("due", false)) due.put(card)
+                      }
+                      return if (due.length() > 0) due else all
+                  }
+
+                  private fun updateOne(context: Context, manager: AppWidgetManager, widgetId: Int) {
+                      val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                      val raw = prefs.getString("payload", "{}") ?: "{}"
+                      val payload = try { JSONObject(raw) } catch (_: Exception) { JSONObject() }
+                      val labels = payload.optJSONObject("labels") ?: JSONObject()
+                      val cards = selectedCards(context)
+                      val views = RemoteViews(context.packageName, R.layout.quick_review_widget)
+                      val hasCards = cards.length() > 0
+                      val index = if (hasCards) Math.floorMod(prefs.getInt("index", 0), cards.length()) else 0
+                      val revealed = hasCards && prefs.getBoolean("revealed", false)
+                      val card = if (hasCards) cards.optJSONObject(index) ?: JSONObject() else JSONObject()
+                      val title = labels.optString("title", "PARIN LITNER · QUICK REVIEW")
+                      val empty = labels.optString("empty", "Create a few flashcards first.")
+                      views.setTextViewText(R.id.quick_title, title)
+                      views.setTextViewText(R.id.quick_question, if (hasCards) card.optString(if (revealed) "back" else "front", empty) else empty)
+                      views.setTextViewText(R.id.quick_deck, if (hasCards) card.optString("deck", "") else "")
+                      val countLabel = if (cards.length() == 1) labels.optString("due", "card due") else labels.optString("due", "cards due")
+                      views.setTextViewText(R.id.quick_status, if (hasCards) (index + 1).toString() + "/" + cards.length().toString() + " · " + countLabel else "")
+                      views.setTextViewText(R.id.quick_toggle, labels.optString(if (revealed) "hide" else "reveal", if (revealed) "Hide" else "Reveal"))
+                      views.setTextViewText(R.id.quick_next, labels.optString("next", "Next"))
+                      views.setTextViewText(R.id.quick_open, labels.optString("open", "Open app"))
+                      val rtl = payload.optBoolean("isRtl", false)
+                      val alignment = if (rtl) Gravity.RIGHT or Gravity.CENTER_VERTICAL else Gravity.LEFT or Gravity.CENTER_VERTICAL
+                      views.setInt(R.id.quick_question, "setGravity", alignment)
+                      views.setInt(R.id.quick_deck, "setGravity", if (rtl) Gravity.RIGHT else Gravity.LEFT)
+
+                      val toggle = Intent(context, QuickReviewWidgetProvider::class.java).setAction(ACTION_TOGGLE)
+                      val next = Intent(context, QuickReviewWidgetProvider::class.java).setAction(ACTION_NEXT)
+                      views.setOnClickPendingIntent(R.id.quick_toggle, PendingIntent.getBroadcast(context, widgetId + 1001, toggle, FLAG_UPDATE_IMMUTABLE))
+                      views.setOnClickPendingIntent(R.id.quick_question, PendingIntent.getBroadcast(context, widgetId + 1001, toggle, FLAG_UPDATE_IMMUTABLE))
+                      views.setOnClickPendingIntent(R.id.quick_next, PendingIntent.getBroadcast(context, widgetId + 2001, next, FLAG_UPDATE_IMMUTABLE))
+                      val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                      if (launch != null) {
+                          launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                          views.setOnClickPendingIntent(R.id.quick_open, PendingIntent.getActivity(context, widgetId + 3001, launch, FLAG_UPDATE_IMMUTABLE))
+                      }
+                      manager.updateAppWidget(widgetId, views)
+                  }
+              }
+          }
+          ''')
+
+          res = Path('android/app/src/main/res')
+          (res / 'layout').mkdir(parents=True, exist_ok=True)
+          (res / 'drawable').mkdir(parents=True, exist_ok=True)
+          (res / 'xml').mkdir(parents=True, exist_ok=True)
+
+          (res / 'layout/quick_review_widget.xml').write_text(r'''<?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/quick_widget_root"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:minHeight="150dp"
+              android:orientation="vertical"
+              android:padding="14dp"
+              android:background="@drawable/quick_review_widget_bg">
+              <TextView
+                  android:id="@+id/quick_title"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:text="PARIN LITNER · QUICK REVIEW"
+                  android:textColor="#FFFFFFFF"
+                  android:textSize="12sp"
+                  android:fontFamily="sans-serif-medium"
+                  android:maxLines="1"
+                  android:ellipsize="end" />
+              <TextView
+                  android:id="@+id/quick_status"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="2dp"
+                  android:textColor="#D9FFFFFF"
+                  android:textSize="10sp"
+                  android:maxLines="1" />
+              <TextView
+                  android:id="@+id/quick_deck"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="6dp"
+                  android:textColor="#FFFFFFFF"
+                  android:textSize="11sp"
+                  android:maxLines="1"
+                  android:ellipsize="end" />
+              <TextView
+                  android:id="@+id/quick_question"
+                  android:layout_width="match_parent"
+                  android:layout_height="0dp"
+                  android:layout_weight="1"
+                  android:gravity="center_vertical|start"
+                  android:text="Create a few flashcards first."
+                  android:textColor="#FFFFFFFF"
+                  android:textSize="17sp"
+                  android:fontFamily="sans-serif-medium"
+                  android:maxLines="3"
+                  android:ellipsize="end"
+                  android:textDirection="firstStrong" />
+              <LinearLayout
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="horizontal"
+                  android:gravity="center_vertical">
+                  <TextView
+                      android:id="@+id/quick_toggle"
+                      android:layout_width="0dp"
+                      android:layout_height="38dp"
+                      android:layout_weight="1.1"
+                      android:gravity="center"
+                      android:text="Reveal"
+                      android:textColor="#FFFFFFFF"
+                      android:textSize="11sp"
+                      android:fontFamily="sans-serif-medium"
+                      android:background="@android:color/transparent"
+                      android:maxLines="1"
+                      android:ellipsize="end" />
+                  <TextView
+                      android:id="@+id/quick_next"
+                      android:layout_width="0dp"
+                      android:layout_height="38dp"
+                      android:layout_weight="0.8"
+                      android:gravity="center"
+                      android:text="Next"
+                      android:textColor="#FFFFFFFF"
+                      android:textSize="11sp"
+                      android:fontFamily="sans-serif-medium"
+                      android:background="@android:color/transparent"
+                      android:maxLines="1"
+                      android:ellipsize="end" />
+                  <TextView
+                      android:id="@+id/quick_open"
+                      android:layout_width="0dp"
+                      android:layout_height="38dp"
+                      android:layout_weight="1"
+                      android:gravity="center"
+                      android:text="Open app"
+                      android:textColor="#FFFFFFFF"
+                      android:textSize="11sp"
+                      android:fontFamily="sans-serif-medium"
+                      android:background="@android:color/transparent"
+                      android:maxLines="1"
+                      android:ellipsize="end" />
+              </LinearLayout>
+          </LinearLayout>
+          ''')
+
+          (res / 'drawable/quick_review_widget_bg.xml').write_text(r'''<?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#FF0078D4" />
+              <corners android:radius="0dp" />
+          </shape>
+          ''')
+
+          (res / 'xml/quick_review_widget_info.xml').write_text(r'''<?xml version="1.0" encoding="utf-8"?>
+          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+              android:minWidth="250dp"
+              android:minHeight="150dp"
+              android:minResizeWidth="220dp"
+              android:minResizeHeight="130dp"
+              android:updatePeriodMillis="1800000"
+              android:initialLayout="@layout/quick_review_widget"
+              android:resizeMode="horizontal|vertical"
+              android:widgetCategory="home_screen" />
+          ''')
+
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          source = manifest.read_text()
+          if 'QuickReviewWidgetProvider' not in source:
+              receiver = '''
+                  <receiver android:name=".QuickReviewWidgetProvider" android:label="Parin Litner Quick Review" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                          <action android:name="com.parin.parin_litner.QUICK_TOGGLE" />
+                          <action android:name="com.parin.parin_litner.QUICK_NEXT" />
+                      </intent-filter>
+                      <meta-data android:name="android.appwidget.provider" android:resource="@xml/quick_review_widget_info" />
+                  </receiver>
+              '''
+              if '</application>' not in source:
+                  raise SystemExit('Cannot register widget: application closing tag is missing.')
+              source = source.replace('</application>', receiver + '\\n</application>', 1)
+              manifest.write_text(source)
+          print('Quick-review home-screen widget generated.')
+          PY
+
       - name: Setup Java 17
         uses: actions/setup-java@v5
         with:
