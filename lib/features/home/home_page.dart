@@ -53,7 +53,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parin Litner'),
+        title: const Text('Talent Litner'),
         actions: [
           IconButton(
             onPressed: widget.onImport,
