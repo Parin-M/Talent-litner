@@ -136,7 +136,7 @@ class CardPdfExportService {
     final document = pw.Document(
       title: deck.name,
       author: 'Parin Mashalchian',
-      subject: 'Parin Litner flashcards',
+      subject: 'Talent Litner flashcards',
     );
 
     for (var start = 0; start < sortedCards.length; start += cardsPerPage) {
