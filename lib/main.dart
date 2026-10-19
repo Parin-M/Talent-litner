@@ -11,15 +11,15 @@ import 'features/home/home_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ParinLitnerApp());
+  runApp(const TalentLitnerApp());
 }
 
-class ParinLitnerApp extends StatefulWidget {
-  const ParinLitnerApp({super.key});
-  @override State<ParinLitnerApp> createState() => _ParinLitnerAppState();
+class TalentLitnerApp extends StatefulWidget {
+  const TalentLitnerApp({super.key});
+  @override State<TalentLitnerApp> createState() => _TalentLitnerAppState();
 }
 
-class _ParinLitnerAppState extends State<ParinLitnerApp> {
+class _TalentLitnerAppState extends State<TalentLitnerApp> {
   final storage = StorageService();
   final backup = BackupService();
   final settings = AppSettings();
@@ -95,7 +95,7 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
     animation: settings,
     builder: (context, _) => MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Parin Litner',
+      title: 'Talent Litner',
       locale: settings.locale,
       supportedLocales: AppStrings.supportedLocales,
       localizationsDelegates: const [AppStrings.delegate, GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
