@@ -196,8 +196,8 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 10),
             _MetroAction(
-              title: 'Power Center',
-              subtitle: 'Smart Mix • XP • Streaks • Rewards',
+              title: s(context, 'power_center_title'),
+              subtitle: s(context, 'pc_tile_subtitle'),
               icon: Icons.auto_awesome_outlined,
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => PowerCenterPage(
