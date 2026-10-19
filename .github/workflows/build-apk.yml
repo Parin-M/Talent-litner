@@ -468,7 +468,7 @@ jobs:
       - name: Verify versioned feature source
         run: |
           set -euo pipefail
-          grep -Fqx 'version: 7.3.0+23' <(grep '^version:' pubspec.yaml)
+          grep -Fq 'version: 7.3.0+23' pubspec.yaml
           grep -Fq 'image: 4.10.0' pubspec.yaml
           test -s lib/features/study/quick_review_page.dart
           test -s lib/features/quizzes/quizzes_page.dart
@@ -482,7 +482,7 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          text='\\n'.join(p.read_text(errors='ignore') for p in Path('android').rglob('*.xml'))
+          text='\n'.join(p.read_text(errors='ignore') for p in Path('android').rglob('*.xml'))
           banned=['SYSTEM_ALERT_WINDOW','REQUEST_INSTALL_PACKAGES','QUERY_ALL_PACKAGES','MANAGE_EXTERNAL_STORAGE','READ_SMS','RECEIVE_SMS','SEND_SMS','BIND_ACCESSIBILITY_SERVICE','ACCESS_FINE_LOCATION','ACCESS_COARSE_LOCATION','READ_CALL_LOG','WRITE_CALL_LOG','RECORD_AUDIO']
           bad=[x for x in banned if x in text]
           if bad: raise SystemExit('Unexpected sensitive permissions: '+', '.join(bad))
