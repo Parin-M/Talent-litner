@@ -23,7 +23,7 @@ class AboutPage extends StatelessWidget {
         Card(child: Padding(padding: const EdgeInsets.all(22), child: Column(children: [
           Container(width: 92, height: 92, padding: const EdgeInsets.all(10), decoration: BoxDecoration(borderRadius: BorderRadius.zero, color: scheme.primaryContainer), child: Image.asset('assets/parin_litner_icon.png')),
           const SizedBox(height: 18),
-          const Text('Parin Litner', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
+          const Text('Talent Litner', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
           const SizedBox(height: 12),
           Text('$_authorCredit\n\n${s('about_ai')}', style: TextStyle(fontSize: 16, height: 1.65, color: scheme.onSurfaceVariant), textAlign: TextAlign.center),
         ]))),
