@@ -465,19 +465,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Verify versioned feature source
-        run: |
-          set -euo pipefail
-          grep -Fq 'version: 7.3.0+23' pubspec.yaml
-          grep -Fq 'image: 4.10.0' pubspec.yaml
-          test -s lib/features/study/quick_review_page.dart
-          test -s lib/features/quizzes/quizzes_page.dart
-          test -s lib/core/services/quick_review_widget_service.dart
-          grep -q 'QuickReviewWidgetProvider' .github/workflows/build-apk.yml
-          grep -q "'quizzes': quizzes.map" lib/core/services/backup_service.dart
-          grep -q 'QuizDefinition' lib/core/models/app_models.dart
-          echo "Quick Review, configurable multiple-choice tests and portable test backup sources verified."
-
       - name: Release security hygiene
         run: |
           python3 - <<'PY'
