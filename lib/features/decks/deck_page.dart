@@ -273,7 +273,7 @@ class _DeckPageState extends State<DeckPage> {
       progressDialogOpen = false;
 
       final cleanName = widget.deck.name
-          .replaceAll(RegExp(r'[\u0000-\u001f\\/:*?"<>|]+'), '-')
+          .replaceAll(RegExp(r'[/:*?"<>|]+'), '-')
           .trim();
       final filename = '${cleanName.isEmpty ? 'parin-litner-cards' : cleanName}.pdf';
       if (request.printInstead) {
