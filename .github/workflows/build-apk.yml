@@ -1,11 +1,15 @@
-name: Build Parin Litner
+name: Build Talent Litner
+
+concurrency:
+  group: talent-litner-${{ github.ref }}
+  cancel-in-progress: true
 
 on:
   workflow_dispatch:
   pull_request:
     branches: [main]
   push:
-    branches: [main, master, pourya-refresh-2026]
+    branches: [main, master]
 
 jobs:
   build:
@@ -25,7 +29,7 @@ jobs:
           rm -rf android
           flutter create --platforms=android --org com.parin .
           # The Flutter 3.35 engine requires Android 7.0 (API 24).
-          # Android 4.0 support is provided by a separate native legacy APK.
+          # Older Android versions are not targeted; minimum supported Android is API 24.
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -47,6 +51,285 @@ jobs:
           PY
           rm -rf test
 
+      - name: Generate quick-review Android home widget
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          package_dir = Path('android/app/src/main/kotlin/com/parin/parin_litner')
+          package_dir.mkdir(parents=True, exist_ok=True)
+          main = package_dir / 'MainActivity.kt'
+          main.write_text(r'''package com.parin.parin_litner
+
+          import android.content.Context
+          import io.flutter.embedding.android.FlutterActivity
+          import io.flutter.embedding.engine.FlutterEngine
+          import io.flutter.plugin.common.MethodChannel
+
+          class MainActivity : FlutterActivity() {
+              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+                  super.configureFlutterEngine(flutterEngine)
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "parin_litner/quick_widget")
+                      .setMethodCallHandler { call, result ->
+                          when (call.method) {
+                              "syncCards" -> {
+                                  val payload = call.argument<String>("payload") ?: "{}"
+                                  getSharedPreferences("quick_review_widget", Context.MODE_PRIVATE)
+                                      .edit().putString("payload", payload).apply()
+                                  QuickReviewWidgetProvider.refreshAll(this)
+                                  result.success(null)
+                              }
+                              else -> result.notImplemented()
+                          }
+                      }
+              }
+          }
+          ''')
+
+          provider = package_dir / 'QuickReviewWidgetProvider.kt'
+          provider.write_text(r'''package com.parin.parin_litner
+
+          import android.app.PendingIntent
+          import android.appwidget.AppWidgetManager
+          import android.appwidget.AppWidgetProvider
+          import android.content.ComponentName
+          import android.content.Context
+          import android.content.Intent
+          import android.view.Gravity
+          import android.widget.RemoteViews
+          import org.json.JSONArray
+          import org.json.JSONObject
+
+          class QuickReviewWidgetProvider : AppWidgetProvider() {
+              override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
+                  for (id in appWidgetIds) updateOne(context, manager, id)
+              }
+
+              override fun onReceive(context: Context, intent: Intent) {
+                  super.onReceive(context, intent)
+                  val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                  when (intent.action) {
+                      ACTION_TOGGLE -> prefs.edit().putBoolean("revealed", !prefs.getBoolean("revealed", false)).apply()
+                      ACTION_NEXT -> {
+                          val count = selectedCards(context).length()
+                          if (count > 0) prefs.edit().putInt("index", (prefs.getInt("index", 0) + 1) % count).putBoolean("revealed", false).apply()
+                      }
+                  }
+                  if (intent.action == ACTION_TOGGLE || intent.action == ACTION_NEXT) refreshAll(context)
+              }
+
+              companion object {
+                  private const val PREFS = "quick_review_widget"
+                  private const val ACTION_TOGGLE = "com.parin.parin_litner.QUICK_TOGGLE"
+                  private const val ACTION_NEXT = "com.parin.parin_litner.QUICK_NEXT"
+                  private val FLAG_UPDATE_IMMUTABLE = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+
+                  fun refreshAll(context: Context) {
+                      val manager = AppWidgetManager.getInstance(context)
+                      val ids = manager.getAppWidgetIds(ComponentName(context, QuickReviewWidgetProvider::class.java))
+                      if (ids.isNotEmpty()) for (id in ids) updateOne(context, manager, id)
+                  }
+
+                  private fun selectedCards(context: Context): JSONArray {
+                      val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("payload", "{}") ?: "{}"
+                      val payload = try { JSONObject(raw) } catch (_: Exception) { JSONObject() }
+                      val all = payload.optJSONArray("cards") ?: JSONArray()
+                      val due = JSONArray()
+                      for (i in 0 until all.length()) {
+                          val card = all.optJSONObject(i)
+                          if (card != null && card.optBoolean("due", false)) due.put(card)
+                      }
+                      return if (due.length() > 0) due else all
+                  }
+
+                  private fun updateOne(context: Context, manager: AppWidgetManager, widgetId: Int) {
+                      val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                      val raw = prefs.getString("payload", "{}") ?: "{}"
+                      val payload = try { JSONObject(raw) } catch (_: Exception) { JSONObject() }
+                      val labels = payload.optJSONObject("labels") ?: JSONObject()
+                      val cards = selectedCards(context)
+                      val views = RemoteViews(context.packageName, R.layout.quick_review_widget)
+                      val hasCards = cards.length() > 0
+                      val index = if (hasCards) Math.floorMod(prefs.getInt("index", 0), cards.length()) else 0
+                      val revealed = hasCards && prefs.getBoolean("revealed", false)
+                      val card = if (hasCards) cards.optJSONObject(index) ?: JSONObject() else JSONObject()
+                      val title = labels.optString("title", "TALENT LITNER · QUICK REVIEW")
+                      val empty = labels.optString("empty", "Create a few flashcards first.")
+                      views.setTextViewText(R.id.quick_title, title)
+                      views.setTextViewText(R.id.quick_question, if (hasCards) card.optString(if (revealed) "back" else "front", empty) else empty)
+                      views.setTextViewText(R.id.quick_deck, if (hasCards) card.optString("deck", "") else "")
+                      val allCards = payload.optJSONArray("cards") ?: JSONArray()
+                      var dueCount = 0
+                      for (i in 0 until allCards.length()) {
+                          if (allCards.optJSONObject(i)?.optBoolean("due", false) == true) dueCount++
+                      }
+                      val countLabel = labels.optString(if (dueCount > 0) "due" else "all", if (dueCount > 0) "Due today" else "cards")
+                      views.setTextViewText(R.id.quick_status, if (hasCards) (index + 1).toString() + "/" + cards.length().toString() + " · " + countLabel else "")
+                      views.setTextViewText(R.id.quick_toggle, labels.optString(if (revealed) "hide" else "reveal", if (revealed) "Hide" else "Reveal"))
+                      views.setTextViewText(R.id.quick_next, labels.optString("next", "Next"))
+                      views.setTextViewText(R.id.quick_open, labels.optString("open", "Open app"))
+                      val rtl = payload.optBoolean("isRtl", false)
+                      val alignment = if (rtl) Gravity.RIGHT or Gravity.CENTER_VERTICAL else Gravity.LEFT or Gravity.CENTER_VERTICAL
+                      views.setInt(R.id.quick_question, "setGravity", alignment)
+                      views.setInt(R.id.quick_deck, "setGravity", if (rtl) Gravity.RIGHT else Gravity.LEFT)
+
+                      val toggle = Intent(context, QuickReviewWidgetProvider::class.java).setAction(ACTION_TOGGLE)
+                      val next = Intent(context, QuickReviewWidgetProvider::class.java).setAction(ACTION_NEXT)
+                      views.setOnClickPendingIntent(R.id.quick_toggle, PendingIntent.getBroadcast(context, widgetId + 1001, toggle, FLAG_UPDATE_IMMUTABLE))
+                      views.setOnClickPendingIntent(R.id.quick_question, PendingIntent.getBroadcast(context, widgetId + 1001, toggle, FLAG_UPDATE_IMMUTABLE))
+                      views.setOnClickPendingIntent(R.id.quick_next, PendingIntent.getBroadcast(context, widgetId + 2001, next, FLAG_UPDATE_IMMUTABLE))
+                      val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                      if (launch != null) {
+                          launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                          views.setOnClickPendingIntent(R.id.quick_open, PendingIntent.getActivity(context, widgetId + 3001, launch, FLAG_UPDATE_IMMUTABLE))
+                      }
+                      manager.updateAppWidget(widgetId, views)
+                  }
+              }
+          }
+          ''')
+
+          res = Path('android/app/src/main/res')
+          (res / 'layout').mkdir(parents=True, exist_ok=True)
+          (res / 'drawable').mkdir(parents=True, exist_ok=True)
+          (res / 'xml').mkdir(parents=True, exist_ok=True)
+
+          (res / 'layout/quick_review_widget.xml').write_text(r'''<?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/quick_widget_root"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:minHeight="150dp"
+              android:orientation="vertical"
+              android:padding="14dp"
+              android:background="@drawable/quick_review_widget_bg">
+              <TextView
+                  android:id="@+id/quick_title"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:text="TALENT LITNER · QUICK REVIEW"
+                  android:textColor="#FFFFFFFF"
+                  android:textSize="12sp"
+                  android:fontFamily="sans-serif-medium"
+                  android:maxLines="1"
+                  android:ellipsize="end" />
+              <TextView
+                  android:id="@+id/quick_status"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="2dp"
+                  android:textColor="#D9FFFFFF"
+                  android:textSize="10sp"
+                  android:maxLines="1" />
+              <TextView
+                  android:id="@+id/quick_deck"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="6dp"
+                  android:textColor="#FFFFFFFF"
+                  android:textSize="11sp"
+                  android:maxLines="1"
+                  android:ellipsize="end" />
+              <TextView
+                  android:id="@+id/quick_question"
+                  android:layout_width="match_parent"
+                  android:layout_height="0dp"
+                  android:layout_weight="1"
+                  android:gravity="center_vertical|start"
+                  android:text="Create a few flashcards first."
+                  android:textColor="#FFFFFFFF"
+                  android:textSize="17sp"
+                  android:fontFamily="sans-serif-medium"
+                  android:maxLines="3"
+                  android:ellipsize="end"
+                  android:textDirection="firstStrong" />
+              <LinearLayout
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="horizontal"
+                  android:gravity="center_vertical">
+                  <TextView
+                      android:id="@+id/quick_toggle"
+                      android:layout_width="0dp"
+                      android:layout_height="38dp"
+                      android:layout_weight="1.1"
+                      android:gravity="center"
+                      android:text="Reveal"
+                      android:textColor="#FFFFFFFF"
+                      android:textSize="11sp"
+                      android:fontFamily="sans-serif-medium"
+                      android:background="@android:color/transparent"
+                      android:maxLines="1"
+                      android:ellipsize="end" />
+                  <TextView
+                      android:id="@+id/quick_next"
+                      android:layout_width="0dp"
+                      android:layout_height="38dp"
+                      android:layout_weight="0.8"
+                      android:gravity="center"
+                      android:text="Next"
+                      android:textColor="#FFFFFFFF"
+                      android:textSize="11sp"
+                      android:fontFamily="sans-serif-medium"
+                      android:background="@android:color/transparent"
+                      android:maxLines="1"
+                      android:ellipsize="end" />
+                  <TextView
+                      android:id="@+id/quick_open"
+                      android:layout_width="0dp"
+                      android:layout_height="38dp"
+                      android:layout_weight="1"
+                      android:gravity="center"
+                      android:text="Open app"
+                      android:textColor="#FFFFFFFF"
+                      android:textSize="11sp"
+                      android:fontFamily="sans-serif-medium"
+                      android:background="@android:color/transparent"
+                      android:maxLines="1"
+                      android:ellipsize="end" />
+              </LinearLayout>
+          </LinearLayout>
+          ''')
+
+          (res / 'drawable/quick_review_widget_bg.xml').write_text(r'''<?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#FF0078D4" />
+              <corners android:radius="0dp" />
+          </shape>
+          ''')
+
+          (res / 'xml/quick_review_widget_info.xml').write_text(r'''<?xml version="1.0" encoding="utf-8"?>
+          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+              android:minWidth="250dp"
+              android:minHeight="150dp"
+              android:minResizeWidth="220dp"
+              android:minResizeHeight="130dp"
+              android:updatePeriodMillis="1800000"
+              android:initialLayout="@layout/quick_review_widget"
+              android:resizeMode="horizontal|vertical"
+              android:widgetCategory="home_screen" />
+          ''')
+
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          source = manifest.read_text()
+          if 'QuickReviewWidgetProvider' not in source:
+              receiver = '''
+                  <receiver android:name=".QuickReviewWidgetProvider" android:label="Talent Litner Quick Review" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                          <action android:name="com.parin.parin_litner.QUICK_TOGGLE" />
+                          <action android:name="com.parin.parin_litner.QUICK_NEXT" />
+                      </intent-filter>
+                      <meta-data android:name="android.appwidget.provider" android:resource="@xml/quick_review_widget_info" />
+                  </receiver>
+              '''
+              if '</application>' not in source:
+                  raise SystemExit('Cannot register widget: application closing tag is missing.')
+              source = source.replace('</application>', receiver + '\\n</application>', 1)
+              manifest.write_text(source)
+          print('Quick-review home-screen widget generated.')
+          PY
+
       - name: Setup Java 17
         uses: actions/setup-java@v5
         with:
@@ -59,13 +342,13 @@ jobs:
           from pathlib import Path
           p=Path('android/app/src/main/AndroidManifest.xml')
           s=p.read_text()
-          s=s.replace('android:label="parin_litner"','android:label="Parin Litner"')
+          s=s.replace('android:label="parin_litner"','android:label="Talent Litner"')
           p.write_text(s)
           print('Android package: com.parin.parin_litner')
           PY
           test -f android/app/src/main/kotlin/com/parin/parin_litner/MainActivity.kt
           grep -q '^package com.parin.parin_litner' android/app/src/main/kotlin/com/parin/parin_litner/MainActivity.kt
-          keytool -genkeypair -v -keystore android/parin-release.jks -storepass changeit -keypass changeit -alias parinlitner -keyalg RSA -keysize 2048 -validity 3650 -dname 'CN=Parin Litner, OU=Release, O=Parin, L=Internet, ST=NA, C=US'
+          keytool -genkeypair -v -keystore android/parin-release.jks -storepass changeit -keypass changeit -alias parinlitner -keyalg RSA -keysize 2048 -validity 3650 -dname 'CN=Talent Litner, OU=Release, O=Parin, L=Internet, ST=NA, C=US'
           python3 - <<'PY'
           from pathlib import Path
           p=Path('android/app/build.gradle.kts')
@@ -79,7 +362,7 @@ jobs:
           print('Ephemeral release signing configured for this CI run.')
           PY
 
-      - name: Install Parin Litner assets
+      - name: Install Talent Litner assets
         run: |
           mkdir -p assets/audio
           test -s assets/parin_litner_icon.png
@@ -155,20 +438,25 @@ jobs:
           PY
           for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do cp assets/parin_litner_icon.png android/app/src/main/res/mipmap-$d/ic_launcher.png; done
 
-      - name: Enable native haptic vibration permission
+      - name: Enable network and native haptic permissions
         run: |
           python3 - <<'PY'
           from pathlib import Path
           path = Path('android/app/src/main/AndroidManifest.xml')
           text = path.read_text()
-          permission = '    <uses-permission android:name="android.permission.VIBRATE" />'
-          if 'android.permission.VIBRATE' not in text:
-              index = text.find('<application')
-              if index < 0:
-                  raise SystemExit('Android manifest has no application node')
-              text = text[:index] + permission + '\n\n    ' + text[index:]
+          permissions = (
+              '    <uses-permission android:name="android.permission.VIBRATE" />',
+              '    <uses-permission android:name="android.permission.INTERNET" />',
+          )
+          for permission in permissions:
+              permission_name = permission.split('"')[1]
+              if permission_name not in text:
+                  index = text.find('<application')
+                  if index < 0:
+                      raise SystemExit('Android manifest has no application node')
+                  text = text[:index] + permission + '\n' + text[index:]
           path.write_text(text)
-          print('VIBRATE permission verified')
+          print('VIBRATE and INTERNET permissions verified')
           PY
 
       - name: Verify Flutter minimum SDK (Android 7+)
@@ -250,7 +538,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: parin-litner-release-apk
+          name: talent-litner-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 30
@@ -258,108 +546,7 @@ jobs:
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: parin-litner-release-aab
+          name: talent-litner-release-aab
           path: build/app/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-          retention-days: 30
-
-  build-legacy-android4:
-    name: Build native Android 4.0 compatibility APK
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java for Android SDK tools
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Validate legacy web assets
-        run: |
-          node --check legacy-android/app/src/main/assets/app.js
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          root = Path('legacy-android/app/src/main/assets')
-          translations = json.loads((root / 'translations.json').read_text())
-          themes = json.loads((root / 'themes.json').read_text())
-          assert len(translations) == 21, f'Expected 21 languages, got {len(translations)}'
-          assert len(themes) == 50, f'Expected 50 themes, got {len(themes)}'
-          index = (root / 'index.html').read_text()
-          for script in ('i18n.js', 'palettes.js', 'app.js'):
-              assert script in index, f'Missing script reference: {script}'
-          print(f'Legacy assets verified: {len(translations)} languages, {len(themes)} themes')
-          PY
-
-      - name: Install Android 4 compatible build SDK
-        run: |
-          set -euo pipefail
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -x "$SDKMANAGER" ]; then
-            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
-          fi
-          test -x "$SDKMANAGER"
-          "$SDKMANAGER" --install "platforms;android-28" "build-tools;28.0.3"
-
-      - name: Setup Java 8 for the legacy Gradle toolchain
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '8'
-
-      - name: Setup legacy Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '4.10.3'
-
-      - name: Verify Android 4.0 minimum SDK
-        run: |
-          grep -q 'minSdkVersion 14' legacy-android/app/build.gradle
-          grep -q 'android:minSdkVersion="14"' legacy-android/app/src/main/AndroidManifest.xml
-
-      - name: Build native legacy APK
-        shell: bash
-        run: |
-          set -euo pipefail
-          for attempt in 1 2 3; do
-            if gradle -p legacy-android --no-daemon clean assembleRelease; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              delay=$((attempt * 20))
-              echo "Legacy Gradle build failed (attempt $attempt); retrying in ${delay}s. This can recover from Maven Central rate limits."
-              sleep "$delay"
-            fi
-          done
-          echo "Legacy Gradle build failed after three attempts." >&2
-          exit 1
-
-      - name: Verify APK package and minimum SDK
-        run: |
-          set -euo pipefail
-          APK=legacy-android/app/build/outputs/apk/release/app-release.apk
-          test -s "$APK"
-          "$ANDROID_HOME/build-tools/28.0.3/aapt" dump badging "$APK" | grep -q "sdkVersion:'14'"
-          "$ANDROID_HOME/build-tools/28.0.3/aapt" dump badging "$APK" | grep -q "package: name='com.parin.parin_litner.legacy'"
-          "$ANDROID_HOME/build-tools/28.0.3/aapt" dump xmltree "$APK" AndroidManifest.xml | grep -q 'com.parin.parin_litner.MainActivity'
-          python3 - "$APK" <<'PY'
-          import sys, zipfile
-          with zipfile.ZipFile(sys.argv[1]) as z:
-              bad = z.testzip()
-              if bad: raise SystemExit('Corrupt APK entry: ' + bad)
-              names = set(z.namelist())
-              for asset in ('assets/index.html','assets/app.js','assets/i18n.js','assets/palettes.js'):
-                  if asset not in names: raise SystemExit('Missing legacy asset: ' + asset)
-              if 'classes.dex' not in names: raise SystemExit('APK missing classes.dex')
-          print('Android 4 APK integrity check: OK')
-          PY
-
-      - name: Upload Android 4 APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: parin-litner-android4-legacy-apk
-          path: legacy-android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30

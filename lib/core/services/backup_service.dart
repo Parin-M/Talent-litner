@@ -3,12 +3,18 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
 
+class BackupBundle {
+  final List<Deck> decks;
+  final List<QuizDefinition> quizzes;
+  const BackupBundle({required this.decks, required this.quizzes});
+}
+
 class BackupService {
   static const List<int> _magic = <int>[0x50, 0x4c, 0x49, 0x54, 0x42, 0x4b, 0x30, 0x31]; // PLITBK01
   static const int _maxManifestBytes = 64 * 1024 * 1024;
   static const int _maxAssets = 50000;
 
-  Future<bool> exportDecks(List<Deck> decks) async {
+  Future<bool> exportBackup(List<Deck> decks, {List<QuizDefinition> quizzes = const <QuizDefinition>[]}) async {
     final assets = <String, Uint8List>{};
     var nextAsset = 0;
     String? addImage(dynamic raw, String label) {
@@ -40,7 +46,8 @@ class BackupService {
     }
 
     final manifest = <String, dynamic>{
-      'app': 'Parin Litner', 'format': 1,
+      'app': 'Talent Litner', 'format': 2,
+      'quizzes': quizzes.map((quiz) => quiz.toJson()).toList(),
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
       'imageCount': assets.length, 'decks': deckPayload,
     };
@@ -54,7 +61,7 @@ class BackupService {
     }
 
     final saved = await FilePicker.saveFile(
-      dialogTitle: 'ذخیره پشتیبان Parin Litner',
+      dialogTitle: 'ذخیره پشتیبان Talent Litner',
       fileName: 'parin_litner_backup.plbackup',
       type: FileType.custom,
       allowedExtensions: ['plbackup'],
@@ -63,7 +70,9 @@ class BackupService {
     return saved != null;
   }
 
-  Future<List<Deck>?> importDecks() async {
+  Future<List<Deck>?> importDecks() async => (await importBackup())?.decks;
+
+  Future<BackupBundle?> importBackup() async {
     final picked = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['plbackup', 'json'],
@@ -77,16 +86,21 @@ class BackupService {
     // Backward compatibility for pre-.plbackup JSON files.
     final dynamic decoded;
     try { decoded = jsonDecode(utf8.decode(bytes)); }
-    on FormatException { throw const FormatException('This is not a valid Parin Litner backup.'); }
+    on FormatException { throw const FormatException('This is not a valid Talent Litner backup.'); }
     final dynamic rawDecks = decoded is Map ? decoded['decks'] : decoded;
+    final dynamic rawQuizzes = decoded is Map ? decoded['quizzes'] : null;
     if (rawDecks is! List) throw const FormatException('The selected file does not contain a deck list.');
-    return rawDecks.map((raw) {
+    final decks = rawDecks.map((raw) {
       if (raw is! Map) throw const FormatException('A deck record is invalid.');
       return Deck.fromJson(Map<String, dynamic>.from(raw));
     }).toList();
+    final quizzes = rawQuizzes is List
+        ? rawQuizzes.whereType<Map>().map((raw) => QuizDefinition.fromJson(Map<String, dynamic>.from(raw))).toList()
+        : <QuizDefinition>[];
+    return BackupBundle(decks: decks, quizzes: quizzes);
   }
 
-  List<Deck> _decodeBinaryBackup(Uint8List bytes) {
+  BackupBundle _decodeBinaryBackup(Uint8List bytes) {
     if (bytes.length < 12) throw const FormatException('Backup file is incomplete.');
     final manifestLength = _readUint32(bytes, 8);
     if (manifestLength > _maxManifestBytes || manifestLength > bytes.length - 12) throw const FormatException('Backup metadata length is invalid.');
@@ -97,7 +111,8 @@ class BackupService {
     on FormatException { throw const FormatException('Backup metadata is damaged.'); }
     if (rawManifest is! Map) throw const FormatException('Backup metadata is invalid.');
     final manifest = Map<String, dynamic>.from(rawManifest);
-    if (manifest['app'] != 'Parin Litner' || manifest['format'] != 1) throw const FormatException('This backup version is not supported.');
+    final format = manifest['format'];
+    if (manifest['app'] != 'Talent Litner' || (format != 1 && format != 2)) throw const FormatException('This backup version is not supported.');
     final count = manifest['imageCount'];
     if (count is! int || count < 0 || count > _maxAssets) throw const FormatException('Backup image count is invalid.');
 
@@ -120,7 +135,7 @@ class BackupService {
 
     final dynamic rawDecks = manifest['decks'];
     if (rawDecks is! List) throw const FormatException('Backup does not contain a deck list.');
-    return rawDecks.map((rawDeck) {
+    final decks = rawDecks.map((rawDeck) {
       if (rawDeck is! Map) throw const FormatException('A deck record is invalid.');
       final deck = Map<String, dynamic>.from(rawDeck);
       final dynamic rawCards = deck['cards'];
@@ -141,7 +156,14 @@ class BackupService {
       }).toList();
       return Deck.fromJson(deck);
     }).toList();
+    final dynamic rawQuizzes = manifest['quizzes'];
+    final quizzes = rawQuizzes is List
+        ? rawQuizzes.whereType<Map>().map((raw) => QuizDefinition.fromJson(Map<String, dynamic>.from(raw))).toList()
+        : <QuizDefinition>[];
+    return BackupBundle(decks: decks, quizzes: quizzes);
   }
+
+  Future<bool> exportDecks(List<Deck> decks) => exportBackup(decks);
 
   bool _hasMagic(Uint8List bytes) {
     if (bytes.length < _magic.length) return false;
