@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:printing/printing.dart';
 
 import '../../core/i18n/app_strings.dart';
 import '../../core/models/app_models.dart';
 import '../../core/models/app_settings.dart';
+import '../../core/services/pdf_export_service.dart';
 import '../../core/utils/helpers.dart';
 import '../../shared/widgets/animated_glass_card.dart';
 import '../cards/card_editor.dart';
@@ -51,6 +54,7 @@ class _DeckPageState extends State<DeckPage> {
           style: const TextStyle(fontWeight: FontWeight.w500),
         ),
         actions: [
+          IconButton(onPressed: _exportPdf, icon: const Icon(Icons.picture_as_pdf_outlined), tooltip: s('pdf_export')),
           IconButton(onPressed: _renameDeck, icon: const Icon(Icons.edit_outlined), tooltip: s('rename')),
           IconButton(onPressed: _manageBoxes, icon: const Icon(Icons.layers_outlined), tooltip: s('boxes')),
           IconButton(onPressed: _deleteDeck, icon: const Icon(Icons.delete_outline), tooltip: s('delete')),
@@ -216,6 +220,80 @@ class _DeckPageState extends State<DeckPage> {
     );
   }
 
+  Future<void> _exportPdf() async {
+    final q = query.trim().toLowerCase();
+    final matchingCount = q.isEmpty
+        ? widget.deck.cards.length
+        : widget.deck.cards.where((card) =>
+            '\${card.front} \${card.back} \${card.tags}'.toLowerCase().contains(q)).length;
+    final request = await showDialog<_PdfExportRequest>(
+      context: context,
+      builder: (_) => _PdfExportDialog(
+        hasSearch: q.isNotEmpty,
+        matchingCount: matchingCount,
+        totalCount: widget.deck.cards.length,
+      ),
+    );
+    if (!mounted || request == null) return;
+
+    final selectedCards = request.options.matchingCardsOnly && q.isNotEmpty
+        ? widget.deck.cards.where((card) =>
+            '\${card.front} \${card.back} \${card.tags}'.toLowerCase().contains(q)).toList()
+        : List<FlashCard>.from(widget.deck.cards);
+    if (selectedCards.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(s('no_cards'))),
+      );
+      return;
+    }
+
+    var progressDialogOpen = true;
+    unawaited(showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        content: Row(
+          children: [
+            const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5)),
+            const SizedBox(width: 16),
+            Expanded(child: Text(s('pdf_generating'))),
+          ],
+        ),
+      ),
+    ));
+
+    try {
+      final bytes = await CardPdfExportService.generate(
+        deck: widget.deck,
+        cards: selectedCards,
+        options: request.options,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      progressDialogOpen = false;
+
+      final cleanName = widget.deck.name
+          .replaceAll(RegExp(r'[\u0000-\u001f\\/:*?"<>|]+'), '-')
+          .trim();
+      final filename = '\${cleanName.isEmpty ? 'parin-litner-cards' : cleanName}.pdf';
+      if (request.printInstead) {
+        await Printing.layoutPdf(
+          name: filename,
+          onLayout: (_) async => bytes,
+        );
+      } else {
+        await Printing.sharePdf(bytes: bytes, filename: filename);
+      }
+    } catch (_) {
+      if (mounted) {
+        if (progressDialogOpen) Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(s('pdf_export_error'))),
+        );
+      }
+    }
+  }
+
   Future<void> _renameDeck() async {
     final controller = TextEditingController(text: widget.deck.name);
     final name = await showDialog<String>(
@@ -327,6 +405,228 @@ class _DeckPageState extends State<DeckPage> {
           widget.onChanged();
         },
       ),
+    );
+  }
+}
+
+
+class _PdfExportRequest {
+  final CardPdfExportOptions options;
+  final bool printInstead;
+
+  const _PdfExportRequest({required this.options, required this.printInstead});
+}
+
+class _PdfExportDialog extends StatefulWidget {
+  final bool hasSearch;
+  final int matchingCount;
+  final int totalCount;
+
+  const _PdfExportDialog({
+    required this.hasSearch,
+    required this.matchingCount,
+    required this.totalCount,
+  });
+
+  @override
+  State<_PdfExportDialog> createState() => _PdfExportDialogState();
+}
+
+class _PdfExportDialogState extends State<_PdfExportDialog> {
+  CardPdfLayout _layout = CardPdfLayout.flashcards;
+  CardPdfPageSize _pageSize = CardPdfPageSize.a4;
+  CardPdfSortOrder _sortOrder = CardPdfSortOrder.original;
+  int _cardsPerPage = 2;
+  bool _landscape = false;
+  bool _includeAnswers = true;
+  bool _includeImages = true;
+  bool _includeTags = true;
+  bool _includeBox = false;
+  bool _includeDifficulty = false;
+  bool _includePageNumbers = true;
+  bool _matchingCardsOnly = false;
+
+  String s(String key) => AppStrings.t(context, key);
+
+  String _layoutLabel(CardPdfLayout value) => switch (value) {
+    CardPdfLayout.flashcards => s('pdf_layout_flashcards'),
+    CardPdfLayout.worksheet => s('pdf_layout_worksheet'),
+    CardPdfLayout.quiz => s('pdf_layout_quiz'),
+  };
+
+  String _pageSizeLabel(CardPdfPageSize value) => switch (value) {
+    CardPdfPageSize.a4 => s('pdf_size_a4'),
+    CardPdfPageSize.a5 => s('pdf_size_a5'),
+    CardPdfPageSize.letter => s('pdf_size_letter'),
+  };
+
+  String _sortLabel(CardPdfSortOrder value) => switch (value) {
+    CardPdfSortOrder.original => s('pdf_sort_original'),
+    CardPdfSortOrder.favoritesFirst => s('pdf_sort_favorites'),
+    CardPdfSortOrder.dueFirst => s('pdf_sort_due'),
+  };
+
+  CardPdfExportOptions _options() => CardPdfExportOptions(
+    layout: _layout,
+    pageSize: _pageSize,
+    sortOrder: _sortOrder,
+    cardsPerPage: _cardsPerPage,
+    landscape: _landscape,
+    includeAnswers: _includeAnswers,
+    includeImages: _includeImages,
+    includeTags: _includeTags,
+    includeBox: _includeBox,
+    includeDifficulty: _includeDifficulty,
+    includePageNumbers: _includePageNumbers,
+    matchingCardsOnly: _matchingCardsOnly,
+    questionLabel: s('pdf_question'),
+    answerLabel: s('pdf_answer'),
+    tagsLabel: s('tags'),
+    boxLabel: s('boxes'),
+    difficultyLabel: s('card_difficulty'),
+    favoriteLabel: s('favorite_only'),
+    imageCardLabel: s('pdf_image_card'),
+    pageLabel: s('pdf_page'),
+    answerKeyLabel: s('pdf_answer_key'),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(s('pdf_export_title')),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(s('pdf_options_hint'), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 14),
+              DropdownButtonFormField<CardPdfLayout>(
+                value: _layout,
+                decoration: InputDecoration(labelText: s('pdf_layout')),
+                items: CardPdfLayout.values.map((value) => DropdownMenuItem(
+                  value: value,
+                  child: Text(_layoutLabel(value)),
+                )).toList(),
+                onChanged: (value) => setState(() => _layout = value ?? _layout),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<CardPdfPageSize>(
+                      value: _pageSize,
+                      decoration: InputDecoration(labelText: s('pdf_page_size')),
+                      items: CardPdfPageSize.values.map((value) => DropdownMenuItem(
+                        value: value,
+                        child: Text(_pageSizeLabel(value)),
+                      )).toList(),
+                      onChanged: (value) => setState(() => _pageSize = value ?? _pageSize),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      value: _cardsPerPage,
+                      decoration: InputDecoration(labelText: s('pdf_cards_per_page')),
+                      items: const [1, 2, 4].map((value) => DropdownMenuItem(
+                        value: value,
+                        child: Text('$value'),
+                      )).toList(),
+                      onChanged: (value) => setState(() => _cardsPerPage = value ?? _cardsPerPage),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<CardPdfSortOrder>(
+                value: _sortOrder,
+                decoration: InputDecoration(labelText: s('pdf_sort')),
+                items: CardPdfSortOrder.values.map((value) => DropdownMenuItem(
+                  value: value,
+                  child: Text(_sortLabel(value)),
+                )).toList(),
+                onChanged: (value) => setState(() => _sortOrder = value ?? _sortOrder),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _landscape,
+                title: Text(s('pdf_landscape')),
+                onChanged: (value) => setState(() => _landscape = value ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _includeAnswers,
+                title: Text(_layout == CardPdfLayout.quiz ? s('pdf_answer_key') : s('pdf_include_answers')),
+                onChanged: (value) => setState(() => _includeAnswers = value ?? true),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _includeImages,
+                title: Text(s('pdf_include_images')),
+                onChanged: (value) => setState(() => _includeImages = value ?? true),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _includeTags,
+                title: Text(s('pdf_include_tags')),
+                onChanged: (value) => setState(() => _includeTags = value ?? true),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _includeBox,
+                title: Text(s('pdf_include_box')),
+                onChanged: (value) => setState(() => _includeBox = value ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _includeDifficulty,
+                title: Text(s('pdf_include_difficulty')),
+                onChanged: (value) => setState(() => _includeDifficulty = value ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _includePageNumbers,
+                title: Text(s('pdf_page_numbers')),
+                onChanged: (value) => setState(() => _includePageNumbers = value ?? true),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+              if (widget.hasSearch)
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _matchingCardsOnly,
+                  title: Text('\${s('pdf_only_matching')} (\${widget.matchingCount}/\${widget.totalCount})'),
+                  onChanged: (value) => setState(() => _matchingCardsOnly = value ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(s('cancel')),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.pop(context, _PdfExportRequest(options: _options(), printInstead: true)),
+          icon: const Icon(Icons.print_outlined),
+          label: Text(s('pdf_print_save')),
+        ),
+        FilledButton.icon(
+          onPressed: () => Navigator.pop(context, _PdfExportRequest(options: _options(), printInstead: false)),
+          icon: const Icon(Icons.share_outlined),
+          label: Text(s('pdf_share')),
+        ),
+      ],
     );
   }
 }
