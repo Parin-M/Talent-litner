@@ -31,7 +31,7 @@ class QuickReviewWidgetService {
     final isRtl = const <String>{'fa', 'ar', 'he'}.contains(locale.languageCode);
     final payload = jsonEncode({
       'labels': {
-        'title': 'PARIN LITNER · ' + strings.text('quick_review').toUpperCase(),
+        'title': 'TALENT LITNER · ' + strings.text('quick_review').toUpperCase(),
         'reveal': strings.text('quick_show_answer'),
         'hide': strings.text('quick_hide_answer'),
         'next': strings.text('test_next'),
