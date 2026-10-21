@@ -98,14 +98,20 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
     try {
       final incoming = await backup.importBackup();
       if (incoming == null || !mounted) return;
+      final stats = AppStrings.t(context, 'backup_stats')
+          .replaceAll('{decks}', incoming.decks.length.toString())
+          .replaceAll('{cards}', incoming.cardCount.toString())
+          .replaceAll('{tests}', incoming.quizzes.length.toString())
+          .replaceAll('{images}', incoming.imageCount.toString());
+      final exportedAt = incoming.exportedAt == null ? '' : '\n\nExported: ${incoming.exportedAt!.toLocal()}';
       final mode = await showDialog<bool>(
         context: context,
-        builder: (_) => AlertDialog(
+        builder: (dialogContext) => AlertDialog(
           title: Text(AppStrings.t(context, 'import')),
-          content: Text(incoming.decks.length.toString() + ' ' + AppStrings.t(context, 'decks') + ' · ' + incoming.quizzes.length.toString() + ' ' + AppStrings.t(context, 'tests')),
+          content: Text('$stats$exportedAt\n\n' + AppStrings.t(context, 'backup_restore_hint')),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppStrings.t(context, 'merge'))),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(AppStrings.t(context, 'replace'))),
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(AppStrings.t(context, 'merge'))),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(AppStrings.t(context, 'replace'))),
           ],
         ),
       );
