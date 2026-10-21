@@ -46,8 +46,17 @@ class BackupService {
     }
 
     final manifest = <String, dynamic>{
-      'app': 'Talent Litner', 'format': 2,
-      'quizzes': quizzes.map((quiz) => quiz.toJson()).toList(),
+      'app': 'Talent Litner', 'format': 3,
+      'quizzes': quizzes.map((quiz) {
+        final quizJson = quiz.toJson();
+        quizJson['questions'] = quiz.questions.map((question) {
+          final questionJson = question.toJson();
+          questionJson['promptImageAsset'] = addImage(questionJson.remove('promptImage'), 'question ${question.id} prompt');
+          questionJson['answerImageAsset'] = addImage(questionJson.remove('answerImage'), 'question ${question.id} answer');
+          return questionJson;
+        }).toList();
+        return quizJson;
+      }).toList(),
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
       'imageCount': assets.length, 'decks': deckPayload,
     };
@@ -62,7 +71,7 @@ class BackupService {
 
     final saved = await FilePicker.saveFile(
       dialogTitle: 'ذخیره پشتیبان Talent Litner',
-      fileName: 'parin_litner_backup.plbackup',
+      fileName: 'talent_litner_backup.plbackup',
       type: FileType.custom,
       allowedExtensions: ['plbackup'],
       bytes: Uint8List.fromList(output),
@@ -95,7 +104,26 @@ class BackupService {
       return Deck.fromJson(Map<String, dynamic>.from(raw));
     }).toList();
     final quizzes = rawQuizzes is List
-        ? rawQuizzes.whereType<Map>().map((raw) => QuizDefinition.fromJson(Map<String, dynamic>.from(raw))).toList()
+        ? rawQuizzes.whereType<Map>().map((raw) {
+            final quiz = Map<String, dynamic>.from(raw);
+            final rawQuestions = quiz['questions'];
+            if (rawQuestions is List) {
+              quiz['questions'] = rawQuestions.whereType<Map>().map((rawQuestion) {
+                final question = Map<String, dynamic>.from(rawQuestion);
+                for (final side in const ['prompt', 'answer']) {
+                  final ref = question.remove('${side}ImageAsset');
+                  if (ref != null) {
+                    if (ref is! String || !assets.containsKey(ref)) throw const FormatException('A quiz image is missing from the backup.');
+                    question['${side}Image'] = base64Encode(assets[ref]!);
+                  } else {
+                    question['${side}Image'] ??= null;
+                  }
+                }
+                return question;
+              }).toList();
+            }
+            return QuizDefinition.fromJson(quiz);
+          }).toList()
         : <QuizDefinition>[];
     return BackupBundle(decks: decks, quizzes: quizzes);
   }
@@ -112,7 +140,7 @@ class BackupService {
     if (rawManifest is! Map) throw const FormatException('Backup metadata is invalid.');
     final manifest = Map<String, dynamic>.from(rawManifest);
     final format = manifest['format'];
-    if (manifest['app'] != 'Talent Litner' || (format != 1 && format != 2)) throw const FormatException('This backup version is not supported.');
+    if (!const ['Talent Litner', 'Parin Litner', 'parin_litner'].contains(manifest['app']) || (format != 1 && format != 2 && format != 3)) throw const FormatException('This backup version is not supported.');
     final count = manifest['imageCount'];
     if (count is! int || count < 0 || count > _maxAssets) throw const FormatException('Backup image count is invalid.');
 
