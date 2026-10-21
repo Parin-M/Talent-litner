@@ -13,8 +13,9 @@ class SettingsPage extends StatefulWidget {
   final Future<void> Function() onImport;
   final Future<void> Function() onExport;
   final List<Deck>? decks;
+  final List<QuizDefinition>? quizzes;
 
-  const SettingsPage({super.key, required this.settings, required this.onImport, required this.onExport, this.decks});
+  const SettingsPage({super.key, required this.settings, required this.onImport, required this.onExport, this.decks, this.quizzes});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -230,7 +231,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ])),
               const SizedBox(height: 12),
-              _Section(title: s('backup'), icon: Icons.backup_outlined, compact: compact, child: Row(children: [Expanded(child: OutlinedButton.icon(onPressed: widget.onExport, icon: const Icon(Icons.upload_file_outlined), label: Text(s('export')))), const SizedBox(width: 10), Expanded(child: OutlinedButton.icon(onPressed: widget.onImport, icon: const Icon(Icons.download_outlined), label: Text(s('import'))))])),
+              _Section(title: s('backup'), icon: Icons.backup_outlined, compact: compact, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(s('backup_safety_note'), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.45)),
+                const SizedBox(height: 12),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  _BackupStat(label: s('decks'), value: '${widget.decks?.length ?? 0}', icon: Icons.style_outlined),
+                  _BackupStat(label: s('cards'), value: '${(widget.decks ?? <Deck>[]).fold<int>(0, (sum, deck) => sum + deck.cards.length)}', icon: Icons.copy_all_outlined),
+                  _BackupStat(label: s('tests'), value: '${widget.quizzes?.length ?? 0}', icon: Icons.quiz_outlined),
+                  _BackupStat(label: s('backup_images'), value: '${(widget.decks ?? <Deck>[]).fold<int>(0, (sum, deck) => sum + deck.cards.fold<int>(0, (n, card) => n + (card.frontImage == null ? 0 : 1) + (card.backImage == null ? 0 : 1))) + (widget.quizzes ?? <QuizDefinition>[]).fold<int>(0, (sum, quiz) => sum + quiz.questions.fold<int>(0, (n, question) => n + (question.promptImage == null ? 0 : 1) + (question.answerImage == null ? 0 : 1)))}', icon: Icons.image_outlined),
+                ]),
+                const SizedBox(height: 12),
+                Row(children: [Expanded(child: FilledButton.icon(onPressed: widget.onExport, icon: const Icon(Icons.backup_outlined), label: Text(s('export')))), const SizedBox(width: 10), Expanded(child: OutlinedButton.icon(onPressed: widget.onImport, icon: const Icon(Icons.restore_outlined), label: Text(s('import')))]),
+              ])),
               const SizedBox(height: 12),
               _Section(title: s('extra'), icon: Icons.auto_awesome_outlined, compact: compact, child: Column(children: [
                 ListTile(contentPadding: EdgeInsets.zero, leading: Container(width: 40, height: 40, color: Theme.of(context).colorScheme.primaryContainer, alignment: Alignment.center, child: Icon(Icons.workspace_premium_outlined, color: Theme.of(context).colorScheme.onPrimaryContainer)), title: Text(s('achievement_center'), style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(s('achievement_center_sub')), trailing: const Icon(Icons.chevron_right), onTap: _openAchievements),
@@ -291,6 +303,24 @@ class _Section extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+
+class _BackupStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _BackupStat({required this.label, required this.value, required this.icon});
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 100),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(color: scheme.surfaceContainerHighest, border: Border.all(color: scheme.outlineVariant)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 17), const SizedBox(width: 6), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(value, style: const TextStyle(fontWeight: FontWeight.w900)), Text(label, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant))])]),
     );
   }
 }
