@@ -25,6 +25,18 @@ class BackupService {
   static const int _maxBackupBytes = 512 * 1024 * 1024;
 
   Future<bool> exportBackup(List<Deck> decks, {List<QuizDefinition> quizzes = const <QuizDefinition>[]}) async {
+    final output = buildBackupBytes(decks, quizzes: quizzes);
+    final saved = await FilePicker.saveFile(
+      dialogTitle: 'ذخیره پشتیبان Talent Litner',
+      fileName: 'talent_litner_backup.plbackup',
+      type: FileType.custom,
+      allowedExtensions: ['plbackup'],
+      bytes: output,
+    );
+    return saved != null;
+  }
+
+  Uint8List buildBackupBytes(List<Deck> decks, {List<QuizDefinition> quizzes = const <QuizDefinition>[]}) {
     final assets = <String, Uint8List>{};
     var nextAsset = 0;
     String? addImage(dynamic raw, String label) {
@@ -87,14 +99,8 @@ class BackupService {
       if (output.length > _maxBackupBytes) throw const FormatException('Backup file exceeds the supported size limit.');
     }
 
-    final saved = await FilePicker.saveFile(
-      dialogTitle: 'ذخیره پشتیبان Talent Litner',
-      fileName: 'talent_litner_backup.plbackup',
-      type: FileType.custom,
-      allowedExtensions: ['plbackup'],
-      bytes: Uint8List.fromList(output),
-    );
-    return saved != null;
+    if (output.length > _maxBackupBytes) throw const FormatException('Backup file exceeds the supported size limit.');
+    return Uint8List.fromList(output);
   }
 
   Future<List<Deck>?> importDecks() async => (await importBackup())?.decks;
@@ -104,6 +110,10 @@ class BackupService {
     if (picked == null || picked.files.isEmpty) return null;
     final bytes = picked.files.first.bytes;
     if (bytes == null) throw const FormatException('Unable to read the selected backup file.');
+    return decodeBackupBytes(bytes);
+  }
+
+  BackupBundle decodeBackupBytes(Uint8List bytes) {
     if (bytes.length > _maxBackupBytes) throw const FormatException('Backup file exceeds the supported size limit.');
     if (_hasMagic(bytes)) return _decodeBinaryBackup(bytes);
 
