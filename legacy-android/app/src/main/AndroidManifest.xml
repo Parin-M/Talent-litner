@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
-        android:label="Parin Litner"
+        android:label="Talent Litner"
         android:theme="@android:style/Theme.Holo.Light.NoActionBar"
         android:allowBackup="true"
         android:hardwareAccelerated="true">
