@@ -114,7 +114,14 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
         decks = incoming.decks;
         quizzes = incoming.quizzes;
       } else {
-        decks.addAll(incoming.decks.map((d) => Deck(id: uid(), name: d.name, description: d.description, colorHex: d.colorHex, cards: d.cards, boxes: d.boxes)));
+        decks.addAll(incoming.decks.map((d) => Deck(
+          id: uid(),
+          name: d.name,
+          description: d.description,
+          colorHex: d.colorHex,
+          cards: d.cards.map((card) => FlashCard.fromJson({...card.toJson(), 'id': uid()})).toList(),
+          boxes: d.boxes.map((box) => LeitnerBox.fromJson({...box.toJson(), 'id': uid()})).toList(),
+        )));
         quizzes.addAll(incoming.quizzes.map((quiz) => quiz.copyWith(id: uid())));
       }
       await _save();
