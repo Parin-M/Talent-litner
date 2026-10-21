@@ -37,7 +37,7 @@ class BackupService {
       if (data.isEmpty) return null;
       if (data.length > _maxAssetBytes) throw FormatException('Image is too large for backup: $label.');
       nextAsset++;
-      final name = 'image_\${nextAsset.toString().padLeft(6, '0')}.bin';
+      final name = 'image_${nextAsset.toString().padLeft(6, '0')}.bin';
       assets[name] = data;
       if (assets.length > _maxAssets) throw const FormatException('Too many images in backup.');
       return name;
@@ -136,7 +136,7 @@ class BackupService {
     if (rawManifest is! Map) throw const FormatException('Backup metadata is invalid.');
     final manifest = Map<String, dynamic>.from(rawManifest);
     final format = manifest['format'];
-    if (manifest['app'] != 'Talent Litner' || (format != 1 && format != 2 && format != 3)) {
+    if (!['Talent Litner', 'Parin Litner'].contains(manifest['app']) || (format != 1 && format != 2 && format != 3)) {
       throw const FormatException('This backup version is not supported.');
     }
     final count = manifest['imageCount'];
@@ -172,12 +172,12 @@ class BackupService {
         if (rawCard is! Map) throw const FormatException('A card record is invalid.');
         final card = Map<String, dynamic>.from(rawCard);
         for (final side in const ['front', 'back']) {
-          final ref = card.remove('\${side}ImageAsset');
+          final ref = card.remove('${side}ImageAsset');
           if (ref != null) {
             if (ref is! String || !assets.containsKey(ref)) throw const FormatException('A card image is missing from the backup.');
-            card['\${side}Image'] = base64Encode(assets[ref]!);
+            card['${side}Image'] = base64Encode(assets[ref]!);
           } else {
-            card.putIfAbsent('\${side}Image', () => null);
+            card.putIfAbsent('${side}Image', () => null);
           }
         }
         return card;
@@ -194,8 +194,8 @@ class BackupService {
         if (rawQuestion is! Map) throw const FormatException('A quiz question is invalid.');
         final question = Map<String, dynamic>.from(rawQuestion);
         for (final side in const ['prompt', 'answer']) {
-          final ref = question.remove('\${side}ImageAsset');
-          final imageKey = '\${side}Image';
+          final ref = question.remove('${side}ImageAsset');
+          final imageKey = '${side}Image';
           if (ref != null) {
             if (ref is! String || !assets.containsKey(ref)) throw const FormatException('A quiz image is missing from the backup.');
             question[imageKey] = base64Encode(assets[ref]!);
