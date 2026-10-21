@@ -104,26 +104,7 @@ class BackupService {
       return Deck.fromJson(Map<String, dynamic>.from(raw));
     }).toList();
     final quizzes = rawQuizzes is List
-        ? rawQuizzes.whereType<Map>().map((raw) {
-            final quiz = Map<String, dynamic>.from(raw);
-            final rawQuestions = quiz['questions'];
-            if (rawQuestions is List) {
-              quiz['questions'] = rawQuestions.whereType<Map>().map((rawQuestion) {
-                final question = Map<String, dynamic>.from(rawQuestion);
-                for (final side in const ['prompt', 'answer']) {
-                  final ref = question.remove('${side}ImageAsset');
-                  if (ref != null) {
-                    if (ref is! String || !assets.containsKey(ref)) throw const FormatException('A quiz image is missing from the backup.');
-                    question['${side}Image'] = base64Encode(assets[ref]!);
-                  } else {
-                    question['${side}Image'] ??= null;
-                  }
-                }
-                return question;
-              }).toList();
-            }
-            return QuizDefinition.fromJson(quiz);
-          }).toList()
+        ? rawQuizzes.whereType<Map>().map((raw) => QuizDefinition.fromJson(Map<String, dynamic>.from(raw))).toList()
         : <QuizDefinition>[];
     return BackupBundle(decks: decks, quizzes: quizzes);
   }
@@ -186,7 +167,26 @@ class BackupService {
     }).toList();
     final dynamic rawQuizzes = manifest['quizzes'];
     final quizzes = rawQuizzes is List
-        ? rawQuizzes.whereType<Map>().map((raw) => QuizDefinition.fromJson(Map<String, dynamic>.from(raw))).toList()
+        ? rawQuizzes.whereType<Map>().map((raw) {
+            final quiz = Map<String, dynamic>.from(raw);
+            final rawQuestions = quiz['questions'];
+            if (rawQuestions is List) {
+              quiz['questions'] = rawQuestions.whereType<Map>().map((rawQuestion) {
+                final question = Map<String, dynamic>.from(rawQuestion);
+                for (final side in const ['prompt', 'answer']) {
+                  final ref = question.remove('${side}ImageAsset');
+                  if (ref != null) {
+                    if (ref is! String || !assets.containsKey(ref)) throw const FormatException('A quiz image is missing from the backup.');
+                    question['${side}Image'] = base64Encode(assets[ref]!);
+                  } else {
+                    question['${side}Image'] ??= null;
+                  }
+                }
+                return question;
+              }).toList();
+            }
+            return QuizDefinition.fromJson(quiz);
+          }).toList()
         : <QuizDefinition>[];
     return BackupBundle(decks: decks, quizzes: quizzes);
   }
