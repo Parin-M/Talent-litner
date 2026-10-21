@@ -1,8 +1,25 @@
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../core/i18n/app_strings.dart';
 import '../../core/models/app_models.dart';
 import '../../core/utils/helpers.dart';
 import '../../shared/widgets/animated_glass_card.dart';
+
+Widget? _quizImage(String? encoded, {double height = 190}) {
+  if (encoded == null || encoded.isEmpty) return null;
+  try {
+    final bytes = base64Decode(encoded);
+    if (bytes.isEmpty) return null;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.memory(bytes, height: height, width: double.infinity, fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+    );
+  } catch (_) {
+    return null;
+  }
+}
 
 class QuizzesPage extends StatefulWidget {
   final List<QuizDefinition> quizzes;
@@ -287,6 +304,8 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
   late final TextEditingController _explanation;
   late final List<TextEditingController> _options;
   int _correctIndex = 0;
+  String? _promptImage;
+  String? _answerImage;
 
   String s(String key) => AppStrings.t(context, key);
 
@@ -300,6 +319,8 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
         .map((value) => TextEditingController(text: value))
         .toList();
     _correctIndex = widget.initial?.correctIndex ?? 0;
+    _promptImage = widget.initial?.promptImage;
+    _answerImage = widget.initial?.answerImage;
   }
 
   @override
@@ -310,6 +331,60 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
       option.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _pickImage({required bool questionImage}) async {
+    try {
+      final picked = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
+      if (picked == null || picked.files.isEmpty || !mounted) return;
+      final bytes = picked.files.first.bytes;
+      if (bytes == null || bytes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('test_image_error'))));
+        return;
+      }
+      if (bytes.length > 12 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('test_image_too_large'))));
+        return;
+      }
+      setState(() {
+        if (questionImage) {
+          _promptImage = base64Encode(bytes);
+        } else {
+          _answerImage = base64Encode(bytes);
+        }
+      });
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('test_image_error'))));
+    }
+  }
+
+  Widget _imageControls({required bool questionImage}) {
+    final image = questionImage ? _promptImage : _answerImage;
+    final title = s(questionImage ? 'test_question_image' : 'test_answer_image');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(children: [
+          Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700))),
+          OutlinedButton.icon(
+            onPressed: () => _pickImage(questionImage: questionImage),
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+            label: Text(s(image == null ? 'add_image' : 'change_image')),
+          ),
+          if (image != null) IconButton(
+            onPressed: () => setState(() {
+              if (questionImage) { _promptImage = null; } else { _answerImage = null; }
+            }),
+            icon: const Icon(Icons.delete_outline),
+            tooltip: s('delete'),
+          ),
+        ]),
+        if (image != null) ...[
+          const SizedBox(height: 8),
+          _quizImage(image, height: 180) ?? const SizedBox.shrink(),
+        ],
+      ],
+    );
   }
 
   void _addOption() {
@@ -351,6 +426,8 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
       options: options,
       correctIndex: _correctIndex,
       explanation: _explanation.text.trim(),
+      promptImage: _promptImage,
+      answerImage: _answerImage,
     ));
   }
 
@@ -372,6 +449,8 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
         children: [
           TextField(controller: _prompt, autofocus: true, maxLength: 700, maxLines: 3,
             decoration: InputDecoration(labelText: s('test_question'), hintText: s('test_question_hint'), alignLabelWithHint: true)),
+          const SizedBox(height: 8),
+          _imageControls(questionImage: true),
           const SizedBox(height: 18),
           Row(
             children: [
@@ -411,6 +490,8 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
           const SizedBox(height: 18),
           TextField(controller: _explanation, maxLines: 3, maxLength: 500,
             decoration: InputDecoration(labelText: s('test_explanation'), alignLabelWithHint: true)),
+          const SizedBox(height: 8),
+          _imageControls(questionImage: false),
         ],
       ),
     );
@@ -488,6 +569,7 @@ class _QuizRunPageState extends State<QuizRunPage> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(question.prompt, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, height: 1.35)),
               )),
+              if (_quizImage(question.promptImage) case final image?) ...[const SizedBox(height: 12), image],
               const SizedBox(height: 10),
               for (var i = 0; i < question.options.length; i++) ...[
                 const SizedBox(height: 7),
@@ -572,6 +654,7 @@ class _QuizRunPageState extends State<QuizRunPage> {
                     Expanded(child: Text((i + 1).toString() + '. ' + questions[i].prompt, style: const TextStyle(fontWeight: FontWeight.w700))),
                   ],
                 ),
+                if (_quizImage(questions[i].promptImage, height: 150) case final promptImage?) ...[const SizedBox(height: 10), promptImage],
                 const SizedBox(height: 10),
                 Text(s('test_your_answer') + ': ' + (_answers[i] == null
                   ? s('test_unanswered')
@@ -579,6 +662,7 @@ class _QuizRunPageState extends State<QuizRunPage> {
                 const SizedBox(height: 4),
                 Text(s('test_correct_answer') + ': ' + questions[i].options[questions[i].correctIndex],
                   style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w700)),
+                if (_quizImage(questions[i].answerImage, height: 180) case final answerImage?) ...[const SizedBox(height: 10), answerImage],
                 if (questions[i].explanation.trim().isNotEmpty) ...[
                   const SizedBox(height: 7),
                   Text(questions[i].explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
