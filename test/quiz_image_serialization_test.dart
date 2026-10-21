@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parin_litner/core/services/backup_service.dart';
 import 'package:parin_litner/core/models/app_models.dart';
@@ -88,5 +89,36 @@ void main() {
     expect(restored.quizzes.single.questions.single.answerImage, quizzes.single.questions.single.answerImage);
     expect(restored.quizzes.single.questions.single.correctIndex, 1);
     expect(restored.imageCount, 4);
+  });
+  test('backup decoder rejects truncated binary image payloads', () {
+    final service = BackupService();
+    final bytes = service.buildBackupBytes([
+      Deck(
+        id: 'deck-1',
+        name: 'Deck',
+        cards: [
+          FlashCard(id: 'card-1', front: 'Q', back: 'A', frontImage: base64Encode([1, 2, 3])),
+        ],
+      ),
+    ]);
+
+    expect(
+      () => service.decodeBackupBytes(Uint8List.fromList(bytes.sublist(0, bytes.length - 1))),
+      throwsFormatException,
+    );
+  });
+
+  test('legacy JSON backups remain importable', () {
+    final deck = Deck(
+      id: 'legacy-deck',
+      name: 'Legacy',
+      cards: [FlashCard(id: 'legacy-card', front: 'Q', back: 'A', frontImage: base64Encode([7, 8]))],
+    );
+    final bytes = Uint8List.fromList(utf8.encode(jsonEncode({'decks': [deck.toJson()]})));
+    final restored = BackupService().decodeBackupBytes(bytes);
+
+    expect(restored.decks.single.name, 'Legacy');
+    expect(restored.decks.single.cards.single.frontImage, deck.cards.single.frontImage);
+    expect(restored.quizzes, isEmpty);
   });
 }
