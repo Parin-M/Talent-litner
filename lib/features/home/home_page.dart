@@ -60,22 +60,13 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Talent Litner'),
         actions: [
           IconButton(
-            onPressed: widget.onImport,
-            tooltip: s(context, 'import'),
-            icon: const Icon(Icons.file_download_outlined),
-          ),
-          IconButton(
-            onPressed: widget.onExport,
-            tooltip: s(context, 'export'),
-            icon: const Icon(Icons.file_upload_outlined),
-          ),
-          IconButton(
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => SettingsPage(
                 settings: widget.settings,
                 onImport: widget.onImport,
                 onExport: widget.onExport,
                 decks: decks,
+                quizzes: widget.quizzes,
               ),
             )),
             tooltip: s(context, 'settings'),
