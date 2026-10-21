@@ -116,6 +116,8 @@ class QuizQuestion {
   List<String> options;
   int correctIndex;
   String explanation;
+  String? promptImage;
+  String? answerImage;
 
   QuizQuestion({
     required this.id,
@@ -123,6 +125,8 @@ class QuizQuestion {
     required List<String> options,
     required int correctIndex,
     this.explanation = '',
+    this.promptImage,
+    this.answerImage,
   })  : options = List<String>.from(options),
         correctIndex = options.isEmpty ? 0 : correctIndex.clamp(0, options.length - 1).toInt();
 
@@ -132,6 +136,8 @@ class QuizQuestion {
         'options': options,
         'correctIndex': correctIndex,
         'explanation': explanation,
+        'promptImage': promptImage,
+        'answerImage': answerImage,
       };
 
   factory QuizQuestion.fromJson(Map<String, dynamic> json) {
@@ -144,6 +150,8 @@ class QuizQuestion {
       options: options,
       correctIndex: options.isEmpty ? 0 : requestedIndex.clamp(0, options.length - 1).toInt(),
       explanation: json['explanation'] as String? ?? '',
+      promptImage: json['promptImage'] as String?,
+      answerImage: json['answerImage'] as String?,
     );
   }
 }
