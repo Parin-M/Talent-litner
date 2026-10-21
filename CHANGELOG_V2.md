@@ -8,3 +8,13 @@
 - Updated the home screen with Metro-style Quick Review and Test Builder tiles, square surfaces, sharp color blocks and clearer section hierarchy.
 - Preserved PDF export (printable flashcards, study worksheets, quiz sheets), multilingual creator attribution and Android 7.0+ (API 24) minimum.
 - Pinned the image dependency to a Flutter/Dart 3.9-compatible version for the PDF release build.
+
+## Talent Litner — Backup reliability and image-based tests
+
+- Moved backup and restore controls from the dashboard into Settings and added a backup inventory summary.
+- Added a restore preview with deck, card, test, image counts and export timestamp before choosing merge or replace.
+- Introduced portable backup format v3. It stores flashcard images, test question images, and test answer images as binary assets, alongside test definitions, options, correct answers, and explanations.
+- Kept compatibility with legacy JSON and binary backup formats v1/v2, including older product-name metadata.
+- Added stricter validation for incomplete/corrupt backups, missing or duplicate image assets, invalid base64, and oversized assets/manifests/files.
+- Added optional question and answer images in Test Builder, with preview, replace/remove controls, in-test question image display, and answer image display in results.
+- Added model and full portable-backup round-trip tests for card and quiz image preservation.
