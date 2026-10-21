@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parin_litner/core/services/backup_service.dart';
 import 'package:parin_litner/core/models/app_models.dart';
 
 void main() {
@@ -41,5 +43,50 @@ void main() {
 
     expect(restored.questions.single.promptImage, 'cHJvbXB0');
     expect(restored.questions.single.answerImage, 'YW5zd2Vy');
+  });
+  test('portable backup round-trip preserves flashcard and quiz images', () {
+    final decks = [
+      Deck(
+        id: 'deck-1',
+        name: 'Images',
+        cards: [
+          FlashCard(
+            id: 'card-1',
+            front: 'Front',
+            back: 'Back',
+            frontImage: base64Encode([1, 2, 3, 4]),
+            backImage: base64Encode([5, 6, 7, 8]),
+          ),
+        ],
+      ),
+    ];
+    final quizzes = [
+      QuizDefinition(
+        id: 'quiz-1',
+        title: 'Image quiz',
+        questions: [
+          QuizQuestion(
+            id: 'question-1',
+            prompt: 'Question with image',
+            options: const ['A', 'B'],
+            correctIndex: 1,
+            explanation: 'Answer with a diagram',
+            promptImage: base64Encode([9, 10, 11]),
+            answerImage: base64Encode([12, 13, 14]),
+          ),
+        ],
+      ),
+    ];
+
+    final service = BackupService();
+    final bytes = service.buildBackupBytes(decks, quizzes: quizzes);
+    final restored = service.decodeBackupBytes(bytes);
+
+    expect(restored.decks.single.cards.single.frontImage, decks.single.cards.single.frontImage);
+    expect(restored.decks.single.cards.single.backImage, decks.single.cards.single.backImage);
+    expect(restored.quizzes.single.questions.single.promptImage, quizzes.single.questions.single.promptImage);
+    expect(restored.quizzes.single.questions.single.answerImage, quizzes.single.questions.single.answerImage);
+    expect(restored.quizzes.single.questions.single.correctIndex, 1);
+    expect(restored.imageCount, 4);
   });
 }
