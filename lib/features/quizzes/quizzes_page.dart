@@ -335,7 +335,7 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
 
   Future<void> _pickImage({required bool questionImage}) async {
     try {
-      final picked = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
+      final picked = await FilePicker.pickFiles(type: FileType.image, withData: true);
       if (picked == null || picked.files.isEmpty || !mounted) return;
       final bytes = picked.files.first.bytes;
       if (bytes == null || bytes.isEmpty) {
