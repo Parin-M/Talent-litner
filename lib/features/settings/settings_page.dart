@@ -106,7 +106,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _openRepository() async {
-    final opened = await launchUrl(Uri.parse('https://github.com/Parin-M/parin-litner'), mode: LaunchMode.externalApplication);
+    final opened = await launchUrl(Uri.parse('https://github.com/Parin-M/Talent-litner'), mode: LaunchMode.externalApplication);
     if (!opened && mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('about_open_error'))));
   }
 
