@@ -13,8 +13,9 @@ class SettingsPage extends StatefulWidget {
   final Future<void> Function() onImport;
   final Future<void> Function() onExport;
   final List<Deck>? decks;
+  final List<QuizDefinition>? quizzes;
 
-  const SettingsPage({super.key, required this.settings, required this.onImport, required this.onExport, this.decks});
+  const SettingsPage({super.key, required this.settings, required this.onImport, required this.onExport, this.decks, this.quizzes});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
