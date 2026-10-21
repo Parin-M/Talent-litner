@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../core/i18n/app_strings.dart';
 import '../../core/models/app_models.dart';
@@ -287,6 +289,8 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
   late final TextEditingController _explanation;
   late final List<TextEditingController> _options;
   int _correctIndex = 0;
+  String? _promptImage;
+  String? _answerImage;
 
   String s(String key) => AppStrings.t(context, key);
 
@@ -300,6 +304,8 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
         .map((value) => TextEditingController(text: value))
         .toList();
     _correctIndex = widget.initial?.correctIndex ?? 0;
+    _promptImage = widget.initial?.promptImage;
+    _answerImage = widget.initial?.answerImage;
   }
 
   @override
@@ -310,6 +316,42 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
       option.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _pickImage({required bool forPrompt}) async {
+    try {
+      final picked = await FilePicker.pickFiles(type: FileType.image, withData: true);
+      if (picked == null || picked.files.isEmpty || picked.files.first.bytes == null || !mounted) return;
+      final bytes = picked.files.first.bytes!;
+      if (bytes.length > 12 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('quiz_image_too_large'))));
+        return;
+      }
+      setState(() {
+        if (forPrompt) { _promptImage = base64Encode(bytes); } else { _answerImage = base64Encode(bytes); }
+      });
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('quiz_image_pick_error'))));
+    }
+  }
+
+  Widget _imagePickerTile({required bool forPrompt}) {
+    final value = forPrompt ? _promptImage : _answerImage;
+    final label = s(forPrompt ? 'quiz_question_image' : 'quiz_answer_image');
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700))),
+          OutlinedButton.icon(onPressed: () => _pickImage(forPrompt: forPrompt), icon: const Icon(Icons.image_outlined), label: Text(s('choose_image'))),
+          if (value != null) IconButton(tooltip: s('remove_image'), onPressed: () => setState(() { if (forPrompt) { _promptImage = null; } else { _answerImage = null; } }), icon: const Icon(Icons.delete_outline)),
+        ]),
+        if (value != null) ClipRect(child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 220),
+          child: Image.memory(base64Decode(value), fit: BoxFit.contain, errorBuilder: (_, __, ___) => Text(s('quiz_image_invalid'))),
+        )),
+      ]),
+    );
   }
 
   void _addOption() {
@@ -351,6 +393,8 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
       options: options,
       correctIndex: _correctIndex,
       explanation: _explanation.text.trim(),
+      promptImage: _promptImage,
+      answerImage: _answerImage,
     ));
   }
 
@@ -372,6 +416,7 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
         children: [
           TextField(controller: _prompt, autofocus: true, maxLength: 700, maxLines: 3,
             decoration: InputDecoration(labelText: s('test_question'), hintText: s('test_question_hint'), alignLabelWithHint: true)),
+          _imagePickerTile(forPrompt: true),
           const SizedBox(height: 18),
           Row(
             children: [
@@ -411,6 +456,7 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
           const SizedBox(height: 18),
           TextField(controller: _explanation, maxLines: 3, maxLength: 500,
             decoration: InputDecoration(labelText: s('test_explanation'), alignLabelWithHint: true)),
+          _imagePickerTile(forPrompt: false),
         ],
       ),
     );
@@ -486,7 +532,7 @@ class _QuizRunPageState extends State<QuizRunPage> {
             children: [
               AnimatedGlassCard(child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(question.prompt, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, height: 1.35)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(question.prompt, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, height: 1.35)), if (question.promptImage != null) ...[const SizedBox(height: 12), Image.memory(base64Decode(question.promptImage!), fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox.shrink())]]),
               )),
               const SizedBox(height: 10),
               for (var i = 0; i < question.options.length; i++) ...[
@@ -582,6 +628,7 @@ class _QuizRunPageState extends State<QuizRunPage> {
                 if (questions[i].explanation.trim().isNotEmpty) ...[
                   const SizedBox(height: 7),
                   Text(questions[i].explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
+                  if (questions[i].answerImage != null) ...[const SizedBox(height: 8), Image.memory(base64Decode(questions[i].answerImage!), fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox.shrink())],
                 ],
               ],
             ),
