@@ -18,6 +18,11 @@ class StorageService {
     }
   }
 
+  Future<bool> hasSavedDecks() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.containsKey(_key);
+  }
+
   Future<void> save(List<Deck> decks) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, jsonEncode(decks.map((e) => e.toJson()).toList()));
