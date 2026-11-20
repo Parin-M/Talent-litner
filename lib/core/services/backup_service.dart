@@ -106,10 +106,34 @@ class BackupService {
   Future<List<Deck>?> importDecks() async => (await importBackup())?.decks;
 
   Future<BackupBundle?> importBackup() async {
-    final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['plbackup', 'json'], withData: true);
+    final picked = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['plbackup', 'json'],
+      withData: true,
+      withReadStream: true,
+    );
     if (picked == null || picked.files.isEmpty) return null;
-    final bytes = picked.files.first.bytes;
-    if (bytes == null) throw const FormatException('Unable to read the selected backup file.');
+
+    final file = picked.files.first;
+    if (file.size <= 0) throw const FormatException('The selected backup file is empty.');
+    if (file.size > _maxBackupBytes) {
+      throw const FormatException('Backup file exceeds the supported size limit.');
+    }
+
+    Uint8List? bytes = file.bytes;
+    if (bytes == null && file.readStream != null) {
+      final builder = BytesBuilder(copy: false);
+      await for (final chunk in file.readStream!) {
+        if (builder.length + chunk.length > _maxBackupBytes) {
+          throw const FormatException('Backup file exceeds the supported size limit.');
+        }
+        builder.add(chunk);
+      }
+      bytes = builder.takeBytes();
+    }
+    if (bytes == null || bytes.isEmpty) {
+      throw const FormatException('Unable to read the selected backup file.');
+    }
     return decodeBackupBytes(bytes);
   }
 
