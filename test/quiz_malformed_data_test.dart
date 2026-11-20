@@ -35,4 +35,29 @@ void main() {
     expect(deck.boxes.first.name, 'خانه ۱');
   });
 
+  test('quiz decoder rejects a non-list question collection', () {
+    expect(
+      () => QuizDefinition.fromJson(<String, dynamic>{
+        'id': 'bad-quiz',
+        'title': 'Bad quiz',
+        'questions': <String, dynamic>{'not': 'a list'},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('quiz decoder rejects malformed question records instead of dropping them', () {
+    expect(
+      () => QuizDefinition.fromJson(<String, dynamic>{
+        'id': 'partial-quiz',
+        'title': 'Partial quiz',
+        'questions': <dynamic>[
+          <String, dynamic>{'id': 'valid', 'prompt': 'Q', 'options': <String>['A'], 'correctIndex': 0},
+          null,
+        ],
+      }),
+      throwsFormatException,
+    );
+  });
+
 }
