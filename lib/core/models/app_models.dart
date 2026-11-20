@@ -195,14 +195,21 @@ class QuizDefinition {
 
   factory QuizDefinition.fromJson(Map<String, dynamic> json) {
     final rawQuestions = json['questions'];
+    if (rawQuestions != null && rawQuestions is! List) {
+      throw const FormatException('A quiz has an invalid question list.');
+    }
+    final questions = (rawQuestions as List? ?? const []).map((rawQuestion) {
+      if (rawQuestion is! Map) {
+        throw const FormatException('A quiz contains an invalid question record.');
+      }
+      return QuizQuestion.fromJson(Map<String, dynamic>.from(rawQuestion));
+    }).toList();
     return QuizDefinition(
       id: json['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
-      questions: rawQuestions is List
-          ? rawQuestions.whereType<Map>().map((question) => QuizQuestion.fromJson(Map<String, dynamic>.from(question))).toList()
-          : <QuizQuestion>[],
+      questions: questions,
     );
   }
 
