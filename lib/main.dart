@@ -59,7 +59,8 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
     try { savedQuizzes = await storage.loadQuizzes(); } catch (_) { savedQuizzes = []; }
     // Only seed demo content on a genuinely fresh install. An explicitly saved
     // empty deck list means the user intentionally removed all decks.
-    final hasSavedDecks = await storage.hasSavedDecks();
+    var hasSavedDecks = false;
+    try { hasSavedDecks = await storage.hasSavedDecks(); } catch (_) {}
     if (data.isEmpty && !hasSavedDecks) {
       data = [Deck(id: 'demo', name: 'شروع سریع', description: 'کارت‌های نمونه')];
       data[0].cards.addAll([
