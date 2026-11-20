@@ -133,18 +133,74 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
           ],
         ),
       );
-      if (mode == null) return;
-      if (mode) {
-        decks = incoming.decks;
-        quizzes = incoming.quizzes;
-      } else {
-        decks.addAll(incoming.decks.map((d) => Deck(id: uid(), name: d.name, description: d.description, colorHex: d.colorHex, cards: d.cards, boxes: d.boxes)));
-        quizzes.addAll(incoming.quizzes.map((quiz) => quiz.copyWith(id: uid())));
+      if (mode == null || !mounted) return;
+
+      // Build the replacement/merged state separately. Do not mutate the live
+      // lists until both stores have accepted the new data.
+      final previousDecks = decks;
+      final previousQuizzes = quizzes;
+      final nextDecks = mode
+          ? List<Deck>.from(incoming.decks)
+          : <Deck>[
+              ...previousDecks,
+              ...incoming.decks.map((deck) => Deck(
+                    id: uid(),
+                    name: deck.name,
+                    description: deck.description,
+                    colorHex: deck.colorHex,
+                    cards: List<FlashCard>.from(deck.cards),
+                    boxes: List<LeitnerBox>.from(deck.boxes),
+                  )),
+            ];
+      final nextQuizzes = mode
+          ? List<QuizDefinition>.from(incoming.quizzes)
+          : <QuizDefinition>[
+              ...previousQuizzes,
+              ...incoming.quizzes.map((quiz) => quiz.copyWith(
+                    id: uid(),
+                    questions: List<QuizQuestion>.from(quiz.questions),
+                  )),
+            ];
+
+      try {
+        await storage.save(nextDecks);
+        await storage.saveQuizzes(nextQuizzes);
+      } catch (_) {
+        // Best-effort rollback if one of the two preference writes succeeded.
+        try {
+          await storage.save(previousDecks);
+          await storage.saveQuizzes(previousQuizzes);
+        } catch (_) {
+          // Keep the original in-memory state and surface the persistence error.
+        }
+        rethrow;
       }
-      await _save();
-      if (mounted) setState(() { loadError = null; loading = false; });
+
+      if (!mounted) return;
+      setState(() {
+        decks = nextDecks;
+        quizzes = nextQuizzes;
+        loadError = null;
+        loading = false;
+      });
+      await QuickReviewWidgetService.sync(decks: decks, languageCode: settings.languageCode);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Backup restored successfully.')),
+        );
+      }
+    } on FormatException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${AppStrings.t(context, 'backup_invalid')} ${error.message}')),
+        );
+      }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.t(context, 'backup_invalid'))));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppStrings.t(context, 'backup_error'))),
+        );
+      }
     }
   }
 
