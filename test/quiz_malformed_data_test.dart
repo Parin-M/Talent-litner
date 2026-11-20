@@ -24,4 +24,15 @@ void main() {
 
     expect(question.correctIndex, 1);
   });
+  test('legacy deck without Leitner boxes receives the default boxes', () {
+    final deck = Deck.fromJson(<String, dynamic>{
+      'id': 'legacy-deck',
+      'name': 'Legacy deck',
+      'cards': <dynamic>[],
+    });
+
+    expect(deck.boxes, hasLength(5));
+    expect(deck.boxes.first.name, 'خانه ۱');
+  });
+
 }
