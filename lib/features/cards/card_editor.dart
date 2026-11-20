@@ -59,6 +59,15 @@ class _CardEditorState extends State<CardEditor> {
       if (result == null || result.files.isEmpty) return;
       final bytes = result.files.first.bytes;
       if (bytes == null || bytes.isEmpty || !mounted) return;
+      // Keep card images within the same per-image limit used by quiz images.
+      // Images are currently serialized as Base64 in local preferences, so
+      // accepting arbitrarily large files can exhaust memory/storage quickly.
+      if (bytes.length > 12 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(s('test_image_too_large'))),
+        );
+        return;
+      }
       final encoded = base64Encode(bytes);
       setState(() => isFront ? frontImage = encoded : backImage = encoded);
     } catch (_) {
