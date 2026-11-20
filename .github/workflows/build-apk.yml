@@ -28,6 +28,9 @@ jobs:
         run: |
           rm -rf android
           flutter create --platforms=android --org com.parin .
+          # flutter create generates a template test that instantiates the removed
+          # MyApp class. Keep the repository's own regression tests instead.
+          rm -f test/widget_test.dart
           # The Flutter 3.35 engine requires Android 7.0 (API 24).
           # Older Android versions are not targeted; minimum supported Android is API 24.
           python3 - <<'PY'
