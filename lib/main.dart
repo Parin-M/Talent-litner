@@ -57,7 +57,10 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
     try { data = await storage.load(); } catch (_) { data = []; }
     List<QuizDefinition> savedQuizzes;
     try { savedQuizzes = await storage.loadQuizzes(); } catch (_) { savedQuizzes = []; }
-    if (data.isEmpty) {
+    // Only seed demo content on a genuinely fresh install. An explicitly saved
+    // empty deck list means the user intentionally removed all decks.
+    final hasSavedDecks = await storage.hasSavedDecks();
+    if (data.isEmpty && !hasSavedDecks) {
       data = [Deck(id: 'demo', name: 'شروع سریع', description: 'کارت‌های نمونه')];
       data[0].cards.addAll([
         FlashCard(id: uid(), front: 'Leitner چیست؟', back: 'یک روش مرور فاصله‌دار برای انتقال کارت‌ها بین خانه‌ها.'),
