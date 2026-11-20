@@ -99,14 +99,21 @@ class Deck {
         'boxes': boxes.map((e) => e.toJson()).toList(),
       };
 
-  factory Deck.fromJson(Map<String, dynamic> j) => Deck(
-        id: j['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
-        name: j['name'] as String? ?? 'دسته بدون نام',
-        description: j['description'] as String? ?? '',
-        colorHex: j['color'] as String? ?? '6C63FF',
-        cards: ((j['cards'] as List?) ?? []).map((e) => FlashCard.fromJson(Map<String, dynamic>.from(e as Map))).toList(),
-        boxes: ((j['boxes'] as List?) ?? []).map((e) => LeitnerBox.fromJson(Map<String, dynamic>.from(e as Map))).toList(),
-      );
+  factory Deck.fromJson(Map<String, dynamic> j) {
+    final rawCards = j['cards'];
+    final rawBoxes = j['boxes'];
+    final boxes = rawBoxes is List && rawBoxes.isNotEmpty
+        ? rawBoxes.map((item) => LeitnerBox.fromJson(Map<String, dynamic>.from(item as Map))).toList()
+        : defaultBoxes();
+    return Deck(
+      id: j['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      name: j['name'] as String? ?? 'دسته بدون نام',
+      description: j['description'] as String? ?? '',
+      colorHex: j['color'] as String? ?? '6C63FF',
+      cards: (rawCards is List ? rawCards : const []).map((item) => FlashCard.fromJson(Map<String, dynamic>.from(item as Map))).toList(),
+      boxes: boxes,
+    );
+  }
 }
 
 
