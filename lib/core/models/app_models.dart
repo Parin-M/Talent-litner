@@ -102,6 +102,12 @@ class Deck {
   factory Deck.fromJson(Map<String, dynamic> j) {
     final rawCards = j['cards'];
     final rawBoxes = j['boxes'];
+    if (rawCards != null && rawCards is! List) {
+      throw const FormatException('A deck has an invalid card list.');
+    }
+    if (rawBoxes != null && rawBoxes is! List) {
+      throw const FormatException('A deck has an invalid Leitner box list.');
+    }
     final boxes = rawBoxes is List && rawBoxes.isNotEmpty
         ? rawBoxes.map((item) => LeitnerBox.fromJson(Map<String, dynamic>.from(item as Map))).toList()
         : defaultBoxes();
@@ -110,7 +116,7 @@ class Deck {
       name: j['name'] as String? ?? 'دسته بدون نام',
       description: j['description'] as String? ?? '',
       colorHex: j['color'] as String? ?? '6C63FF',
-      cards: (rawCards is List ? rawCards : const []).map((item) => FlashCard.fromJson(Map<String, dynamic>.from(item as Map))).toList(),
+      cards: (rawCards as List? ?? const []).map((item) => FlashCard.fromJson(Map<String, dynamic>.from(item as Map))).toList(),
       boxes: boxes,
     );
   }
