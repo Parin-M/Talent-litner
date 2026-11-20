@@ -25,7 +25,8 @@ class StorageService {
 
   Future<void> save(List<Deck> decks) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, jsonEncode(decks.map((e) => e.toJson()).toList()));
+    final saved = await prefs.setString(_key, jsonEncode(decks.map((e) => e.toJson()).toList()));
+    if (!saved) throw StateError('Unable to persist flashcard data.');
   }
   Future<List<QuizDefinition>> loadQuizzes() async {
     try {
@@ -44,6 +45,7 @@ class StorageService {
 
   Future<void> saveQuizzes(List<QuizDefinition> quizzes) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_quizzesKey, jsonEncode(quizzes.map((quiz) => quiz.toJson()).toList()));
+    final saved = await prefs.setString(_quizzesKey, jsonEncode(quizzes.map((quiz) => quiz.toJson()).toList()));
+    if (!saved) throw StateError('Unable to persist quiz data.');
   }
 }
