@@ -7,14 +7,29 @@ class StorageService {
   static const _quizzesKey = 'parin_litner_v1_quizzes';
 
   Future<List<Deck>> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
+    if (raw == null || raw.isEmpty) return <Deck>[];
+
+    final dynamic decoded;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_key);
-      if (raw == null || raw.isEmpty) return [];
-      final decoded = jsonDecode(raw) as List;
-      return decoded.map((e) => Deck.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+      decoded = jsonDecode(raw);
+    } on FormatException {
+      throw const FormatException('Saved flashcard data is damaged. Your original data has been preserved.');
+    }
+    if (decoded is! List) {
+      throw const FormatException('Saved flashcard data has an invalid structure. Your original data has been preserved.');
+    }
+
+    try {
+      return decoded.map((item) {
+        if (item is! Map) throw const FormatException('A saved deck record is invalid.');
+        return Deck.fromJson(Map<String, dynamic>.from(item));
+      }).toList();
+    } on FormatException {
+      rethrow;
     } catch (_) {
-      return [];
+      throw const FormatException('A saved deck could not be read. Your original data has been preserved.');
     }
   }
 
@@ -28,18 +43,31 @@ class StorageService {
     final saved = await prefs.setString(_key, jsonEncode(decks.map((e) => e.toJson()).toList()));
     if (!saved) throw StateError('Unable to persist flashcard data.');
   }
+
   Future<List<QuizDefinition>> loadQuizzes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_quizzesKey);
+    if (raw == null || raw.isEmpty) return <QuizDefinition>[];
+
+    final dynamic decoded;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_quizzesKey);
-      if (raw == null || raw.isEmpty) return <QuizDefinition>[];
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) return <QuizDefinition>[];
-      return decoded.whereType<Map>()
-          .map((item) => QuizDefinition.fromJson(Map<String, dynamic>.from(item)))
-          .toList();
+      decoded = jsonDecode(raw);
+    } on FormatException {
+      throw const FormatException('Saved quiz data is damaged. Your original data has been preserved.');
+    }
+    if (decoded is! List) {
+      throw const FormatException('Saved quiz data has an invalid structure. Your original data has been preserved.');
+    }
+
+    try {
+      return decoded.map((item) {
+        if (item is! Map) throw const FormatException('A saved quiz record is invalid.');
+        return QuizDefinition.fromJson(Map<String, dynamic>.from(item));
+      }).toList();
+    } on FormatException {
+      rethrow;
     } catch (_) {
-      return <QuizDefinition>[];
+      throw const FormatException('A saved quiz could not be read. Your original data has been preserved.');
     }
   }
 
