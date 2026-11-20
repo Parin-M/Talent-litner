@@ -142,7 +142,7 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
         quizzes.addAll(incoming.quizzes.map((quiz) => quiz.copyWith(id: uid())));
       }
       await _save();
-      if (mounted) setState(() {});
+      if (mounted) setState(() { loadError = null; loading = false; });
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.t(context, 'backup_invalid'))));
     }
@@ -159,7 +159,7 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
       localizationsDelegates: const [AppStrings.delegate, GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
       theme: AppTheme.build(settings.themeIndex, mode: settings.appearanceMode, glass: settings.glass, glassOpacity: settings.glassOpacity),
       builder: (context, child) => Directionality(textDirection: settings.language.rtl ? TextDirection.rtl : TextDirection.ltr, child: child ?? const SizedBox.shrink()),
-      home: loading ? const Scaffold(body: Center(child: CircularProgressIndicator())) : loadError != null ? _StorageRecoveryPage(error: loadError!, onRetry: _load) : HomePage(decks: decks, quizzes: quizzes, onChanged: _save, onImport: _import, onExport: _export, settings: settings),
+      home: loading ? const Scaffold(body: Center(child: CircularProgressIndicator())) : loadError != null ? _StorageRecoveryPage(error: loadError!, onRetry: _load, onRestoreBackup: _import) : HomePage(decks: decks, quizzes: quizzes, onChanged: _save, onImport: _import, onExport: _export, settings: settings),
     ),
   );
 }
@@ -168,8 +168,9 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
 class _StorageRecoveryPage extends StatelessWidget {
   final String error;
   final VoidCallback onRetry;
+  final Future<void> Function() onRestoreBackup;
 
-  const _StorageRecoveryPage({required this.error, required this.onRetry});
+  const _StorageRecoveryPage({required this.error, required this.onRetry, required this.onRestoreBackup});
 
   @override
   Widget build(BuildContext context) {
@@ -197,7 +198,9 @@ class _StorageRecoveryPage extends StatelessWidget {
               const SizedBox(height: 12),
               SelectableText(error, textAlign: TextAlign.center, style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
               const SizedBox(height: 20),
-              FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Try again')),
+              FilledButton.icon(onPressed: onRestoreBackup, icon: const Icon(Icons.settings_backup_restore), label: const Text('Restore from backup')),
+              const SizedBox(height: 8),
+              TextButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Try again')),
             ],
           ),
         ),
