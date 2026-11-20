@@ -658,9 +658,13 @@ class _QuizRunPageState extends State<QuizRunPage> {
                 const SizedBox(height: 10),
                 Text(s('test_your_answer') + ': ' + (_answers[i] == null
                   ? s('test_unanswered')
-                  : questions[i].options[_answers[i]!.clamp(0, questions[i].options.length - 1).toInt()])),
+                  : (questions[i].options.isEmpty
+                      ? s('test_unanswered')
+                      : questions[i].options[_answers[i]!.clamp(0, questions[i].options.length - 1).toInt()]))),
                 const SizedBox(height: 4),
-                Text(s('test_correct_answer') + ': ' + questions[i].options[questions[i].correctIndex],
+                Text(s('test_correct_answer') + ': ' + (questions[i].options.isEmpty
+                    ? s('test_unanswered')
+                    : questions[i].options[questions[i].correctIndex.clamp(0, questions[i].options.length - 1).toInt()]),
                   style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w700)),
                 if (_quizImage(questions[i].answerImage, height: 180) case final answerImage?) ...[const SizedBox(height: 10), answerImage],
                 if (questions[i].explanation.trim().isNotEmpty) ...[
