@@ -127,8 +127,14 @@ class BackupService {
       if (raw is! Map) throw const FormatException('A deck record is invalid.');
       return Deck.fromJson(Map<String, dynamic>.from(raw));
     }).toList();
+    if (rawQuizzes != null && rawQuizzes is! List) {
+      throw const FormatException('The selected backup contains an invalid quiz list.');
+    }
     final quizzes = rawQuizzes is List
-      ? rawQuizzes.whereType<Map>().map((raw) => QuizDefinition.fromJson(Map<String, dynamic>.from(raw))).toList()
+      ? rawQuizzes.map((raw) {
+          if (raw is! Map) throw const FormatException('A quiz record is invalid.');
+          return QuizDefinition.fromJson(Map<String, dynamic>.from(raw));
+        }).toList()
       : <QuizDefinition>[];
     final exportedAt = decoded is Map ? DateTime.tryParse(decoded['exportedAt']?.toString() ?? '') : null;
     return BackupBundle(decks: decks, quizzes: quizzes, exportedAt: exportedAt);
@@ -196,7 +202,11 @@ class BackupService {
     }).toList();
 
     final dynamic rawQuizzes = manifest['quizzes'];
-    final quizzes = rawQuizzes is List ? rawQuizzes.whereType<Map>().map((rawQuiz) {
+    if (rawQuizzes != null && rawQuizzes is! List) {
+      throw const FormatException('Backup contains an invalid quiz list.');
+    }
+    final quizzes = rawQuizzes is List ? rawQuizzes.map((rawQuiz) {
+      if (rawQuiz is! Map) throw const FormatException('A quiz record is invalid.');
       final quiz = Map<String, dynamic>.from(rawQuiz);
       final dynamic rawQuestions = quiz['questions'];
       if (rawQuestions is! List) throw const FormatException('A quiz has an invalid question list.');
