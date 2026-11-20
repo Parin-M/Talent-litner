@@ -22,7 +22,7 @@ class BackupService {
   static const int _maxManifestBytes = 64 * 1024 * 1024;
   static const int _maxAssets = 50000;
   static const int _maxAssetBytes = 64 * 1024 * 1024;
-  static const int _maxBackupBytes = 512 * 1024 * 1024;
+  static const int _maxBackupBytes = 128 * 1024 * 1024;
 
   Future<bool> exportBackup(List<Deck> decks, {List<QuizDefinition> quizzes = const <QuizDefinition>[]}) async {
     final output = buildBackupBytes(decks, quizzes: quizzes);
@@ -91,16 +91,33 @@ class BackupService {
     };
     final manifestBytes = Uint8List.fromList(utf8.encode(jsonEncode(manifest)));
     if (manifestBytes.length > _maxManifestBytes) throw const FormatException('Backup metadata is too large.');
-    final output = <int>[..._magic, ..._uint32(manifestBytes.length), ...manifestBytes];
+    final output = BytesBuilder(copy: false)
+      ..add(_magic)
+      ..add(_uint32(manifestBytes.length))
+      ..add(manifestBytes);
+    var outputLength = _magic.length + 4 + manifestBytes.length;
+    if (outputLength > _maxBackupBytes) {
+      throw const FormatException('Backup file exceeds the supported size limit.');
+    }
     for (final entry in assets.entries) {
       final nameBytes = utf8.encode(entry.key);
-      if (nameBytes.isEmpty || nameBytes.length > 0xffff) throw const FormatException('Invalid image asset name.');
-      output..addAll(_uint16(nameBytes.length))..addAll(nameBytes)..addAll(_uint32(entry.value.length))..addAll(entry.value);
-      if (output.length > _maxBackupBytes) throw const FormatException('Backup file exceeds the supported size limit.');
+      if (nameBytes.isEmpty || nameBytes.length > 0xffff) {
+        throw const FormatException('Invalid image asset name.');
+      }
+      final header = <int>[
+        ..._uint16(nameBytes.length),
+        ...nameBytes,
+        ..._uint32(entry.value.length),
+      ];
+      outputLength += header.length + entry.value.length;
+      if (outputLength > _maxBackupBytes) {
+        throw const FormatException('Backup file exceeds the supported size limit.');
+      }
+      output
+        ..add(header)
+        ..add(entry.value);
     }
-
-    if (output.length > _maxBackupBytes) throw const FormatException('Backup file exceeds the supported size limit.');
-    return Uint8List.fromList(output);
+    return output.takeBytes();
   }
 
   Future<List<Deck>?> importDecks() async => (await importBackup())?.decks;
