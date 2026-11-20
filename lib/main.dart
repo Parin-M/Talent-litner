@@ -28,6 +28,7 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
   List<Deck> decks = [];
   List<QuizDefinition> quizzes = [];
   bool loading = true;
+  String? loadError;
   String _widgetLanguageCode = 'fa';
 
   @override
@@ -52,24 +53,37 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
   }
 
   Future<void> _load() async {
-    try { await settings.load(); } catch (_) {}
-    List<Deck> data;
-    try { data = await storage.load(); } catch (_) { data = []; }
-    List<QuizDefinition> savedQuizzes;
-    try { savedQuizzes = await storage.loadQuizzes(); } catch (_) { savedQuizzes = []; }
-    // Only seed demo content on a genuinely fresh install. An explicitly saved
-    // empty deck list means the user intentionally removed all decks.
-    var hasSavedDecks = false;
-    try { hasSavedDecks = await storage.hasSavedDecks(); } catch (_) {}
-    if (data.isEmpty && !hasSavedDecks) {
-      data = [Deck(id: 'demo', name: 'شروع سریع', description: 'کارت‌های نمونه')];
-      data[0].cards.addAll([
-        FlashCard(id: uid(), front: 'Leitner چیست؟', back: 'یک روش مرور فاصله‌دار برای انتقال کارت‌ها بین خانه‌ها.'),
-        FlashCard(id: uid(), front: 'Flutter چیست؟', back: 'فریم‌ورک ساخت رابط کاربری چندسکویی با Dart.'),
-      ]);
+    if (mounted) setState(() { loading = true; loadError = null; });
+    try {
+      await settings.load();
+      final data = await storage.load();
+      final savedQuizzes = await storage.loadQuizzes();
+      final hasSavedDecks = await storage.hasSavedDecks();
+
+      // Only seed demo content on a genuinely fresh install. An explicitly saved
+      // empty deck list means the user intentionally removed all decks.
+      if (data.isEmpty && !hasSavedDecks) {
+        data.add(Deck(id: 'demo', name: 'شروع سریع', description: 'کارت‌های نمونه'));
+        data[0].cards.addAll([
+          FlashCard(id: uid(), front: 'Leitner چیست؟', back: 'یک روش مرور فاصله‌دار برای انتقال کارت‌ها بین خانه‌ها.'),
+          FlashCard(id: uid(), front: 'Flutter چیست؟', back: 'فریم‌ورک ساخت رابط کاربری چندسکویی با Dart.'),
+        ]);
+      }
+      if (!mounted) return;
+      setState(() {
+        decks = data;
+        quizzes = savedQuizzes;
+        loading = false;
+        loadError = null;
+      });
+      unawaited(QuickReviewWidgetService.sync(decks: data, languageCode: settings.languageCode));
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        loadError = error.toString();
+        loading = false;
+      });
     }
-    if (mounted) setState(() { decks = data; quizzes = savedQuizzes; loading = false; });
-    unawaited(QuickReviewWidgetService.sync(decks: data, languageCode: settings.languageCode));
   }
 
   Future<void> _save() async {
@@ -145,7 +159,49 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
       localizationsDelegates: const [AppStrings.delegate, GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
       theme: AppTheme.build(settings.themeIndex, mode: settings.appearanceMode, glass: settings.glass, glassOpacity: settings.glassOpacity),
       builder: (context, child) => Directionality(textDirection: settings.language.rtl ? TextDirection.rtl : TextDirection.ltr, child: child ?? const SizedBox.shrink()),
-      home: loading ? const Scaffold(body: Center(child: CircularProgressIndicator())) : HomePage(decks: decks, quizzes: quizzes, onChanged: _save, onImport: _import, onExport: _export, settings: settings),
+      home: loading ? const Scaffold(body: Center(child: CircularProgressIndicator())) : loadError != null ? _StorageRecoveryPage(error: loadError!, onRetry: _load) : HomePage(decks: decks, quizzes: quizzes, onChanged: _save, onImport: _import, onExport: _export, settings: settings),
     ),
   );
+}
+
+
+class _StorageRecoveryPage extends StatelessWidget {
+  final String error;
+  final VoidCallback onRetry;
+
+  const _StorageRecoveryPage({required this.error, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Talent Litner')),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 56, color: scheme.error),
+              const SizedBox(height: 16),
+              const Text(
+                'Saved data could not be loaded',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Your existing data has not been reset or overwritten. Restart the app or restore a backup after checking the saved file.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              SelectableText(error, textAlign: TextAlign.center, style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+              const SizedBox(height: 20),
+              FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Try again')),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
