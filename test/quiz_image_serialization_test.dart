@@ -121,4 +121,16 @@ void main() {
     expect(restored.decks.single.cards.single.frontImage, deck.cards.single.frontImage);
     expect(restored.quizzes, isEmpty);
   });
+  test('legacy JSON backup rejects malformed quiz records instead of skipping them', () {
+    final bytes = Uint8List.fromList(utf8.encode(jsonEncode({
+      'decks': <dynamic>[],
+      'quizzes': <dynamic>[null],
+    })));
+
+    expect(
+      () => BackupService().decodeBackupBytes(bytes),
+      throwsFormatException,
+    );
+  });
+
 }
