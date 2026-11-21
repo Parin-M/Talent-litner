@@ -90,8 +90,7 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
     // Child pages mutate the shared model and refresh their own route. Persist here
     // without rebuilding MaterialApp for every card edit or review rating.
     try {
-      await storage.save(decks);
-      await storage.saveQuizzes(quizzes);
+      await storage.saveAll(decks, quizzes);
       await QuickReviewWidgetService.sync(decks: decks, languageCode: settings.languageCode);
     } catch (_) {
       if (!mounted) return;
@@ -136,8 +135,8 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
       );
       if (mode == null || !mounted) return;
 
-      // Build the replacement/merged state separately. Do not mutate the live
-      // lists until both stores have accepted the new data.
+      // Build the replacement/merged state separately. Persist the complete
+      // app snapshot in one write before replacing the live in-memory lists.
       final previousDecks = decks;
       final previousQuizzes = quizzes;
       final nextDecks = mode
@@ -164,13 +163,11 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
             ];
 
       try {
-        await storage.save(nextDecks);
-        await storage.saveQuizzes(nextQuizzes);
+        await storage.saveAll(nextDecks, nextQuizzes);
       } catch (_) {
-        // Best-effort rollback if one of the two preference writes succeeded.
+        // Restore the previous atomic snapshot if persistence reports failure.
         try {
-          await storage.save(previousDecks);
-          await storage.saveQuizzes(previousQuizzes);
+          await storage.saveAll(previousDecks, previousQuizzes);
         } catch (_) {
           // Keep the original in-memory state and surface the persistence error.
         }
