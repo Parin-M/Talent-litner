@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parin_litner/core/services/backup_service.dart';
 import 'package:parin_litner/core/models/app_models.dart';
+import 'package:parin_litner/core/services/image_storage_service.dart';
 
 void main() {
   test('quiz question images survive JSON round-trip', () {
@@ -180,5 +182,58 @@ void main() {
       throwsA(isA<FormatException>()),
     );
   });
+
+
+  test('async backup materializes file-backed card and quiz images', () async {
+    final temp = await Directory.systemTemp.createTemp('talent-backup-images-');
+    try {
+      final imageStore = ImageStorageService(
+        directoryProvider: () async => temp,
+      );
+      final imageBytes = <int>[21, 22, 23, 24, 25, 26];
+      final reference = await imageStore.storeBytes(imageBytes);
+      final decks = [
+        Deck(
+          id: 'file-image-deck',
+          name: 'File image deck',
+          cards: [
+            FlashCard(
+              id: 'file-image-card',
+              front: 'Question',
+              back: 'Answer',
+              frontImage: reference,
+            ),
+          ],
+        ),
+      ];
+      final quizzes = [
+        QuizDefinition(
+          id: 'file-image-quiz',
+          title: 'File image quiz',
+          questions: [
+            QuizQuestion(
+              id: 'file-image-question',
+              prompt: 'Prompt',
+              options: const ['A', 'B'],
+              correctIndex: 1,
+              answerImage: reference,
+            ),
+          ],
+        ),
+      ];
+
+      final service = BackupService(imageStore: imageStore);
+      final backup = await service.buildBackupBytesAsync(decks, quizzes: quizzes);
+      final restored = service.decodeBackupBytes(backup);
+
+      expect(restored.decks.single.cards.single.frontImage, base64Encode(imageBytes));
+      expect(restored.quizzes.single.questions.single.answerImage, base64Encode(imageBytes));
+      expect(restored.imageCount, 2);
+      expect(decks.single.cards.single.frontImage, reference);
+    } finally {
+      await temp.delete(recursive: true);
+    }
+  });
+
 
 }
