@@ -120,7 +120,12 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> with WidgetsBindingObse
     } catch (error, stackTrace) {
       debugPrint('Backup export failed: $error\\n$stackTrace');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.t(context, 'backup_error'))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${AppStrings.t(context, 'backup_error')}\n$error'),
+          duration: const Duration(seconds: 8),
+        ),
+      );
     }
   }
 
@@ -211,7 +216,10 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> with WidgetsBindingObse
       debugPrint('Backup import failed: $error\\n$stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppStrings.t(context, 'backup_error'))),
+          SnackBar(
+            content: Text('${AppStrings.t(context, 'backup_error')}\n$error'),
+            duration: const Duration(seconds: 8),
+          ),
         );
       }
     }
