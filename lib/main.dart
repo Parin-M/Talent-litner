@@ -106,7 +106,8 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
       if (!mounted) return;
       final key = saved ? 'backup_saved' : 'backup_cancelled';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.t(context, key))));
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Backup export failed: $error\\n$stackTrace');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.t(context, 'backup_error'))));
     }
@@ -189,13 +190,15 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
           const SnackBar(content: Text('Backup restored successfully.')),
         );
       }
-    } on FormatException catch (error) {
+    } on FormatException catch (error, stackTrace) {
+      debugPrint('Backup import rejected: ${error.message}\\n$stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${AppStrings.t(context, 'backup_invalid')} ${error.message}')),
         );
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Backup import failed: $error\\n$stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppStrings.t(context, 'backup_error'))),

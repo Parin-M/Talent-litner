@@ -123,35 +123,52 @@ class BackupService {
   Future<List<Deck>?> importDecks() async => (await importBackup())?.decks;
 
   Future<BackupBundle?> importBackup() async {
-    final picked = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['plbackup', 'json'],
-      withData: true,
-      withReadStream: true,
     );
-    if (picked == null || picked.files.isEmpty) return null;
+    if (file == null) return null;
 
-    final file = picked.files.first;
-    if (file.size <= 0) throw const FormatException('The selected backup file is empty.');
-    if (file.size > _maxBackupBytes) {
+    // Read the provider-backed file as a stream. Loading both bytes and a
+    // read stream at picker time can duplicate a large backup in memory.
+    final fileSize = await file.length();
+    if (fileSize > _maxBackupBytes) {
+      throw const FormatException('Backup file exceeds the supported size limit.');
+    }
+    return decodeBackupStream(
+      file.readAsByteStream(),
+      expectedLength: fileSize,
+    );
+  }
+
+  /// Decodes a picked file incrementally, enforcing limits while bytes arrive.
+  /// [expectedLength] is used when the platform can report the file size.
+  Future<BackupBundle> decodeBackupStream(
+    Stream<List<int>> stream, {
+    int? expectedLength,
+  }) async {
+    if (expectedLength != null && expectedLength > _maxBackupBytes) {
       throw const FormatException('Backup file exceeds the supported size limit.');
     }
 
-    Uint8List? bytes = file.bytes;
-    if (bytes == null && file.readStream != null) {
-      final builder = BytesBuilder(copy: false);
-      await for (final chunk in file.readStream!) {
-        if (builder.length + chunk.length > _maxBackupBytes) {
-          throw const FormatException('Backup file exceeds the supported size limit.');
-        }
-        builder.add(chunk);
+    final builder = BytesBuilder(copy: false);
+    var received = 0;
+    await for (final chunk in stream) {
+      if (chunk.isEmpty) continue;
+      if (chunk.length > _maxBackupBytes - received) {
+        throw const FormatException('Backup file exceeds the supported size limit.');
       }
-      bytes = builder.takeBytes();
+      builder.add(chunk);
+      received += chunk.length;
     }
-    if (bytes == null || bytes.isEmpty) {
-      throw const FormatException('Unable to read the selected backup file.');
+
+    if (received == 0) {
+      throw const FormatException('The selected backup file is empty.');
     }
-    return decodeBackupBytes(bytes);
+    if (expectedLength != null && expectedLength > 0 && received != expectedLength) {
+      throw const FormatException('The selected backup file could not be read completely.');
+    }
+    return decodeBackupBytes(builder.takeBytes());
   }
 
   BackupBundle decodeBackupBytes(Uint8List bytes) {
@@ -213,7 +230,7 @@ class BackupService {
       if (dataLength > _maxAssetBytes || dataLength > bytes.length - offset || assets.containsKey(name)) {
         throw const FormatException('Backup image data is incomplete, oversized, or duplicated.');
       }
-      assets[name] = Uint8List.fromList(bytes.sublist(offset, offset + dataLength));
+      assets[name] = Uint8List.sublistView(bytes, offset, offset + dataLength);
       offset += dataLength;
     }
     if (offset != bytes.length) throw const FormatException('Backup file contains unexpected trailing data.');

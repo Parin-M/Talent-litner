@@ -133,4 +133,52 @@ void main() {
     );
   });
 
+  test('portable backup can be decoded from a chunked file stream', () async {
+    final decks = [
+      Deck(
+        id: 'stream-deck',
+        name: 'Stream backup',
+        cards: [
+          FlashCard(
+            id: 'stream-card',
+            front: 'Front',
+            back: 'Back',
+            frontImage: base64Encode([1, 2, 3, 4]),
+          ),
+        ],
+      ),
+    ];
+    final original = BackupService().buildBackupBytes(decks);
+    final chunks = <List<int>>[];
+    for (var offset = 0; offset < original.length;) {
+      final end = offset + 7 < original.length ? offset + 7 : original.length;
+      chunks.add(original.sublist(offset, end));
+      offset = end;
+    }
+
+    final restored = await BackupService().decodeBackupStream(
+      Stream<List<int>>.fromIterable(chunks),
+      expectedLength: original.length,
+    );
+
+    expect(restored.decks.single.name, 'Stream backup');
+    expect(
+      restored.decks.single.cards.single.frontImage,
+      decks.single.cards.single.frontImage,
+    );
+  });
+
+  test('portable backup stream rejects truncated file reads', () async {
+    final original = BackupService().buildBackupBytes(const <Deck>[]);
+    final incomplete = original.sublist(0, original.length - 1);
+
+    await expectLater(
+      BackupService().decodeBackupStream(
+        Stream<List<int>>.value(incomplete),
+        expectedLength: original.length,
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
 }

@@ -21,7 +21,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.7'
+          flutter-version: '3.38.0'
           cache: true
 
       - name: Create fresh Android project
@@ -31,7 +31,7 @@ jobs:
           # flutter create generates a template test that instantiates the removed
           # MyApp class. Keep the repository's own regression tests instead.
           rm -f test/widget_test.dart
-          # The Flutter 3.35 engine requires Android 7.0 (API 24).
+          # Keep Android 7.0 (API 24) as the minimum supported Android version.
           # Older Android versions are not targeted; minimum supported Android is API 24.
           python3 - <<'PY'
           from pathlib import Path
