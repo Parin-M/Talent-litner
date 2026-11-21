@@ -7,6 +7,31 @@ import 'package:parin_litner/core/services/backup_service.dart';
 import 'package:parin_litner/core/models/app_models.dart';
 import 'package:parin_litner/core/services/image_storage_service.dart';
 
+class _TestPlatformFile implements PlatformFile {
+  _TestPlatformFile({
+    required this.name,
+    required this.path,
+    required Uint8List bytes,
+  }) : _bytes = bytes;
+
+  @override
+  final String name;
+
+  @override
+  final String? path;
+
+  final Uint8List _bytes;
+
+  @override
+  Future<int> length() async => _bytes.length;
+
+  @override
+  Stream<Uint8List> readAsByteStream() => Stream<Uint8List>.value(_bytes);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   test('quiz question images survive JSON round-trip', () {
     final question = QuizQuestion(
@@ -48,6 +73,7 @@ void main() {
     expect(restored.questions.single.promptImage, 'cHJvbXB0');
     expect(restored.questions.single.answerImage, 'YW5zd2Vy');
   });
+
   test('portable backup round-trip preserves flashcard and quiz images', () {
     final decks = [
       Deck(
@@ -93,6 +119,7 @@ void main() {
     expect(restored.quizzes.single.questions.single.correctIndex, 1);
     expect(restored.imageCount, 4);
   });
+
   test('backup decoder rejects truncated binary image payloads', () {
     final service = BackupService();
     final bytes = service.buildBackupBytes([
@@ -124,6 +151,7 @@ void main() {
     expect(restored.decks.single.cards.single.frontImage, deck.cards.single.frontImage);
     expect(restored.quizzes, isEmpty);
   });
+
   test('legacy JSON backup rejects malformed quiz records instead of skipping them', () {
     final bytes = Uint8List.fromList(utf8.encode(jsonEncode({
       'decks': <dynamic>[],
@@ -184,10 +212,10 @@ void main() {
       await backupFile.writeAsBytes(bytes, flush: true);
 
       final service = BackupService(
-        pickBackupFile: () async => PlatformFile(
+        pickBackupFile: () async => _TestPlatformFile(
           name: 'portable.PLbackup',
-          size: bytes.length,
           path: backupFile.path,
+          bytes: bytes,
         ),
       );
       final restored = await service.importBackup();
@@ -212,7 +240,6 @@ void main() {
       throwsA(isA<FormatException>()),
     );
   });
-
 
   test('async backup materializes file-backed card and quiz images', () async {
     final temp = await Directory.systemTemp.createTemp('talent-backup-images-');
@@ -264,6 +291,4 @@ void main() {
       await temp.delete(recursive: true);
     }
   });
-
-
 }
