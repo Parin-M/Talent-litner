@@ -18,11 +18,23 @@ class BackupBundle {
   ));
 }
 
+typedef BackupFilePicker = Future<PlatformFile?> Function();
+
 class BackupService {
   final ImageStorageService imageStore;
+  final BackupFilePicker _pickBackupFile;
 
-  BackupService({ImageStorageService? imageStore})
-      : imageStore = imageStore ?? ImageStorageService();
+  BackupService({
+    ImageStorageService? imageStore,
+    BackupFilePicker? pickBackupFile,
+  })  : imageStore = imageStore ?? ImageStorageService(),
+        _pickBackupFile = pickBackupFile ?? _pickBackupFileFromDevice;
+
+  /// Do not filter by extension in the Android picker: `.plbackup` is a
+  /// project-specific extension and some document providers do not expose it
+  /// through a recognized MIME type. The decoder below validates file content.
+  static Future<PlatformFile?> _pickBackupFileFromDevice() =>
+      FilePicker.pickFile(type: FileType.any);
 
   static const List<int> _magic = <int>[0x50, 0x4c, 0x49, 0x54, 0x42, 0x4b, 0x30, 0x31]; // PLITBK01
   static const int _maxManifestBytes = 64 * 1024 * 1024;
@@ -158,10 +170,7 @@ class BackupService {
   Future<List<Deck>?> importDecks() async => (await importBackup())?.decks;
 
   Future<BackupBundle?> importBackup() async {
-    final file = await FilePicker.pickFile(
-      type: FileType.custom,
-      allowedExtensions: ['plbackup', 'json'],
-    );
+    final file = await _pickBackupFile();
     if (file == null) return null;
 
     // Read the provider-backed file as a stream. Loading both bytes and a
