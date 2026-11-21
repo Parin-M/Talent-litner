@@ -2,6 +2,13 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 
+class StoredAppData {
+  final List<Deck> decks;
+  final List<QuizDefinition> quizzes;
+
+  const StoredAppData({required this.decks, required this.quizzes});
+}
+
 class StorageService {
   // Legacy keys are kept for one-way migration from existing installations.
   static const _key = 'parin_litner_v4_data';
@@ -74,6 +81,35 @@ class StorageService {
         'A saved quiz could not be read. Your original data has been preserved.',
       );
     }
+  }
+
+  Future<StoredAppData> loadAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final snapshot = _readSnapshot(prefs);
+    if (snapshot != null) {
+      // Decode the large combined payload only once at application startup.
+      return StoredAppData(
+        decks: _decodeDecks(snapshot['decks']),
+        quizzes: _decodeQuizzes(snapshot['quizzes']),
+      );
+    }
+
+    final deckRaw = prefs.getString(_key);
+    final quizRaw = prefs.getString(_quizzesKey);
+    return StoredAppData(
+      decks: deckRaw == null || deckRaw.isEmpty
+          ? <Deck>[]
+          : _decodeDecks(_decodeLegacyList(
+              deckRaw,
+              'Saved flashcard data is damaged. Your original data has been preserved.',
+            )),
+      quizzes: quizRaw == null || quizRaw.isEmpty
+          ? <QuizDefinition>[]
+          : _decodeQuizzes(_decodeLegacyList(
+              quizRaw,
+              'Saved quiz data is damaged. Your original data has been preserved.',
+            )),
+    );
   }
 
   Future<List<Deck>> load() async {

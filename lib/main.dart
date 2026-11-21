@@ -56,8 +56,9 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
     if (mounted) setState(() { loading = true; loadError = null; });
     try {
       await settings.load();
-      final data = await storage.load();
-      final savedQuizzes = await storage.loadQuizzes();
+      final savedData = await storage.loadAll();
+      final data = savedData.decks;
+      final savedQuizzes = savedData.quizzes;
       final hasSavedDecks = await storage.hasSavedDecks();
 
       // Only seed demo content on a genuinely fresh install. An explicitly saved
