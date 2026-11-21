@@ -27,7 +27,7 @@ void main() {
       final imageStore = ImageStorageService(
         directoryProvider: () async => temp,
       );
-      const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+      const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==';
       final reference = await imageStore.storeBytes(base64Decode(png));
       final deck = Deck(
         id: 'pdf-deck',
