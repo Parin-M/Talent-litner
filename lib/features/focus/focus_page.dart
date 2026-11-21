@@ -24,6 +24,8 @@ class _FocusPageState extends State<FocusPage> {
   final TextEditingController _customController = TextEditingController(text: '60');
   final AudioPlayer _alarmPlayer = AudioPlayer();
   bool _running = false;
+  bool _starting = false;
+  bool _musicChanging = false;
   bool _musicPlaying = false;
 
   String s(String key) => AppStrings.t(context, key);
@@ -70,21 +72,45 @@ class _FocusPageState extends State<FocusPage> {
   }
 
   Future<void> _toggle() async {
-    if (!_running && _remaining == 0) {
-      setState(() => _remaining = _selectedMinutes * 60);
-    }
+    // Prevent a second tap from racing the asynchronous music startup.
+    if (_starting) return;
+
     if (_running) {
       _timer?.cancel();
       setState(() => _running = false);
       return;
     }
-    setState(() => _running = true);
-    if (widget.settings.musicEnabled && !_musicPlaying) {
-      try {
-        await MusicService.instance.play(widget.settings.musicTrack, volume: widget.settings.musicVolume);
-        if (mounted) setState(() => _musicPlaying = true);
-      } catch (_) {}
+
+    if (_remaining == 0) {
+      setState(() => _remaining = _selectedMinutes * 60);
     }
+
+    setState(() {
+      _running = true;
+      _starting = true;
+    });
+
+    try {
+      if (widget.settings.musicEnabled && !_musicPlaying) {
+        await MusicService.instance.play(
+          widget.settings.musicTrack,
+          volume: widget.settings.musicVolume,
+        );
+        if (!mounted) {
+          await MusicService.instance.stop();
+          return;
+        }
+        setState(() => _musicPlaying = true);
+      }
+    } catch (_) {
+      // The focus timer must remain usable when optional music fails.
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+
+    // The page may have been closed while the audio plugin was starting.
+    if (!mounted || !_running) return;
+
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
       if (!mounted) return;
@@ -215,9 +241,9 @@ class _FocusPageState extends State<FocusPage> {
                   ),
                   const SizedBox(height: 22),
                   Row(children: [
-                    Expanded(child: FilledButton.icon(onPressed: _toggle, icon: Icon(_running ? Icons.pause : Icons.play_arrow), label: Text(_running ? s('pause') : s('start_focus')))),
+                    Expanded(child: FilledButton.icon(onPressed: _starting ? null : _toggle, icon: Icon(_running ? Icons.pause : Icons.play_arrow), label: Text(_running ? s('pause') : s('start_focus')))),
                     const SizedBox(width: 10),
-                    IconButton.filledTonal(onPressed: _reset, tooltip: s('reset'), icon: const Icon(Icons.restart_alt)),
+                    IconButton.filledTonal(onPressed: _starting ? null : _reset, tooltip: s('reset'), icon: const Icon(Icons.restart_alt)),
                   ]),
                   if (widget.settings.musicEnabled) ...[
                     const SizedBox(height: 10),
@@ -225,7 +251,7 @@ class _FocusPageState extends State<FocusPage> {
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(_musicPlaying ? Icons.music_note : Icons.music_off),
                       title: Text(s('focus_music')),
-                      trailing: Switch(value: _musicPlaying, onChanged: (_) => _toggleMusic()),
+                      trailing: Switch(value: _musicPlaying, onChanged: (_starting || _musicChanging) ? null : (_) => _toggleMusic()),
                     ),
                   ],
                 ],
@@ -238,14 +264,24 @@ class _FocusPageState extends State<FocusPage> {
   }
 
   Future<void> _toggleMusic() async {
-    if (_musicPlaying) {
-      await MusicService.instance.pause();
-      if (mounted) setState(() => _musicPlaying = false);
-    } else {
-      try {
+    if (_starting || _musicChanging) return;
+    setState(() => _musicChanging = true);
+    try {
+      if (_musicPlaying) {
+        await MusicService.instance.pause();
+        if (mounted) setState(() => _musicPlaying = false);
+      } else {
         await MusicService.instance.play(widget.settings.musicTrack, volume: widget.settings.musicVolume);
-        if (mounted) setState(() => _musicPlaying = true);
-      } catch (_) {}
+        if (!mounted) {
+          await MusicService.instance.stop();
+          return;
+        }
+        setState(() => _musicPlaying = true);
+      }
+    } catch (_) {
+      // Optional background music must not affect the focus timer.
+    } finally {
+      if (mounted) setState(() => _musicChanging = false);
     }
   }
 }

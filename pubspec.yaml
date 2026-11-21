@@ -1,11 +1,11 @@
 name: parin_litner
-description: Parin Litner - a stable multilingual Leitner flashcard app.
+description: Talent Litner - a stable multilingual Leitner flashcard app.
 publish_to: 'none'
-version: 7.1.0+21
+version: 7.3.0+23
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
-  flutter: '>=3.32.0'
+  sdk: '>=3.10.0 <4.0.0'
+  flutter: '>=3.38.0'
 
 dependencies:
   flutter:
@@ -13,10 +13,15 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   shared_preferences: ^2.5.5
-  file_picker: ^11.0.3
+  path_provider: ^2.1.5
+  crypto: ^3.0.6
+  file_picker: ^12.0.0
   audioplayers: '>=6.7.1 <6.8.0'
   vibration: ^3.1.8
   url_launcher: ^6.3.2
+  image: 4.10.0 # Pin to the last image build compatible with pdf 3.11.x/archive 4.0.x.
+  pdf: ^3.11.3
+  printing: ^5.14.3
 
 dev_dependencies:
   flutter_test:
