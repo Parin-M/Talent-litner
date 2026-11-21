@@ -173,21 +173,64 @@ class BackupService {
     final file = await _pickBackupFile();
     if (file == null) return null;
 
-    // Read the provider-backed file as a stream. Loading both bytes and a
-    // read stream at picker time can duplicate a large backup in memory.
-    final fileSize = await file.length();
-    if (fileSize > _maxBackupBytes) {
-      throw const FormatException('Backup file exceeds the supported size limit.');
-    }
-    return decodeBackupStream(
-      file.readAsByteStream(),
-      expectedLength: fileSize,
-    );
+    // Some Android document providers do not expose a usable length even
+    // though their content stream is readable. Do not make length() a
+    // prerequisite for importing a user-selected SAF/content:// document.
+    final bytes = await _readPickedFile(file);
+    return decodeBackupBytes(bytes);
   }
 
-  /// Decodes a picked file incrementally, enforcing limits while bytes arrive.
-  /// [expectedLength] is used when the platform can report the file size.
+  Future<Uint8List> _readPickedFile(PlatformFile file) async {
+    Object? streamFailure;
+    try {
+      return await _readLimitedStream(file.readAsByteStream());
+    } on FormatException catch (error) {
+      // A size-limit violation must not be retried through readAsBytes(),
+      // which would allocate the oversized file before rejecting it.
+      if (error.message == 'Backup file exceeds the supported size limit.') {
+        rethrow;
+      }
+      streamFailure = error;
+    } catch (error) {
+      streamFailure = error;
+    }
+
+    // Provider-backed files can expose a working XFile/readAsBytes path even
+    // when openRead/readAsByteStream fails. This fallback still enforces the
+    // same hard limit before parsing or mutating app data.
+    try {
+      final bytes = await file.readAsBytes();
+      if (bytes.isEmpty) {
+        throw const FormatException('The selected backup file is empty.');
+      }
+      if (bytes.length > _maxBackupBytes) {
+        throw const FormatException('Backup file exceeds the supported size limit.');
+      }
+      return bytes;
+    } catch (error) {
+      if (error is FormatException) rethrow;
+      throw FormatException(
+        'Unable to read the selected backup file. Stream read failed: '
+        '$streamFailure. Byte read failed: $error',
+      );
+    }
+  }
+
+  /// Decodes a stream incrementally, enforcing the size limit as bytes arrive.
+  /// [expectedLength] is optional because some document providers cannot
+  /// reliably report metadata for a selected content URI.
   Future<BackupBundle> decodeBackupStream(
+    Stream<List<int>> stream, {
+    int? expectedLength,
+  }) async {
+    final bytes = await _readLimitedStream(
+      stream,
+      expectedLength: expectedLength,
+    );
+    return decodeBackupBytes(bytes);
+  }
+
+  Future<Uint8List> _readLimitedStream(
     Stream<List<int>> stream, {
     int? expectedLength,
   }) async {
@@ -212,7 +255,7 @@ class BackupService {
     if (expectedLength != null && expectedLength > 0 && received != expectedLength) {
       throw const FormatException('The selected backup file could not be read completely.');
     }
-    return decodeBackupBytes(builder.takeBytes());
+    return builder.takeBytes();
   }
 
   BackupBundle decodeBackupBytes(Uint8List bytes) {
