@@ -74,9 +74,9 @@ void main() {
       ],
     });
 
-    expect(deck.cards.map((card) => card.boxIndex), [0, 1]);
+    expect(deck.cards.map((card) => card.boxIndex).toList(), [0, 1]);
     expect(
-      deck.boxes.map((box) => deck.cards.where((card) => card.boxIndex == deck.boxes.indexOf(box)).length),
+      deck.boxes.map((box) => deck.cards.where((card) => card.boxIndex == deck.boxes.indexOf(box)).length).toList(),
       [1, 1],
     );
   });
