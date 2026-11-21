@@ -12,6 +12,7 @@ final class _TestPlatformFile extends PlatformFile {
     required this.name,
     required this.path,
     required Uint8List bytes,
+    this.failStream = false,
   }) : _bytes = bytes;
 
   @override
@@ -21,12 +22,23 @@ final class _TestPlatformFile extends PlatformFile {
   final String? path;
 
   final Uint8List _bytes;
+  final bool failStream;
+
+  // Android/cloud document providers may fail to expose file-size metadata.
+  @override
+  Future<int> length() async =>
+      throw UnsupportedError('Document provider does not expose file length.');
 
   @override
-  Future<int> length() async => _bytes.length;
+  Future<Uint8List> readAsBytes() async => Uint8List.fromList(_bytes);
 
   @override
-  Stream<Uint8List> readAsByteStream() => Stream<Uint8List>.value(_bytes);
+  Stream<Uint8List> readAsByteStream() {
+    if (failStream) {
+      throw StateError('Document provider stream is unavailable.');
+    }
+    return Stream<Uint8List>.value(_bytes);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -226,6 +238,29 @@ void main() {
     } finally {
       await temp.delete(recursive: true);
     }
+  });
+
+  test('import falls back to byte reads when a provider stream is unavailable', () async {
+    final sourceDeck = Deck(
+      id: 'fallback-deck',
+      name: 'Fallback backup',
+      cards: [FlashCard(id: 'fallback-card', front: 'Question', back: 'Answer')],
+    );
+    final bytes = BackupService().buildBackupBytes([sourceDeck]);
+    final service = BackupService(
+      pickBackupFile: () async => _TestPlatformFile(
+        name: 'fallback.plbackup',
+        path: null,
+        bytes: bytes,
+        failStream: true,
+      ),
+    );
+
+    final restored = await service.importBackup();
+
+    expect(restored, isNotNull);
+    expect(restored!.decks.single.name, 'Fallback backup');
+    expect(restored.decks.single.cards.single.back, 'Answer');
   });
 
   test('portable backup stream rejects truncated file reads', () async {
