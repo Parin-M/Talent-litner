@@ -237,7 +237,7 @@ class _FocusPageState extends State<FocusPage> {
                   ),
                   const SizedBox(height: 22),
                   Row(children: [
-                    Expanded(child: FilledButton.icon(onPressed: _starting ? null : _toggle, icon: Icon(_running ? Icons.pause : Icons.play_arrow), label: Text(_starting ? s('music') : _running ? s('pause') : s('start_focus')))),
+                    Expanded(child: FilledButton.icon(onPressed: _starting ? null : _toggle, icon: Icon(_running ? Icons.pause : Icons.play_arrow), label: Text(_running ? s('pause') : s('start_focus')))),
                     const SizedBox(width: 10),
                     IconButton.filledTonal(onPressed: _starting ? null : _reset, tooltip: s('reset'), icon: const Icon(Icons.restart_alt)),
                   ]),
