@@ -111,12 +111,20 @@ class Deck {
     final boxes = rawBoxes is List && rawBoxes.isNotEmpty
         ? rawBoxes.map((item) => LeitnerBox.fromJson(Map<String, dynamic>.from(item as Map))).toList()
         : defaultBoxes();
+    // Every card must reference an existing Leitner box. Backups from older
+    // versions or edited JSON can otherwise leave cards outside all box counts.
+    final cards = (rawCards as List? ?? const [])
+        .map((item) => FlashCard.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList();
+    for (final card in cards) {
+      card.boxIndex = card.boxIndex.clamp(0, boxes.length - 1).toInt();
+    }
     return Deck(
       id: j['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
       name: j['name'] as String? ?? 'دسته بدون نام',
       description: j['description'] as String? ?? '',
       colorHex: j['color'] as String? ?? '6C63FF',
-      cards: (rawCards as List? ?? const []).map((item) => FlashCard.fromJson(Map<String, dynamic>.from(item as Map))).toList(),
+      cards: cards,
       boxes: boxes,
     );
   }
@@ -155,6 +163,9 @@ class QuizQuestion {
 
   factory QuizQuestion.fromJson(Map<String, dynamic> json) {
     final raw = json['options'];
+    if (raw != null && raw is! List) {
+      throw const FormatException('A quiz question has an invalid options list.');
+    }
     final options = raw is List ? raw.map((value) => value.toString()).toList() : <String>[];
     final requestedIndex = (json['correctIndex'] as num?)?.toInt() ?? 0;
     return QuizQuestion(
