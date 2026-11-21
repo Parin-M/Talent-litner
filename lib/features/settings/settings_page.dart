@@ -13,8 +13,9 @@ class SettingsPage extends StatefulWidget {
   final Future<void> Function() onImport;
   final Future<void> Function() onExport;
   final List<Deck>? decks;
+  final List<QuizDefinition>? quizzes;
 
-  const SettingsPage({super.key, required this.settings, required this.onImport, required this.onExport, this.decks});
+  const SettingsPage({super.key, required this.settings, required this.onImport, required this.onExport, this.decks, this.quizzes});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -105,7 +106,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _openRepository() async {
-    final opened = await launchUrl(Uri.parse('https://github.com/Parin-M/parin-litner'), mode: LaunchMode.externalApplication);
+    final opened = await launchUrl(Uri.parse('https://github.com/Parin-M/Talent-litner'), mode: LaunchMode.externalApplication);
     if (!opened && mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('about_open_error'))));
   }
 
@@ -126,6 +127,16 @@ class _SettingsPageState extends State<SettingsPage> {
       animation: widget.settings,
       builder: (context, _) {
         final compact = widget.settings.compactSettings;
+        final backupDecks = widget.decks ?? const <Deck>[];
+        final backupQuizzes = widget.quizzes ?? const <QuizDefinition>[];
+        final backupCards = backupDecks.fold<int>(0, (sum, deck) => sum + deck.cards.length);
+        final backupImages = backupDecks.fold<int>(0, (sum, deck) => sum + deck.cards.fold<int>(0, (n, card) => n + (card.frontImage == null ? 0 : 1) + (card.backImage == null ? 0 : 1)))
+          + backupQuizzes.fold<int>(0, (sum, quiz) => sum + quiz.questions.fold<int>(0, (n, q) => n + (q.promptImage == null ? 0 : 1) + (q.answerImage == null ? 0 : 1)));
+        final backupStats = s('backup_stats')
+          .replaceAll('{decks}', backupDecks.length.toString())
+          .replaceAll('{cards}', backupCards.toString())
+          .replaceAll('{tests}', backupQuizzes.length.toString())
+          .replaceAll('{images}', backupImages.toString());
         return Scaffold(
           appBar: AppBar(title: Text(s('settings'))),
           body: ListView(
@@ -230,7 +241,28 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ])),
               const SizedBox(height: 12),
-              _Section(title: s('backup'), icon: Icons.backup_outlined, compact: compact, child: Row(children: [Expanded(child: OutlinedButton.icon(onPressed: widget.onExport, icon: const Icon(Icons.upload_file_outlined), label: Text(s('export')))), const SizedBox(width: 10), Expanded(child: OutlinedButton.icon(onPressed: widget.onImport, icon: const Icon(Icons.download_outlined), label: Text(s('import'))))])),
+              _Section(title: s('backup'), icon: Icons.backup_outlined, compact: compact, child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(s('backup_description'), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.35)),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(s('backup_includes'), style: const TextStyle(fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 5),
+                      Text(backupStats, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 5),
+                      Text(s('backup_restore_hint'), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
+                    ]),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(onPressed: widget.onExport, icon: const Icon(Icons.backup_outlined), label: Text(s('export'))),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(onPressed: widget.onImport, icon: const Icon(Icons.settings_backup_restore_outlined), label: Text(s('import'))),
+                ],
+              )),
               const SizedBox(height: 12),
               _Section(title: s('extra'), icon: Icons.auto_awesome_outlined, compact: compact, child: Column(children: [
                 ListTile(contentPadding: EdgeInsets.zero, leading: Container(width: 40, height: 40, color: Theme.of(context).colorScheme.primaryContainer, alignment: Alignment.center, child: Icon(Icons.workspace_premium_outlined, color: Theme.of(context).colorScheme.onPrimaryContainer)), title: Text(s('achievement_center'), style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(s('achievement_center_sub')), trailing: const Icon(Icons.chevron_right), onTap: _openAchievements),

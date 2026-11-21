@@ -99,12 +99,137 @@ class Deck {
         'boxes': boxes.map((e) => e.toJson()).toList(),
       };
 
-  factory Deck.fromJson(Map<String, dynamic> j) => Deck(
-        id: j['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
-        name: j['name'] as String? ?? 'دسته بدون نام',
-        description: j['description'] as String? ?? '',
-        colorHex: j['color'] as String? ?? '6C63FF',
-        cards: ((j['cards'] as List?) ?? []).map((e) => FlashCard.fromJson(Map<String, dynamic>.from(e as Map))).toList(),
-        boxes: ((j['boxes'] as List?) ?? []).map((e) => LeitnerBox.fromJson(Map<String, dynamic>.from(e as Map))).toList(),
+  factory Deck.fromJson(Map<String, dynamic> j) {
+    final rawCards = j['cards'];
+    final rawBoxes = j['boxes'];
+    if (rawCards != null && rawCards is! List) {
+      throw const FormatException('A deck has an invalid card list.');
+    }
+    if (rawBoxes != null && rawBoxes is! List) {
+      throw const FormatException('A deck has an invalid Leitner box list.');
+    }
+    final boxes = rawBoxes is List && rawBoxes.isNotEmpty
+        ? rawBoxes.map((item) => LeitnerBox.fromJson(Map<String, dynamic>.from(item as Map))).toList()
+        : defaultBoxes();
+    // Every card must reference an existing Leitner box. Backups from older
+    // versions or edited JSON can otherwise leave cards outside all box counts.
+    final cards = (rawCards as List? ?? const [])
+        .map((item) => FlashCard.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList();
+    for (final card in cards) {
+      card.boxIndex = card.boxIndex.clamp(0, boxes.length - 1).toInt();
+    }
+    return Deck(
+      id: j['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      name: j['name'] as String? ?? 'دسته بدون نام',
+      description: j['description'] as String? ?? '',
+      colorHex: j['color'] as String? ?? '6C63FF',
+      cards: cards,
+      boxes: boxes,
+    );
+  }
+}
+
+
+class QuizQuestion {
+  String id;
+  String prompt;
+  List<String> options;
+  int correctIndex;
+  String explanation;
+  String? promptImage;
+  String? answerImage;
+
+  QuizQuestion({
+    required this.id,
+    required this.prompt,
+    required List<String> options,
+    required int correctIndex,
+    this.explanation = '',
+    this.promptImage,
+    this.answerImage,
+  })  : options = List<String>.from(options),
+        correctIndex = options.isEmpty ? 0 : correctIndex.clamp(0, options.length - 1).toInt();
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'prompt': prompt,
+        'options': options,
+        'correctIndex': correctIndex,
+        'explanation': explanation,
+        'promptImage': promptImage,
+        'answerImage': answerImage,
+      };
+
+  factory QuizQuestion.fromJson(Map<String, dynamic> json) {
+    final raw = json['options'];
+    if (raw != null && raw is! List) {
+      throw const FormatException('A quiz question has an invalid options list.');
+    }
+    final options = raw is List ? raw.map((value) => value.toString()).toList() : <String>[];
+    final requestedIndex = (json['correctIndex'] as num?)?.toInt() ?? 0;
+    return QuizQuestion(
+      id: json['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      prompt: json['prompt'] as String? ?? '',
+      options: options,
+      correctIndex: options.isEmpty ? 0 : requestedIndex.clamp(0, options.length - 1).toInt(),
+      explanation: json['explanation'] as String? ?? '',
+      promptImage: json['promptImage'] as String?,
+      answerImage: json['answerImage'] as String?,
+    );
+  }
+}
+
+class QuizDefinition {
+  String id;
+  String title;
+  String description;
+  List<QuizQuestion> questions;
+  DateTime updatedAt;
+
+  QuizDefinition({
+    required this.id,
+    required this.title,
+    this.description = '',
+    List<QuizQuestion>? questions,
+    DateTime? updatedAt,
+  })  : questions = questions ?? <QuizQuestion>[],
+        updatedAt = updatedAt ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'updatedAt': updatedAt.toIso8601String(),
+        'questions': questions.map((question) => question.toJson()).toList(),
+      };
+
+  factory QuizDefinition.fromJson(Map<String, dynamic> json) {
+    final rawQuestions = json['questions'];
+    if (rawQuestions != null && rawQuestions is! List) {
+      throw const FormatException('A quiz has an invalid question list.');
+    }
+    final questions = (rawQuestions as List? ?? const []).map((rawQuestion) {
+      if (rawQuestion is! Map) {
+        throw const FormatException('A quiz contains an invalid question record.');
+      }
+      return QuizQuestion.fromJson(Map<String, dynamic>.from(rawQuestion));
+    }).toList();
+    return QuizDefinition(
+      id: json['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
+      questions: questions,
+    );
+  }
+
+  QuizDefinition copyWith({String? id, String? title, String? description, List<QuizQuestion>? questions, DateTime? updatedAt}) =>
+      QuizDefinition(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        description: description ?? this.description,
+        questions: questions ?? this.questions,
+        updatedAt: updatedAt ?? this.updatedAt,
       );
 }

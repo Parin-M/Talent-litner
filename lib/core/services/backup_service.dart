@@ -2,13 +2,88 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
+import 'image_storage_service.dart';
+
+class BackupBundle {
+  final List<Deck> decks;
+  final List<QuizDefinition> quizzes;
+  final DateTime? exportedAt;
+  const BackupBundle({required this.decks, required this.quizzes, this.exportedAt});
+
+  int get cardCount => decks.fold<int>(0, (sum, deck) => sum + deck.cards.length);
+  int get imageCount => decks.fold<int>(0, (sum, deck) => sum + deck.cards.fold<int>(
+    0, (n, card) => n + (card.frontImage == null ? 0 : 1) + (card.backImage == null ? 0 : 1),
+  )) + quizzes.fold<int>(0, (sum, quiz) => sum + quiz.questions.fold<int>(
+    0, (n, question) => n + (question.promptImage == null ? 0 : 1) + (question.answerImage == null ? 0 : 1),
+  ));
+}
+
+typedef BackupFilePicker = Future<PlatformFile?> Function();
 
 class BackupService {
+  final ImageStorageService imageStore;
+  final BackupFilePicker _pickBackupFile;
+
+  BackupService({
+    ImageStorageService? imageStore,
+    BackupFilePicker? pickBackupFile,
+  })  : imageStore = imageStore ?? ImageStorageService(),
+        _pickBackupFile = pickBackupFile ?? _pickBackupFileFromDevice;
+
+  /// Do not filter by extension in the Android picker: `.plbackup` is a
+  /// project-specific extension and some document providers do not expose it
+  /// through a recognized MIME type. The decoder below validates file content.
+  static Future<PlatformFile?> _pickBackupFileFromDevice() =>
+      FilePicker.pickFile(type: FileType.any);
+
   static const List<int> _magic = <int>[0x50, 0x4c, 0x49, 0x54, 0x42, 0x4b, 0x30, 0x31]; // PLITBK01
   static const int _maxManifestBytes = 64 * 1024 * 1024;
   static const int _maxAssets = 50000;
+  static const int _maxAssetBytes = 64 * 1024 * 1024;
+  static const int _maxBackupBytes = 128 * 1024 * 1024;
 
-  Future<bool> exportDecks(List<Deck> decks) async {
+  Future<bool> exportBackup(List<Deck> decks, {List<QuizDefinition> quizzes = const <QuizDefinition>[]}) async {
+    final output = await buildBackupBytesAsync(decks, quizzes: quizzes);
+    final saved = await FilePicker.saveFile(
+      dialogTitle: 'ذخیره پشتیبان Talent Litner',
+      fileName: 'talent_litner_backup.plbackup',
+      type: FileType.custom,
+      allowedExtensions: ['plbackup'],
+      bytes: output,
+    );
+    return saved != null;
+  }
+
+  /// Materializes file-backed images in an isolated copy before building the
+  /// portable archive. The synchronous builder remains for Base64 callers.
+  Future<Uint8List> buildBackupBytesAsync(
+    List<Deck> decks, {
+    List<QuizDefinition> quizzes = const <QuizDefinition>[],
+  }) async {
+    final portableDecks = decks
+        .map((deck) => Deck.fromJson(Map<String, dynamic>.from(deck.toJson())))
+        .toList();
+    final portableQuizzes = quizzes
+        .map((quiz) =>
+            QuizDefinition.fromJson(Map<String, dynamic>.from(quiz.toJson())))
+        .toList();
+
+    for (final deck in portableDecks) {
+      for (final card in deck.cards) {
+        card.frontImage = await imageStore.readAsBase64(card.frontImage);
+        card.backImage = await imageStore.readAsBase64(card.backImage);
+      }
+    }
+    for (final quiz in portableQuizzes) {
+      for (final question in quiz.questions) {
+        question.promptImage = await imageStore.readAsBase64(question.promptImage);
+        question.answerImage = await imageStore.readAsBase64(question.answerImage);
+      }
+    }
+    return buildBackupBytes(portableDecks, quizzes: portableQuizzes);
+  }
+
+  Uint8List buildBackupBytes(List<Deck> decks, {List<QuizDefinition> quizzes = const <QuizDefinition>[]}) {
     final assets = <String, Uint8List>{};
     var nextAsset = 0;
     String? addImage(dynamic raw, String label) {
@@ -19,16 +94,18 @@ class BackupService {
       try { data = Uint8List.fromList(base64Decode(raw.trim())); }
       on FormatException { throw FormatException('Invalid image data for $label.'); }
       if (data.isEmpty) return null;
+      if (data.length > _maxAssetBytes) throw FormatException('Image is too large for backup: $label.');
       nextAsset++;
       final name = 'image_${nextAsset.toString().padLeft(6, '0')}.bin';
       assets[name] = data;
+      if (assets.length > _maxAssets) throw const FormatException('Too many images in backup.');
       return name;
     }
 
     final deckPayload = <Map<String, dynamic>>[];
     for (final deck in decks) {
       final deckJson = deck.toJson();
-      final originalCards = (deckJson['cards'] as List? ?? const []);
+      final originalCards = deckJson['cards'] as List? ?? const [];
       deckJson['cards'] = originalCards.map((rawCard) {
         final card = Map<String, dynamic>.from(rawCard as Map);
         final id = card['id']?.toString() ?? 'unknown';
@@ -39,54 +116,176 @@ class BackupService {
       deckPayload.add(deckJson);
     }
 
+    final quizPayload = <Map<String, dynamic>>[];
+    for (final quiz in quizzes) {
+      final quizJson = quiz.toJson();
+      final rawQuestions = quizJson['questions'] as List? ?? const [];
+      quizJson['questions'] = rawQuestions.map((rawQuestion) {
+        final question = Map<String, dynamic>.from(rawQuestion as Map);
+        final id = question['id']?.toString() ?? 'unknown';
+        question['promptImageAsset'] = addImage(question.remove('promptImage'), 'question $id');
+        question['answerImageAsset'] = addImage(question.remove('answerImage'), 'answer $id');
+        return question;
+      }).toList();
+      quizPayload.add(quizJson);
+    }
+
     final manifest = <String, dynamic>{
-      'app': 'Parin Litner', 'format': 1,
+      'app': 'Talent Litner', 'format': 3,
+      'quizzes': quizPayload,
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
       'imageCount': assets.length, 'decks': deckPayload,
     };
     final manifestBytes = Uint8List.fromList(utf8.encode(jsonEncode(manifest)));
     if (manifestBytes.length > _maxManifestBytes) throw const FormatException('Backup metadata is too large.');
-    final output = <int>[..._magic, ..._uint32(manifestBytes.length), ...manifestBytes];
+    final output = BytesBuilder(copy: false)
+      ..add(_magic)
+      ..add(_uint32(manifestBytes.length))
+      ..add(manifestBytes);
+    var outputLength = _magic.length + 4 + manifestBytes.length;
+    if (outputLength > _maxBackupBytes) {
+      throw const FormatException('Backup file exceeds the supported size limit.');
+    }
     for (final entry in assets.entries) {
       final nameBytes = utf8.encode(entry.key);
-      if (nameBytes.isEmpty || nameBytes.length > 0xffff) throw const FormatException('Invalid image asset name.');
-      output..addAll(_uint16(nameBytes.length))..addAll(nameBytes)..addAll(_uint32(entry.value.length))..addAll(entry.value);
+      if (nameBytes.isEmpty || nameBytes.length > 0xffff) {
+        throw const FormatException('Invalid image asset name.');
+      }
+      final header = <int>[
+        ..._uint16(nameBytes.length),
+        ...nameBytes,
+        ..._uint32(entry.value.length),
+      ];
+      outputLength += header.length + entry.value.length;
+      if (outputLength > _maxBackupBytes) {
+        throw const FormatException('Backup file exceeds the supported size limit.');
+      }
+      output
+        ..add(header)
+        ..add(entry.value);
     }
-
-    final saved = await FilePicker.saveFile(
-      dialogTitle: 'ذخیره پشتیبان Parin Litner',
-      fileName: 'parin_litner_backup.plbackup',
-      type: FileType.custom,
-      allowedExtensions: ['plbackup'],
-      bytes: Uint8List.fromList(output),
-    );
-    return saved != null;
+    return output.takeBytes();
   }
 
-  Future<List<Deck>?> importDecks() async {
-    final picked = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['plbackup', 'json'],
-      withData: true,
+  Future<List<Deck>?> importDecks() async => (await importBackup())?.decks;
+
+  Future<BackupBundle?> importBackup() async {
+    final file = await _pickBackupFile();
+    if (file == null) return null;
+
+    // Some Android document providers do not expose a usable length even
+    // though their content stream is readable. Do not make length() a
+    // prerequisite for importing a user-selected SAF/content:// document.
+    final bytes = await _readPickedFile(file);
+    return decodeBackupBytes(bytes);
+  }
+
+  Future<Uint8List> _readPickedFile(PlatformFile file) async {
+    Object? streamFailure;
+    try {
+      return await _readLimitedStream(file.readAsByteStream());
+    } on FormatException catch (error) {
+      // A size-limit violation must not be retried through readAsBytes(),
+      // which would allocate the oversized file before rejecting it.
+      if (error.message == 'Backup file exceeds the supported size limit.') {
+        rethrow;
+      }
+      streamFailure = error;
+    } catch (error) {
+      streamFailure = error;
+    }
+
+    // Provider-backed files can expose a working XFile/readAsBytes path even
+    // when openRead/readAsByteStream fails. This fallback still enforces the
+    // same hard limit before parsing or mutating app data.
+    try {
+      final bytes = await file.readAsBytes();
+      if (bytes.isEmpty) {
+        throw const FormatException('The selected backup file is empty.');
+      }
+      if (bytes.length > _maxBackupBytes) {
+        throw const FormatException('Backup file exceeds the supported size limit.');
+      }
+      return bytes;
+    } catch (error) {
+      if (error is FormatException) rethrow;
+      throw FormatException(
+        'Unable to read the selected backup file. Stream read failed: '
+        '$streamFailure. Byte read failed: $error',
+      );
+    }
+  }
+
+  /// Decodes a stream incrementally, enforcing the size limit as bytes arrive.
+  /// [expectedLength] is optional because some document providers cannot
+  /// reliably report metadata for a selected content URI.
+  Future<BackupBundle> decodeBackupStream(
+    Stream<List<int>> stream, {
+    int? expectedLength,
+  }) async {
+    final bytes = await _readLimitedStream(
+      stream,
+      expectedLength: expectedLength,
     );
-    if (picked == null || picked.files.isEmpty) return null;
-    final bytes = picked.files.first.bytes;
-    if (bytes == null) throw const FormatException('Unable to read the selected backup file.');
+    return decodeBackupBytes(bytes);
+  }
+
+  Future<Uint8List> _readLimitedStream(
+    Stream<List<int>> stream, {
+    int? expectedLength,
+  }) async {
+    if (expectedLength != null && expectedLength > _maxBackupBytes) {
+      throw const FormatException('Backup file exceeds the supported size limit.');
+    }
+
+    final builder = BytesBuilder(copy: false);
+    var received = 0;
+    await for (final chunk in stream) {
+      if (chunk.isEmpty) continue;
+      if (chunk.length > _maxBackupBytes - received) {
+        throw const FormatException('Backup file exceeds the supported size limit.');
+      }
+      builder.add(chunk);
+      received += chunk.length;
+    }
+
+    if (received == 0) {
+      throw const FormatException('The selected backup file is empty.');
+    }
+    if (expectedLength != null && expectedLength > 0 && received != expectedLength) {
+      throw const FormatException('The selected backup file could not be read completely.');
+    }
+    return builder.takeBytes();
+  }
+
+  BackupBundle decodeBackupBytes(Uint8List bytes) {
+    if (bytes.length > _maxBackupBytes) throw const FormatException('Backup file exceeds the supported size limit.');
     if (_hasMagic(bytes)) return _decodeBinaryBackup(bytes);
 
-    // Backward compatibility for pre-.plbackup JSON files.
     final dynamic decoded;
     try { decoded = jsonDecode(utf8.decode(bytes)); }
-    on FormatException { throw const FormatException('This is not a valid Parin Litner backup.'); }
+    on FormatException { throw const FormatException('This is not a valid Talent Litner backup.'); }
     final dynamic rawDecks = decoded is Map ? decoded['decks'] : decoded;
+    final dynamic rawQuizzes = decoded is Map ? decoded['quizzes'] : null;
     if (rawDecks is! List) throw const FormatException('The selected file does not contain a deck list.');
-    return rawDecks.map((raw) {
+    final decks = rawDecks.map((raw) {
       if (raw is! Map) throw const FormatException('A deck record is invalid.');
       return Deck.fromJson(Map<String, dynamic>.from(raw));
     }).toList();
+    if (rawQuizzes != null && rawQuizzes is! List) {
+      throw const FormatException('The selected backup contains an invalid quiz list.');
+    }
+    final quizzes = rawQuizzes is List
+      ? rawQuizzes.map((raw) {
+          if (raw is! Map) throw const FormatException('A quiz record is invalid.');
+          return QuizDefinition.fromJson(Map<String, dynamic>.from(raw));
+        }).toList()
+      : <QuizDefinition>[];
+    final exportedAt = decoded is Map ? DateTime.tryParse(decoded['exportedAt']?.toString() ?? '') : null;
+    return BackupBundle(decks: decks, quizzes: quizzes, exportedAt: exportedAt);
   }
 
-  List<Deck> _decodeBinaryBackup(Uint8List bytes) {
+  BackupBundle _decodeBinaryBackup(Uint8List bytes) {
     if (bytes.length < 12) throw const FormatException('Backup file is incomplete.');
     final manifestLength = _readUint32(bytes, 8);
     if (manifestLength > _maxManifestBytes || manifestLength > bytes.length - 12) throw const FormatException('Backup metadata length is invalid.');
@@ -97,7 +296,10 @@ class BackupService {
     on FormatException { throw const FormatException('Backup metadata is damaged.'); }
     if (rawManifest is! Map) throw const FormatException('Backup metadata is invalid.');
     final manifest = Map<String, dynamic>.from(rawManifest);
-    if (manifest['app'] != 'Parin Litner' || manifest['format'] != 1) throw const FormatException('This backup version is not supported.');
+    final format = manifest['format'];
+    if (!['Talent Litner', 'Parin Litner'].contains(manifest['app']) || (format != 1 && format != 2 && format != 3)) {
+      throw const FormatException('This backup version is not supported.');
+    }
     final count = manifest['imageCount'];
     if (count is! int || count < 0 || count > _maxAssets) throw const FormatException('Backup image count is invalid.');
 
@@ -112,15 +314,17 @@ class BackupService {
       offset += nameLength;
       final dataLength = _readUint32(bytes, offset);
       offset += 4;
-      if (dataLength > bytes.length - offset || assets.containsKey(name)) throw const FormatException('Backup image data is incomplete or duplicated.');
-      assets[name] = Uint8List.fromList(bytes.sublist(offset, offset + dataLength));
+      if (dataLength > _maxAssetBytes || dataLength > bytes.length - offset || assets.containsKey(name)) {
+        throw const FormatException('Backup image data is incomplete, oversized, or duplicated.');
+      }
+      assets[name] = Uint8List.sublistView(bytes, offset, offset + dataLength);
       offset += dataLength;
     }
     if (offset != bytes.length) throw const FormatException('Backup file contains unexpected trailing data.');
 
     final dynamic rawDecks = manifest['decks'];
     if (rawDecks is! List) throw const FormatException('Backup does not contain a deck list.');
-    return rawDecks.map((rawDeck) {
+    final decks = rawDecks.map((rawDeck) {
       if (rawDeck is! Map) throw const FormatException('A deck record is invalid.');
       final deck = Map<String, dynamic>.from(rawDeck);
       final dynamic rawCards = deck['cards'];
@@ -134,18 +338,54 @@ class BackupService {
             if (ref is! String || !assets.containsKey(ref)) throw const FormatException('A card image is missing from the backup.');
             card['${side}Image'] = base64Encode(assets[ref]!);
           } else {
-            card['${side}Image'] = null;
+            card.putIfAbsent('${side}Image', () => null);
           }
         }
         return card;
       }).toList();
       return Deck.fromJson(deck);
     }).toList();
+
+    final dynamic rawQuizzes = manifest['quizzes'];
+    if (rawQuizzes != null && rawQuizzes is! List) {
+      throw const FormatException('Backup contains an invalid quiz list.');
+    }
+    final quizzes = rawQuizzes is List ? rawQuizzes.map((rawQuiz) {
+      if (rawQuiz is! Map) throw const FormatException('A quiz record is invalid.');
+      final quiz = Map<String, dynamic>.from(rawQuiz);
+      final dynamic rawQuestions = quiz['questions'];
+      if (rawQuestions is! List) throw const FormatException('A quiz has an invalid question list.');
+      quiz['questions'] = rawQuestions.map((rawQuestion) {
+        if (rawQuestion is! Map) throw const FormatException('A quiz question is invalid.');
+        final question = Map<String, dynamic>.from(rawQuestion);
+        for (final side in const ['prompt', 'answer']) {
+          final ref = question.remove('${side}ImageAsset');
+          final imageKey = '${side}Image';
+          if (ref != null) {
+            if (ref is! String || !assets.containsKey(ref)) throw const FormatException('A quiz image is missing from the backup.');
+            question[imageKey] = base64Encode(assets[ref]!);
+          } else {
+            question.putIfAbsent(imageKey, () => null);
+          }
+        }
+        return question;
+      }).toList();
+      return QuizDefinition.fromJson(quiz);
+    }).toList() : <QuizDefinition>[];
+    return BackupBundle(
+      decks: decks,
+      quizzes: quizzes,
+      exportedAt: DateTime.tryParse(manifest['exportedAt']?.toString() ?? ''),
+    );
   }
+
+  Future<bool> exportDecks(List<Deck> decks) => exportBackup(decks);
 
   bool _hasMagic(Uint8List bytes) {
     if (bytes.length < _magic.length) return false;
-    for (var i = 0; i < _magic.length; i++) { if (bytes[i] != _magic[i]) return false; }
+    for (var i = 0; i < _magic.length; i++) {
+      if (bytes[i] != _magic[i]) return false;
+    }
     return true;
   }
   List<int> _uint16(int value) { final data = ByteData(2)..setUint16(0, value, Endian.big); return data.buffer.asUint8List(); }
