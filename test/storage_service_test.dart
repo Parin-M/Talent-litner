@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:parin_litner/core/models/app_models.dart';
@@ -70,10 +71,8 @@ void main() {
 
     expect((await storage.load()).single.name, 'Atomic deck');
     expect((await storage.loadQuizzes()).single.title, 'Atomic quiz');
-    expect(
-      SharedPreferences.getMockInitialValues()['talent_litner_v5_snapshot'],
-      isNotNull,
-    );
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('talent_litner_v5_snapshot'), isNotNull);
   });
 
   test('reads legacy deck and quiz keys before snapshot migration', () async {
