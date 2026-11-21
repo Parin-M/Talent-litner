@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parin_litner/core/services/backup_service.dart';
 import 'package:parin_litner/core/models/app_models.dart';
@@ -168,6 +169,35 @@ void main() {
       restored.decks.single.cards.single.frontImage,
       decks.single.cards.single.frontImage,
     );
+  });
+
+  test('import accepts a custom .plbackup file selected from storage', () async {
+    final temp = await Directory.systemTemp.createTemp('talent-plbackup-import-');
+    try {
+      final sourceDeck = Deck(
+        id: 'picked-deck',
+        name: 'Picked backup',
+        cards: [FlashCard(id: 'picked-card', front: 'Question', back: 'Answer')],
+      );
+      final bytes = BackupService().buildBackupBytes([sourceDeck]);
+      final backupFile = File('${temp.path}/portable.PLbackup');
+      await backupFile.writeAsBytes(bytes, flush: true);
+
+      final service = BackupService(
+        pickBackupFile: () async => PlatformFile(
+          name: 'portable.PLbackup',
+          size: bytes.length,
+          path: backupFile.path,
+        ),
+      );
+      final restored = await service.importBackup();
+
+      expect(restored, isNotNull);
+      expect(restored!.decks.single.name, 'Picked backup');
+      expect(restored.decks.single.cards.single.front, 'Question');
+    } finally {
+      await temp.delete(recursive: true);
+    }
   });
 
   test('portable backup stream rejects truncated file reads', () async {
