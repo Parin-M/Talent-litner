@@ -514,4 +514,4 @@ class CardPdfExportService {
       );
     }
   }
-
+}
