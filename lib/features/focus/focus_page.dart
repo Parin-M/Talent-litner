@@ -25,6 +25,7 @@ class _FocusPageState extends State<FocusPage> {
   final AudioPlayer _alarmPlayer = AudioPlayer();
   bool _running = false;
   bool _starting = false;
+  bool _musicChanging = false;
   bool _musicPlaying = false;
 
   String s(String key) => AppStrings.t(context, key);
@@ -95,7 +96,10 @@ class _FocusPageState extends State<FocusPage> {
           widget.settings.musicTrack,
           volume: widget.settings.musicVolume,
         );
-        if (!mounted) return;
+        if (!mounted) {
+          await MusicService.instance.stop();
+          return;
+        }
         setState(() => _musicPlaying = true);
       }
     } catch (_) {
@@ -247,7 +251,7 @@ class _FocusPageState extends State<FocusPage> {
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(_musicPlaying ? Icons.music_note : Icons.music_off),
                       title: Text(s('focus_music')),
-                      trailing: Switch(value: _musicPlaying, onChanged: (_) => _toggleMusic()),
+                      trailing: Switch(value: _musicPlaying, onChanged: (_starting || _musicChanging) ? null : (_) => _toggleMusic()),
                     ),
                   ],
                 ],
@@ -260,14 +264,24 @@ class _FocusPageState extends State<FocusPage> {
   }
 
   Future<void> _toggleMusic() async {
-    if (_musicPlaying) {
-      await MusicService.instance.pause();
-      if (mounted) setState(() => _musicPlaying = false);
-    } else {
-      try {
+    if (_starting || _musicChanging) return;
+    setState(() => _musicChanging = true);
+    try {
+      if (_musicPlaying) {
+        await MusicService.instance.pause();
+        if (mounted) setState(() => _musicPlaying = false);
+      } else {
         await MusicService.instance.play(widget.settings.musicTrack, volume: widget.settings.musicVolume);
-        if (mounted) setState(() => _musicPlaying = true);
-      } catch (_) {}
+        if (!mounted) {
+          await MusicService.instance.stop();
+          return;
+        }
+        setState(() => _musicPlaying = true);
+      }
+    } catch (_) {
+      // Optional background music must not affect the focus timer.
+    } finally {
+      if (mounted) setState(() => _musicChanging = false);
     }
   }
 }
