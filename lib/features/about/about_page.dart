@@ -13,6 +13,27 @@ class AboutPage extends StatelessWidget {
     if (!opened && context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.t(context, 'about_open_error'))));
   }
 
+  Future<void> _openTelegram(BuildContext context) async {
+    final uri = Uri.parse('https://t.me/Talent_Academia');
+    try {
+      final opened = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppStrings.t(context, 'about_open_error'))),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppStrings.t(context, 'about_open_error'))),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -29,6 +50,26 @@ class AboutPage extends StatelessWidget {
         ]))),
         const SizedBox(height: 14),
         Card(child: ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8), leading: CircleAvatar(backgroundColor: scheme.primaryContainer, child: Icon(Icons.code_rounded, color: scheme.onPrimaryContainer)), title: Text(s('about_github'), style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(s('about_repo_desc')), trailing: const Icon(Icons.open_in_new_rounded), onTap: () => _openRepository(context))),
+        const SizedBox(height: 10),
+        Card(
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 8,
+            ),
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFF229ED9),
+              child: Icon(Icons.send_rounded, color: Colors.white),
+            ),
+            title: const Text(
+              'تلنت آکادمی',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            subtitle: const Text('کانال تلگرامی پروژه'),
+            trailing: const Icon(Icons.open_in_new_rounded),
+            onTap: () => _openTelegram(context),
+          ),
+        ),
         const SizedBox(height: 24),
         Center(child: Text(s('about_love'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: scheme.onSurfaceVariant), textAlign: TextAlign.center)),
       ]),
