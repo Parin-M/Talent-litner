@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../core/models/app_models.dart';
 import '../../core/i18n/app_strings.dart';
+import '../../core/services/image_storage_service.dart';
 import '../../core/utils/helpers.dart';
 
 class CardEditor extends StatefulWidget {
@@ -34,6 +35,7 @@ class _CardEditorState extends State<CardEditor> {
 
   String? _clean(String? value) {
     if (value == null || value.trim().isEmpty) return null;
+    if (ImageStorageService.isStoredReference(value.trim())) return value.trim();
     try {
       base64Decode(value.trim());
       return value.trim();
@@ -63,8 +65,9 @@ class _CardEditorState extends State<CardEditor> {
       }
       final bytes = await picked.readAsBytes();
       if (bytes.isEmpty || bytes.length > 12 * 1024 * 1024 || !mounted) return;
-      final encoded = base64Encode(bytes);
-      setState(() => isFront ? frontImage = encoded : backImage = encoded);
+      final reference = await ImageStorageService().storeBytes(bytes);
+      if (!mounted) return;
+      setState(() => isFront ? frontImage = reference : backImage = reference);
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('image_error'))));
     }
@@ -112,7 +115,6 @@ class _CardEditorState extends State<CardEditor> {
 
   Widget _imageSection({required bool frontSide, required String title}) {
     final data = frontSide ? frontImage : backImage;
-    final bytes = tryDecodeBase64Image(data);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -124,9 +126,16 @@ class _CardEditorState extends State<CardEditor> {
             OutlinedButton.icon(onPressed: () => _pickImage(frontSide), icon: const Icon(Icons.add_photo_alternate_outlined), label: Text(data == null ? s('add_image') : s('change_image'))),
           ],
         ),
-        if (bytes != null) ...[
+        if (data != null) ...[
           const SizedBox(height: 8),
-          Image.memory(bytes, height: 170, width: double.infinity, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox(height: 170)),
+          SafeMemoryImage(
+            base64: data,
+            height: 170,
+            width: double.infinity,
+            fit: BoxFit.contain,
+            borderRadius: BorderRadius.zero,
+            error: const SizedBox(height: 170),
+          ),
         ],
       ],
     );

@@ -6,7 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../models/app_models.dart';
-import '../utils/helpers.dart';
+import 'image_storage_service.dart';
 
 enum CardPdfLayout { flashcards, worksheet, quiz }
 
@@ -69,6 +69,7 @@ class CardPdfExportService {
     required Deck deck,
     required List<FlashCard> cards,
     required CardPdfExportOptions options,
+    ImageStorageService? imageStore,
   }) async {
     if (cards.isEmpty) {
       throw ArgumentError('Cannot export an empty card collection.');
@@ -84,6 +85,17 @@ class CardPdfExportService {
       case CardPdfSortOrder.dueFirst:
         sortedCards.sort((a, b) => a.dueAt.compareTo(b.dueAt));
         break;
+    }
+
+    final mediaStore = imageStore ?? ImageStorageService();
+    final imageBytesByCard = <FlashCard, List<Uint8List?>>{};
+    if (options.includeImages) {
+      for (final card in sortedCards) {
+        imageBytesByCard[card] = <Uint8List?>[
+          await mediaStore.readBytes(card.frontImage),
+          await mediaStore.readBytes(card.backImage),
+        ];
+      }
     }
 
     final searchableText = <String>[
@@ -184,6 +196,8 @@ class CardPdfExportService {
                 _buildCard(
                   deck: deck,
                   card: chunk[i],
+                  frontImageBytes: imageBytesByCard[chunk[i]]?[0],
+                  backImageBytes: imageBytesByCard[chunk[i]]?[1],
                   number: start + i + 1,
                   options: options,
                   width: contentWidth,
@@ -289,14 +303,16 @@ class CardPdfExportService {
   static pw.Widget _buildCard({
     required Deck deck,
     required FlashCard card,
+    required Uint8List? frontImageBytes,
+    required Uint8List? backImageBytes,
     required int number,
     required CardPdfExportOptions options,
     required double width,
     required double height,
     required double gap,
   }) {
-    final frontImage = options.includeImages ? tryDecodeBase64Image(card.frontImage) : null;
-    final backImage = options.includeImages ? tryDecodeBase64Image(card.backImage) : null;
+    final frontImage = options.includeImages ? frontImageBytes : null;
+    final backImage = options.includeImages ? backImageBytes : null;
     final showAnswer = options.includeAnswers && options.layout != CardPdfLayout.quiz;
     final baseFontSize = options.cardsPerPage == 4 ? 9.0 : options.cardsPerPage == 2 ? 11.0 : 13.0;
 
@@ -454,44 +470,48 @@ class CardPdfExportService {
       RegExp(r'[\u0590-\u08FF]').hasMatch(content);
 
   static Future<pw.ThemeData> _loadTheme(String content) async {
-    if (!RegExp(r'[^\x00-\x7F]').hasMatch(content)) {
+    try {
+      if (!RegExp(r'[^\x00-\x7F]').hasMatch(content)) {
+        return pw.ThemeData.withFont(
+          base: pw.Font.helvetica(),
+          bold: pw.Font.helveticaBold(),
+        );
+      }
+      if (RegExp(r'[\u0590-\u05FF]').hasMatch(content)) {
+        return pw.ThemeData.withFont(
+          base: await PdfGoogleFonts.notoSansHebrewRegular(),
+          bold: await PdfGoogleFonts.notoSansHebrewBold(),
+        );
+      }
+      if (RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]').hasMatch(content)) {
+        return pw.ThemeData.withFont(
+          base: await PdfGoogleFonts.notoSansArabicRegular(),
+          bold: await PdfGoogleFonts.notoSansArabicBold(),
+        );
+      }
+      if (RegExp(r'[\u3040-\u30FF\u4E00-\u9FFF]').hasMatch(content)) {
+        return pw.ThemeData.withFont(
+          base: await PdfGoogleFonts.notoSansJPRegular(),
+          bold: await PdfGoogleFonts.notoSansJPBold(),
+        );
+      }
+      if (RegExp(r'[\uAC00-\uD7AF]').hasMatch(content)) {
+        return pw.ThemeData.withFont(
+          base: await PdfGoogleFonts.notoSansKRRegular(),
+          bold: await PdfGoogleFonts.notoSansKRBold(),
+        );
+      }
+      return pw.ThemeData.withFont(
+        base: await PdfGoogleFonts.notoSansRegular(),
+        bold: await PdfGoogleFonts.notoSansBold(),
+      );
+    } catch (_) {
+      // Offline export continues; non-Latin glyph coverage is best after Noto
+      // fonts have been downloaded and cached at least once.
       return pw.ThemeData.withFont(
         base: pw.Font.helvetica(),
         bold: pw.Font.helveticaBold(),
       );
     }
-
-    if (RegExp(r'[\u0590-\u05FF]').hasMatch(content)) {
-      return pw.ThemeData.withFont(
-        base: await PdfGoogleFonts.notoSansHebrewRegular(),
-        bold: await PdfGoogleFonts.notoSansHebrewBold(),
-      );
-    }
-
-    if (RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]').hasMatch(content)) {
-      return pw.ThemeData.withFont(
-        base: await PdfGoogleFonts.notoSansArabicRegular(),
-        bold: await PdfGoogleFonts.notoSansArabicBold(),
-      );
-    }
-
-    if (RegExp(r'[\u3040-\u30FF\u4E00-\u9FFF]').hasMatch(content)) {
-      return pw.ThemeData.withFont(
-        base: await PdfGoogleFonts.notoSansJPRegular(),
-        bold: await PdfGoogleFonts.notoSansJPBold(),
-      );
-    }
-
-    if (RegExp(r'[\uAC00-\uD7AF]').hasMatch(content)) {
-      return pw.ThemeData.withFont(
-        base: await PdfGoogleFonts.notoSansKRRegular(),
-        bold: await PdfGoogleFonts.notoSansKRBold(),
-      );
-    }
-
-    return pw.ThemeData.withFont(
-      base: await PdfGoogleFonts.notoSansRegular(),
-      bold: await PdfGoogleFonts.notoSansBold(),
-    );
   }
-}
+

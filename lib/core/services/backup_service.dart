@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
+import 'image_storage_service.dart';
 
 class BackupBundle {
   final List<Deck> decks;
@@ -18,6 +19,11 @@ class BackupBundle {
 }
 
 class BackupService {
+  final ImageStorageService imageStore;
+
+  BackupService({ImageStorageService? imageStore})
+      : imageStore = imageStore ?? ImageStorageService();
+
   static const List<int> _magic = <int>[0x50, 0x4c, 0x49, 0x54, 0x42, 0x4b, 0x30, 0x31]; // PLITBK01
   static const int _maxManifestBytes = 64 * 1024 * 1024;
   static const int _maxAssets = 50000;
@@ -25,7 +31,7 @@ class BackupService {
   static const int _maxBackupBytes = 128 * 1024 * 1024;
 
   Future<bool> exportBackup(List<Deck> decks, {List<QuizDefinition> quizzes = const <QuizDefinition>[]}) async {
-    final output = buildBackupBytes(decks, quizzes: quizzes);
+    final output = await buildBackupBytesAsync(decks, quizzes: quizzes);
     final saved = await FilePicker.saveFile(
       dialogTitle: 'ذخیره پشتیبان Talent Litner',
       fileName: 'talent_litner_backup.plbackup',
@@ -34,6 +40,35 @@ class BackupService {
       bytes: output,
     );
     return saved != null;
+  }
+
+  /// Materializes file-backed images in an isolated copy before building the
+  /// portable archive. The synchronous builder remains for Base64 callers.
+  Future<Uint8List> buildBackupBytesAsync(
+    List<Deck> decks, {
+    List<QuizDefinition> quizzes = const <QuizDefinition>[],
+  }) async {
+    final portableDecks = decks
+        .map((deck) => Deck.fromJson(Map<String, dynamic>.from(deck.toJson())))
+        .toList();
+    final portableQuizzes = quizzes
+        .map((quiz) =>
+            QuizDefinition.fromJson(Map<String, dynamic>.from(quiz.toJson())))
+        .toList();
+
+    for (final deck in portableDecks) {
+      for (final card in deck.cards) {
+        card.frontImage = await imageStore.readAsBase64(card.frontImage);
+        card.backImage = await imageStore.readAsBase64(card.backImage);
+      }
+    }
+    for (final quiz in portableQuizzes) {
+      for (final question in quiz.questions) {
+        question.promptImage = await imageStore.readAsBase64(question.promptImage);
+        question.answerImage = await imageStore.readAsBase64(question.answerImage);
+      }
+    }
+    return buildBackupBytes(portableDecks, quizzes: portableQuizzes);
   }
 
   Uint8List buildBackupBytes(List<Deck> decks, {List<QuizDefinition> quizzes = const <QuizDefinition>[]}) {

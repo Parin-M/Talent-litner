@@ -21,7 +21,7 @@ class ParinLitnerApp extends StatefulWidget {
   @override State<ParinLitnerApp> createState() => _ParinLitnerAppState();
 }
 
-class _ParinLitnerAppState extends State<ParinLitnerApp> {
+class _ParinLitnerAppState extends State<ParinLitnerApp> with WidgetsBindingObserver {
   final storage = StorageService();
   final backup = BackupService();
   final settings = AppSettings();
@@ -34,9 +34,19 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _widgetLanguageCode = settings.languageCode;
     settings.addListener(_handleSettingsChanged);
     _load();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      unawaited(storage.flush());
+    }
   }
 
   void _handleSettingsChanged() {
@@ -47,6 +57,7 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     settings.removeListener(_handleSettingsChanged);
     settings.dispose();
     super.dispose();
@@ -164,6 +175,7 @@ class _ParinLitnerAppState extends State<ParinLitnerApp> {
             ];
 
       try {
+        await storage.normalizeImages(nextDecks, nextQuizzes);
         await storage.saveAll(nextDecks, nextQuizzes);
       } catch (_) {
         // Restore the previous atomic snapshot if persistence reports failure.

@@ -284,7 +284,8 @@ class _DeckPageState extends State<DeckPage> {
       } else {
         await Printing.sharePdf(bytes: bytes, filename: filename);
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('PDF export failed: $error\\n$stackTrace');
       if (mounted) {
         if (progressDialogOpen) Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(

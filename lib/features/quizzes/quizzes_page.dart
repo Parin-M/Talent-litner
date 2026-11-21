@@ -1,24 +1,20 @@
-import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../core/i18n/app_strings.dart';
 import '../../core/models/app_models.dart';
+import '../../core/services/image_storage_service.dart';
 import '../../core/utils/helpers.dart';
 import '../../shared/widgets/animated_glass_card.dart';
 
 Widget? _quizImage(String? encoded, {double height = 190}) {
   if (encoded == null || encoded.isEmpty) return null;
-  try {
-    final bytes = base64Decode(encoded);
-    if (bytes.isEmpty) return null;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.memory(bytes, height: height, width: double.infinity, fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const SizedBox.shrink()),
-    );
-  } catch (_) {
-    return null;
-  }
+  return SafeMemoryImage(
+    base64: encoded,
+    height: height,
+    width: double.infinity,
+    fit: BoxFit.contain,
+    borderRadius: BorderRadius.circular(8),
+  );
 }
 
 class QuizzesPage extends StatefulWidget {
@@ -347,11 +343,13 @@ class _QuizQuestionEditorPageState extends State<QuizQuestionEditorPage> {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s('test_image_error'))));
         return;
       }
+      final reference = await ImageStorageService().storeBytes(bytes);
+      if (!mounted) return;
       setState(() {
         if (questionImage) {
-          _promptImage = base64Encode(bytes);
+          _promptImage = reference;
         } else {
-          _answerImage = base64Encode(bytes);
+          _answerImage = reference;
         }
       });
     } catch (_) {
