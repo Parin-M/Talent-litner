@@ -7,7 +7,7 @@ import 'package:parin_litner/core/services/backup_service.dart';
 import 'package:parin_litner/core/models/app_models.dart';
 import 'package:parin_litner/core/services/image_storage_service.dart';
 
-class _TestPlatformFile implements PlatformFile {
+final class _TestPlatformFile extends PlatformFile {
   _TestPlatformFile({
     required this.name,
     required this.path,
